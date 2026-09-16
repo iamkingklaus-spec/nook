@@ -1,0 +1,200 @@
+name: iOS baseline
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-baseline-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  baseline:
+    runs-on: macos-26
+    timeout-minutes: 60
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.5.app/Contents/Developer
+      GIT_TERMINAL_PROMPT: '0'
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+          # Build inputs are included; unrelated marketing videos are not needed.
+          sparse-checkout: |
+            .github
+            Config
+            Nook.xcodeproj
+            Nook
+            NookKit
+            NookShare
+            NookShareSave
+            NookShareDiscover
+            NookWidget
+            NookiOS
+            docs
+            tools
+
+      - name: Record and check toolchain
+        id: toolchain
+        run: |
+          mkdir -p "$RUNNER_TEMP/nook-phase0"
+          {
+            sw_vers
+            uname -m
+            printf 'DEVELOPER_DIR=%s\n' "$DEVELOPER_DIR"
+            ls -d /Applications/Xcode*.app
+            if [[ ! -d "$DEVELOPER_DIR" ]]; then
+              echo '::error::Xcode 26.5 is not installed on this runner. See the installed Xcode list; do not lower deployment targets.'
+              exit 1
+            fi
+            xcodebuild -version
+            xcrun swift --version
+            xcodebuild -showsdks
+            xcrun simctl list runtimes
+            python3 - <<'PY'
+          import re
+          import subprocess
+
+          def output(*args):
+              return subprocess.check_output(args, text=True).strip()
+
+          def version(value):
+              match = re.search(r"\d+\.\d+(?:\.\d+)?", value)
+              if not match:
+                  raise SystemExit(f"::error::Cannot read version from: {value}")
+              return tuple(map(int, match.group().split(".")))
+
+          checks = [
+              ("macOS host", output("sw_vers", "-productVersion"), (26, 0)),
+              ("Xcode", output("xcodebuild", "-version"), (26, 5)),
+              ("Swift", output("xcrun", "swift", "--version"), (6, 1)),
+              ("macOS SDK", output("xcrun", "--sdk", "macosx", "--show-sdk-version"), (26, 0)),
+              ("iOS Simulator SDK", output("xcrun", "--sdk", "iphonesimulator", "--show-sdk-version"), (18, 0)),
+          ]
+          for name, actual, minimum in checks:
+              print(f"{name}: {actual}", flush=True)
+              if version(actual) < minimum:
+                  raise SystemExit(f"::error::{name} does not meet {minimum}: {actual}. Deployment targets remain unchanged.")
+          PY
+          } 2>&1 | tee "$RUNNER_TEMP/nook-phase0/toolchain.log"
+
+      - name: Resolve Xcode dependencies
+        id: resolve_xcode
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project Nook.xcodeproj -scheme NookiOS \
+            -clonedSourcePackagesDirPath "$RUNNER_TEMP/nook-source-packages" \
+            2>&1 | tee "$RUNNER_TEMP/nook-phase0/resolve-xcode.log"
+
+      - name: Resolve NookKit dependencies
+        id: resolve_swiftpm
+        run: |
+          swift package --package-path NookKit resolve \
+            2>&1 | tee "$RUNNER_TEMP/nook-phase0/resolve-swiftpm.log"
+
+      - name: Build iOS Simulator Debug without signing
+        id: debug
+        run: |
+          xcodebuild -project Nook.xcodeproj -scheme NookiOS \
+            -configuration Debug -destination 'generic/platform=iOS Simulator' \
+            -clonedSourcePackagesDirPath "$RUNNER_TEMP/nook-source-packages" \
+            -derivedDataPath "$RUNNER_TEMP/nook-derived-data" \
+            -resultBundlePath "$RUNNER_TEMP/nook-phase0/debug.xcresult" \
+            CODE_SIGNING_ALLOWED=NO build \
+            2>&1 | tee "$RUNNER_TEMP/nook-phase0/build-debug.log"
+
+      - name: Build iOS Simulator Release without signing
+        id: release
+        run: |
+          xcodebuild -project Nook.xcodeproj -scheme NookiOS \
+            -configuration Release -destination 'generic/platform=iOS Simulator' \
+            -clonedSourcePackagesDirPath "$RUNNER_TEMP/nook-source-packages" \
+            -derivedDataPath "$RUNNER_TEMP/nook-derived-data" \
+            -resultBundlePath "$RUNNER_TEMP/nook-phase0/release.xcresult" \
+            CODE_SIGNING_ALLOWED=NO build \
+            2>&1 | tee "$RUNNER_TEMP/nook-phase0/build-release.log"
+
+      - name: Run NookKit tests
+        id: tests
+        run: |
+          swift test --package-path NookKit \
+            2>&1 | tee "$RUNNER_TEMP/nook-phase0/nookkit-tests.log"
+
+      - name: Check diff whitespace
+        id: diff
+        if: ${{ always() && steps.checkout.outcome == 'success' }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/nook-phase0"
+          {
+            git diff --check
+            # Also check committed changes; a clean checkout alone has no diff.
+            git diff --check ebd5ee670ffb578edcc0bb32d41dee5515ae4beb HEAD
+          } 2>&1 | tee "$RUNNER_TEMP/nook-phase0/diff-check.log"
+
+      - name: Preserve dependency diagnostics
+        if: ${{ always() && steps.checkout.outcome == 'success' }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/nook-phase0"
+          git status --short > "$RUNNER_TEMP/nook-phase0/git-status.txt"
+          git diff -- NookKit/Package.resolved > "$RUNNER_TEMP/nook-phase0/package-resolved.diff"
+          cp NookKit/Package.resolved "$RUNNER_TEMP/nook-phase0/NookKit-Package.resolved"
+          xcode_lock=Nook.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+          if [[ -f "$xcode_lock" ]]; then
+            cp "$xcode_lock" "$RUNNER_TEMP/nook-phase0/Xcode-Package.resolved"
+          fi
+
+      - name: Summarize actual outcomes
+        if: ${{ always() }}
+        env:
+          TOOLCHAIN_RESULT: ${{ steps.toolchain.outcome }}
+          XCODE_RESOLVE_RESULT: ${{ steps.resolve_xcode.outcome }}
+          SWIFTPM_RESOLVE_RESULT: ${{ steps.resolve_swiftpm.outcome }}
+          DEBUG_RESULT: ${{ steps.debug.outcome }}
+          RELEASE_RESULT: ${{ steps.release.outcome }}
+          TEST_RESULT: ${{ steps.tests.outcome }}
+          DIFF_RESULT: ${{ steps.diff.outcome }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/nook-phase0"
+          {
+            printf '## Phase 0 CI results\n\nCommit: `%s`\n\n' "$GITHUB_SHA"
+            printf '| Check | Outcome |\n| --- | --- |\n'
+            printf '| Toolchain | %s |\n' "$TOOLCHAIN_RESULT"
+            printf '| Xcode dependency resolution | %s |\n' "$XCODE_RESOLVE_RESULT"
+            printf '| NookKit dependency resolution | %s |\n' "$SWIFTPM_RESOLVE_RESULT"
+            printf '| Simulator Debug (unsigned) | %s |\n' "$DEBUG_RESULT"
+            printf '| Simulator Release (unsigned) | %s |\n' "$RELEASE_RESULT"
+            printf '| NookKit tests | %s |\n' "$TEST_RESULT"
+            printf '| Diff whitespace | %s |\n\n' "$DIFF_RESULT"
+            printf '### Test runner summaries\n\n```text\n'
+            test_log="$RUNNER_TEMP/nook-phase0/nookkit-tests.log"
+            if [[ -f "$test_log" ]] && grep -E '(Test run with|Executed [0-9]+ tests?)' "$test_log"; then
+              :
+            else
+              echo 'No test-count summary was produced. Tests may have been skipped or failed before execution; inspect the full log.'
+            fi
+            printf '```\n\n'
+            echo 'Failures stop subsequent build/test steps. Raw logs and result bundles are uploaded even on failure.'
+            echo 'If nook-plus-protocol blocks resolution or compilation, keep the error and stop; this workflow does not remove Plus or change Package.swift.'
+            echo 'An unsigned Simulator build does not verify Personal Team provisioning or physical-device installation.'
+          } | tee "$RUNNER_TEMP/nook-phase0/summary.md" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload raw logs and result bundles
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: nook-phase0-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/nook-phase0/
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 14
