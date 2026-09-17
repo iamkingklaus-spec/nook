@@ -61,6 +61,20 @@ does not turn a failed build into a successful step. Failures stop the remaining
 build/test steps; the diagnostic, summary, and artifact steps still run. Skipped
 steps are reported as skipped, never as successful.
 
+Both Simulator build commands pass `-skipPackagePluginValidation` so a fresh,
+unattended runner can execute package build plugins without Xcode's interactive
+trust dialog. The first baseline run stopped at validation of `OpenAPIGenerator`,
+which `nook-plus-protocol` 0.4.1 uses to generate `NookPlusServiceAPI` via
+`swift-openapi-generator` 1.13.0. The plugin still runs and its failures still fail
+the build; this option does not remove Plus or skip code generation.
+
+The option implicitly trusts all resolved package plugins for those two
+`xcodebuild` invocations. Review dependency changes accordingly. It does not set
+global Xcode preferences, disable the plugin sandbox, bypass macro validation,
+or change local interactive builds. No signing credentials are supplied.
+See the [SwiftLint plugin documentation](https://github.com/realm/SwiftLint#xcode-projects)
+for the unattended Xcode option and its trust implications.
+
 The artifact `nook-phase0-<run ID>-<attempt>` contains unfiltered command logs,
 available Xcode result bundles, resolved dependency files, and a summary of
 actual step outcomes. The test summary preserves the test runner's count lines

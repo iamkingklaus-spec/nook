@@ -105,12 +105,15 @@ jobs:
 
       - name: Build iOS Simulator Debug without signing
         id: debug
+        # Fresh runners cannot accept Xcode's package-plugin trust dialog.
+        # Allow the resolved build plugins for this command only; see docs/ios-baseline-ci.md.
         run: |
           xcodebuild -project Nook.xcodeproj -scheme NookiOS \
             -configuration Debug -destination 'generic/platform=iOS Simulator' \
             -clonedSourcePackagesDirPath "$RUNNER_TEMP/nook-source-packages" \
             -derivedDataPath "$RUNNER_TEMP/nook-derived-data" \
             -resultBundlePath "$RUNNER_TEMP/nook-phase0/debug.xcresult" \
+            -skipPackagePluginValidation \
             CODE_SIGNING_ALLOWED=NO build \
             2>&1 | tee "$RUNNER_TEMP/nook-phase0/build-debug.log"
 
@@ -122,6 +125,7 @@ jobs:
             -clonedSourcePackagesDirPath "$RUNNER_TEMP/nook-source-packages" \
             -derivedDataPath "$RUNNER_TEMP/nook-derived-data" \
             -resultBundlePath "$RUNNER_TEMP/nook-phase0/release.xcresult" \
+            -skipPackagePluginValidation \
             CODE_SIGNING_ALLOWED=NO build \
             2>&1 | tee "$RUNNER_TEMP/nook-phase0/build-release.log"
 
