@@ -400,6 +400,12 @@ final class FeedXMLParser: NSObject, XMLParserDelegate {
         var summary = ""
         var content = ""
         var contentType = ""
+        var summaryType = ""
+        var contentElement = ""
+        var summaryElement = ""
+        var subtitle = ""
+        var tags: [String] = []
+        var images: [ArticleImageMetadata] = []
         var published = ""
         var updated = ""
     }
@@ -414,6 +420,14 @@ final class FeedXMLParser: NSObject, XMLParserDelegate {
     private var feedSiteLink = ""
     private var currentArticle: ArticleDraft?
     private var articleDrafts: [ArticleDraft] = []
+    private var namespaces: [[String: String]] = []
+    private var baseURLs: [URL] = []
+    private struct ContentCapture {
+        var depth: Int
+        var text = ""
+        var isXHTML: Bool
+    }
+    private var contentCapture: ContentCapture?
 
     init(feedURL: URL) {
         self.feedURL = feedURL
@@ -463,7 +477,25 @@ final class FeedXMLParser: NSObject, XMLParserDelegate {
             let articleID = "\(feed.id)#\(idSeed)"
 
             let rawContent = draft.content.isEmpty ? draft.summary : draft.content
-            let contentHTML = Self.htmlContent(raw: rawContent, declaredType: draft.contentType)
+            let selectedType = draft.content.isEmpty ? draft.summaryType : draft.contentType
+            let contentHTML = Self.htmlContent(raw: rawContent, declaredType: selectedType)
+            var sources: [ArticleSourceContent] = []
+            for (raw, type, element, source) in [
+                (draft.content, draft.contentType, draft.contentElement, ArticleContentSource.rssFullContent),
+                (draft.summary, draft.summaryType, draft.summaryElement, ArticleContentSource.rssDescription)
+            ] where !element.isEmpty {
+                let format: ArticleContentFormat = type.lowercased() == "xhtml" ? .xhtml
+                    : (Self.htmlContent(raw: raw, declaredType: type) == nil ? .plainText : .html)
+                sources.append(ArticleSourceContent(source: source, content: raw, format: format,
+                                                    sourceElement: element,
+                                                    quality: raw.isEmpty ? .empty : .unknown))
+            }
+            // A source tag is not proof that its body is complete. Classification
+            // and quality assessment are deferred; retain the feed's evidence.
+            let selectedSource: ArticleContentSource? = !draft.content.isEmpty ? .rssFullContent
+                : (!draft.summaryElement.isEmpty ? .rssDescription : nil)
+            let hero = [HeroImageProvenance.enclosure, .mediaContent, .mediaThumbnail].lazy
+                .compactMap { (kind: HeroImageProvenance) in draft.images.first { $0.provenance == kind } }.first
 
             return Article(
                 id: articleID,
@@ -477,7 +509,16 @@ final class FeedXMLParser: NSObject, XMLParserDelegate {
                 isRead: false,
                 isStarred: false,
                 contentHTML: contentHTML,
-                hasExplicitPublishDate: explicitDate != nil
+                hasExplicitPublishDate: explicitDate != nil,
+                feedItemGUID: draft.guid.isEmpty ? nil : draft.guid,
+                rssTags: draft.tags,
+                heroImageURL: hero?.url,
+                heroImageProvenance: hero?.provenance,
+                rssImages: draft.images,
+                subtitle: draft.subtitle.isEmpty ? nil : draft.subtitle,
+                contentSource: selectedSource,
+                contentQuality: selectedSource == nil ? nil : (rawContent.isEmpty ? .empty : .unknown),
+                sourceContents: sources
             )
         }
 
@@ -491,9 +532,29 @@ final class FeedXMLParser: NSObject, XMLParserDelegate {
         qualifiedName qName: String?,
         attributes attributeDict: [String: String] = [:]
     ) {
-        let key = elementName.lowercased()
+        var scope = namespaces.last ?? [:]
+        for (name, value) in attributeDict where name.hasPrefix("xmlns:") {
+            scope[String(name.dropFirst(6))] = value
+        }
+        namespaces.append(scope)
+        let base = baseURLs.last ?? feedURL
+        baseURLs.append(attributeDict["xml:base"].flatMap { URL(string: $0, relativeTo: base)?.absoluteURL } ?? base)
+        let key = canonicalElement(elementName, scope: scope)
         elementStack.append(key)
         currentText = ""
+
+        if contentCapture != nil {
+            let attributes = attributeDict.sorted { $0.key < $1.key }
+                .map { " \($0.key)=\"\(Self.xmlEscaped($0.value))\"" }.joined()
+            contentCapture?.text += "<\(elementName)\(attributes)>"
+            return
+        }
+        let isItemChild = parentElement == "item" || parentElement == "entry"
+        if currentArticle != nil, isItemChild,
+           ["description", "summary", "content", "content:encoded", "encoded"].contains(key) {
+            contentCapture = ContentCapture(depth: elementStack.count,
+                                            isXHTML: attributeDict["type"]?.lowercased() == "xhtml")
+        }
 
         if key == "rss" {
             format = .rss
@@ -505,25 +566,55 @@ final class FeedXMLParser: NSObject, XMLParserDelegate {
             currentArticle = ArticleDraft()
         } else if format == .atom, key == "link" {
             handleAtomLink(attributeDict)
-        } else if key == "content", currentArticle != nil, let type = attributeDict["type"] {
+        } else if key == "content", isItemChild, currentArticle != nil, let type = attributeDict["type"] {
             // Atom declares the content type explicitly (e.g. "html", "xhtml", "text").
             currentArticle?.contentType = type
+        }
+        if currentArticle != nil {
+            if key == "summary", isItemChild { currentArticle?.summaryType = attributeDict["type"] ?? "" }
+            if key == "category", isItemChild, format == .atom, let term = attributeDict["term"] {
+                appendTag(term)
+            }
+            let isMediaChild = isItemChild || parentElement == "media:group"
+            if key == "enclosure", isItemChild {
+                appendImage(attributeDict, provenance: .enclosure)
+            } else if key == "media:content", isMediaChild {
+                appendImage(attributeDict, provenance: .mediaContent)
+            } else if key == "media:thumbnail", isMediaChild {
+                appendImage(attributeDict, provenance: .mediaThumbnail)
+            }
         }
     }
 
     func parser(_ parser: XMLParser, foundCharacters string: String) {
         currentText += string
+        if let capture = contentCapture {
+            contentCapture?.text += capture.isXHTML || elementStack.count > capture.depth ? Self.xmlEscaped(string) : string
+        }
     }
 
     func parser(_ parser: XMLParser, foundCDATA CDATABlock: Data) {
         if let string = String(data: CDATABlock, encoding: .utf8) {
             currentText += string
+            contentCapture?.text += string
         }
     }
 
     func parser(_ parser: XMLParser, didEndElement elementName: String, namespaceURI: String?, qualifiedName qName: String?) {
-        let key = elementName.lowercased()
-        let text = currentText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let key = elementStack.last ?? elementName.lowercased()
+        var text = currentText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let capture = contentCapture {
+            if elementStack.count > capture.depth {
+                contentCapture?.text += "</\(elementName)>"
+                elementStack.removeLast()
+                namespaces.removeLast()
+                baseURLs.removeLast()
+                currentText = ""
+                return
+            }
+            text = capture.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            contentCapture = nil
+        }
 
         switch format {
         case .rss:
@@ -543,6 +634,8 @@ final class FeedXMLParser: NSObject, XMLParserDelegate {
 
         if !elementStack.isEmpty {
             elementStack.removeLast()
+            namespaces.removeLast()
+            baseURLs.removeLast()
         }
         currentText = ""
     }
@@ -565,8 +658,14 @@ final class FeedXMLParser: NSObject, XMLParserDelegate {
                 currentArticle?.guid += text
             case "description":
                 currentArticle?.summary += text
+                currentArticle?.summaryElement = "description"
             case "content:encoded", "encoded":
                 currentArticle?.content += text
+                currentArticle?.contentElement = "content:encoded"
+            case "category":
+                appendTag(text)
+            case "subtitle":
+                currentArticle?.subtitle = text
             case "pubdate", "published":
                 currentArticle?.published += text
             case "updated", "dc:date":
@@ -612,8 +711,12 @@ final class FeedXMLParser: NSObject, XMLParserDelegate {
                 currentArticle?.guid += text
             case "summary":
                 currentArticle?.summary += text
+                currentArticle?.summaryElement = "summary"
             case "content":
                 currentArticle?.content += text
+                currentArticle?.contentElement = "content"
+            case "subtitle":
+                currentArticle?.subtitle = text
             case "published":
                 currentArticle?.published += text
             case "updated":
@@ -639,6 +742,12 @@ final class FeedXMLParser: NSObject, XMLParserDelegate {
         guard let href = attributes["href"] else { return }
         let rel = attributes["rel"] ?? "alternate"
 
+        if currentArticle != nil, parentElement == "entry", rel == "enclosure" {
+            var enclosure = attributes
+            enclosure["url"] = href
+            appendImage(enclosure, provenance: .enclosure)
+        }
+
         if currentArticle != nil {
             if currentArticle?.link.isEmpty == true, rel == "alternate" || rel.isEmpty {
                 currentArticle?.link = href
@@ -646,6 +755,50 @@ final class FeedXMLParser: NSObject, XMLParserDelegate {
         } else if feedSiteLink.isEmpty, rel == "alternate" || rel.isEmpty {
             feedSiteLink = href
         }
+    }
+
+    private func appendTag(_ value: String) {
+        let tag = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !tag.isEmpty, currentArticle?.tags.contains(tag) == false else { return }
+        currentArticle?.tags.append(tag)
+    }
+
+    private func appendImage(_ attributes: [String: String], provenance: HeroImageProvenance) {
+        guard let raw = attributes["url"],
+              !raw.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              let url = URL(string: raw.trimmingCharacters(in: .whitespacesAndNewlines),
+                            relativeTo: baseURLs.last ?? feedURL)?.absoluteURL,
+              RSSFeedService.isFetchableWebURL(url) else { return }
+        let mime = attributes["type"]?.lowercased()
+        let medium = attributes["medium"]?.lowercased()
+        if provenance != .mediaThumbnail {
+            // A declared video/audio type must never become the hero image.
+            if let medium, medium != "image" { return }
+            if let mime, !mime.hasPrefix("image/") { return }
+            guard medium == "image" || mime?.hasPrefix("image/") == true
+                    || ["jpg", "jpeg", "png", "gif", "webp", "avif", "heic"].contains(url.pathExtension.lowercased()) else { return }
+        }
+        let image = ArticleImageMetadata(url: url, provenance: provenance, mimeType: mime)
+        if currentArticle?.images.contains(image) == false { currentArticle?.images.append(image) }
+    }
+
+    private func canonicalElement(_ name: String, scope: [String: String]) -> String {
+        let parts = name.split(separator: ":", maxSplits: 1).map(String.init)
+        guard parts.count == 2 else { return name.lowercased() }
+        switch scope[parts[0]] {
+        case "http://search.yahoo.com/mrss/": return "media:" + parts[1].lowercased()
+        case "http://purl.org/rss/1.0/modules/content/": return "content:" + parts[1].lowercased()
+        case "http://www.w3.org/2005/Atom": return parts[1].lowercased()
+        case "http://purl.org/dc/elements/1.1/": return "dc:" + parts[1].lowercased()
+        default: return name.lowercased()
+        }
+    }
+
+    private static func xmlEscaped(_ text: String) -> String {
+        text.replacingOccurrences(of: "&", with: "&amp;")
+            .replacingOccurrences(of: "<", with: "&lt;")
+            .replacingOccurrences(of: ">", with: "&gt;")
+            .replacingOccurrences(of: "\"", with: "&quot;")
     }
 
     private func resolvedURL(from value: String, fallback: URL) -> URL {

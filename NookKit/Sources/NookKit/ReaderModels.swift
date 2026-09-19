@@ -48,9 +48,25 @@ public struct ArticleBody: Codable, Sendable, Equatable {
     public var bodyParagraphs: [String]
     public var contentHTML: String?
 
-    public init(bodyParagraphs: [String], contentHTML: String?) {
+    public var sourceContents: [ArticleSourceContent]
+    public var document: ArticleDocument?
+
+    public init(bodyParagraphs: [String], contentHTML: String?,
+                sourceContents: [ArticleSourceContent] = [], document: ArticleDocument? = nil) {
         self.bodyParagraphs = bodyParagraphs
         self.contentHTML = contentHTML
+        self.sourceContents = sourceContents
+        self.document = document
+    }
+
+    enum CodingKeys: String, CodingKey { case bodyParagraphs, contentHTML, sourceContents, document }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        bodyParagraphs = try c.decodeIfPresent([String].self, forKey: .bodyParagraphs) ?? []
+        contentHTML = try c.decodeIfPresent(String.self, forKey: .contentHTML)
+        sourceContents = try c.decodeIfPresent([ArticleSourceContent].self, forKey: .sourceContents) ?? []
+        document = try c.decodeIfPresent(ArticleDocument.self, forKey: .document)
     }
 }
 
@@ -387,6 +403,20 @@ public struct Article: Identifiable, Codable, Hashable, Sendable {
     /// change is picked up by `reloadMerged`'s `merged.articles != articles` check.
     public var categories: [String] = []
 
+    // News metadata is content, never user category state.
+    public var newsCategory: NewsCategory?
+    public var newsCategoryProvenance: NewsCategoryProvenance?
+    public var feedItemGUID: String?
+    public var rssTags: [String]
+    public var heroImageURL: URL?
+    public var heroImageProvenance: HeroImageProvenance?
+    public var rssImages: [ArticleImageMetadata]
+    public var subtitle: String?
+    public var contentSource: ArticleContentSource?
+    public var contentQuality: ArticleContentQuality?
+    public var sourceContents: [ArticleSourceContent]
+    public var document: ArticleDocument?
+
     public init(
         id: String,
         feedID: Feed.ID,
@@ -400,7 +430,19 @@ public struct Article: Identifiable, Codable, Hashable, Sendable {
         isStarred: Bool,
         contentHTML: String? = nil,
         hasExplicitPublishDate: Bool = true,
-        categories: [String] = []
+        categories: [String] = [],
+        newsCategory: NewsCategory? = nil,
+        newsCategoryProvenance: NewsCategoryProvenance? = nil,
+        feedItemGUID: String? = nil,
+        rssTags: [String] = [],
+        heroImageURL: URL? = nil,
+        heroImageProvenance: HeroImageProvenance? = nil,
+        rssImages: [ArticleImageMetadata] = [],
+        subtitle: String? = nil,
+        contentSource: ArticleContentSource? = nil,
+        contentQuality: ArticleContentQuality? = nil,
+        sourceContents: [ArticleSourceContent] = [],
+        document: ArticleDocument? = nil
     ) {
         self.id = id
         self.feedID = feedID
@@ -415,11 +457,24 @@ public struct Article: Identifiable, Codable, Hashable, Sendable {
         self.contentHTML = contentHTML
         self.hasExplicitPublishDate = hasExplicitPublishDate
         self.categories = categories
+        self.newsCategory = newsCategory
+        self.newsCategoryProvenance = newsCategoryProvenance
+        self.feedItemGUID = feedItemGUID
+        self.rssTags = rssTags
+        self.heroImageURL = heroImageURL
+        self.heroImageProvenance = heroImageProvenance
+        self.rssImages = rssImages
+        self.subtitle = subtitle
+        self.contentSource = contentSource
+        self.contentQuality = contentQuality
+        self.sourceContents = sourceContents
+        self.document = document
     }
 
     enum CodingKeys: String, CodingKey {
         case id, feedID, title, summary, bodyParagraphs, publishedAt
         case url, estimatedReadMinutes, isRead, isStarred, contentHTML
+        case newsCategory, newsCategoryProvenance, feedItemGUID, rssTags, heroImageURL, heroImageProvenance, rssImages, subtitle, contentSource, contentQuality, sourceContents, document
     }
 
     /// Tolerant of a list-light baseline (bodies absent) as well as the legacy
@@ -437,6 +492,18 @@ public struct Article: Identifiable, Codable, Hashable, Sendable {
         isRead = try c.decode(Bool.self, forKey: .isRead)
         isStarred = try c.decode(Bool.self, forKey: .isStarred)
         contentHTML = try c.decodeIfPresent(String.self, forKey: .contentHTML)
+        newsCategory = try c.decodeIfPresent(NewsCategory.self, forKey: .newsCategory)
+        newsCategoryProvenance = try c.decodeIfPresent(NewsCategoryProvenance.self, forKey: .newsCategoryProvenance)
+        feedItemGUID = try c.decodeIfPresent(String.self, forKey: .feedItemGUID)
+        rssTags = try c.decodeIfPresent([String].self, forKey: .rssTags) ?? []
+        heroImageURL = try c.decodeIfPresent(URL.self, forKey: .heroImageURL)
+        heroImageProvenance = try c.decodeIfPresent(HeroImageProvenance.self, forKey: .heroImageProvenance)
+        rssImages = try c.decodeIfPresent([ArticleImageMetadata].self, forKey: .rssImages) ?? []
+        subtitle = try c.decodeIfPresent(String.self, forKey: .subtitle)
+        contentSource = try c.decodeIfPresent(ArticleContentSource.self, forKey: .contentSource)
+        contentQuality = try c.decodeIfPresent(ArticleContentQuality.self, forKey: .contentQuality)
+        sourceContents = try c.decodeIfPresent([ArticleSourceContent].self, forKey: .sourceContents) ?? []
+        document = try c.decodeIfPresent(ArticleDocument.self, forKey: .document)
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -450,23 +517,36 @@ public struct Article: Identifiable, Codable, Hashable, Sendable {
         try c.encode(estimatedReadMinutes, forKey: .estimatedReadMinutes)
         try c.encode(isRead, forKey: .isRead)
         try c.encode(isStarred, forKey: .isStarred)
+        try c.encodeIfPresent(newsCategory, forKey: .newsCategory)
+        try c.encodeIfPresent(newsCategoryProvenance, forKey: .newsCategoryProvenance)
+        try c.encodeIfPresent(feedItemGUID, forKey: .feedItemGUID)
+        try c.encode(rssTags, forKey: .rssTags)
+        try c.encodeIfPresent(heroImageURL, forKey: .heroImageURL)
+        try c.encodeIfPresent(heroImageProvenance, forKey: .heroImageProvenance)
+        try c.encode(rssImages, forKey: .rssImages)
+        try c.encodeIfPresent(subtitle, forKey: .subtitle)
+        try c.encodeIfPresent(contentSource, forKey: .contentSource)
+        try c.encodeIfPresent(contentQuality, forKey: .contentQuality)
         // The content baseline is persisted list-light; the bodies live in the
         // sidecar. Any other encoder (e.g. the sidecar itself) keeps them.
         let strip = encoder.userInfo[.stripArticleContent] as? Bool ?? false
         if !strip {
             try c.encode(bodyParagraphs, forKey: .bodyParagraphs)
             try c.encodeIfPresent(contentHTML, forKey: .contentHTML)
+            try c.encode(sourceContents, forKey: .sourceContents)
+            try c.encodeIfPresent(document, forKey: .document)
         }
     }
 
     /// The article's body, for persisting to / hydrating from the sidecar.
     public var body: ArticleBody {
-        ArticleBody(bodyParagraphs: bodyParagraphs, contentHTML: contentHTML)
+        ArticleBody(bodyParagraphs: bodyParagraphs, contentHTML: contentHTML,
+                    sourceContents: sourceContents, document: document)
     }
 
     /// Whether this article actually carries body content worth persisting.
     public var hasBody: Bool {
-        contentHTML != nil || !bodyParagraphs.isEmpty
+        contentHTML != nil || !bodyParagraphs.isEmpty || !sourceContents.isEmpty || document != nil
     }
 }
 

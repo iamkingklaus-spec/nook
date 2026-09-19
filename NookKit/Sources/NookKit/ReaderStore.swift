@@ -1422,8 +1422,7 @@ public final class ReaderStore {
         var changed = false
         for index in updated.indices where !updated[index].hasBody {
             if let body = bodyCache[updated[index].id] {
-                updated[index].bodyParagraphs = body.bodyParagraphs
-                updated[index].contentHTML = body.contentHTML
+                updated[index].applyBody(body)
                 changed = true
             }
         }
@@ -1438,8 +1437,7 @@ public final class ReaderStore {
         var library = library
         for index in library.articles.indices where !library.articles[index].hasBody {
             if let body = bodyCache[library.articles[index].id] {
-                library.articles[index].bodyParagraphs = body.bodyParagraphs
-                library.articles[index].contentHTML = body.contentHTML
+                library.articles[index].applyBody(body)
             }
         }
         return library
@@ -4796,6 +4794,7 @@ public final class ReaderStore {
                     // A freshly parsed article has no categories; keep the ones already
                     // assigned (keyword/AI/manual) so a refresh never wipes them.
                     article.categories = existing.categories
+                    article.preserveNewsEnrichment(from: existing)
                     // Only pin the timestamp when the feed gave no real date (we
                     // stamped a synthetic first-seen time): re-stamping it each
                     // refresh would jump the article to "now" and reshuffle the list.
@@ -4875,9 +4874,10 @@ public final class ReaderStore {
         // re-merge (which reloads the list-light baseline) restores these bodies
         // rather than blanking them until the next refresh.
         for parsedFeed in batch {
-            for article in parsedFeed.articles
-            where article.hasBody && !deletedArticleIDs.contains(article.id) {
-                bodyCache[article.id] = article.body
+            for parsedArticle in parsedFeed.articles where !deletedArticleIDs.contains(parsedArticle.id) {
+                if let article = existingArticlesByID[parsedArticle.id], article.hasBody {
+                    bodyCache[article.id] = article.body
+                }
             }
         }
     }
