@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A22000000000000000000001 /* NewsHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22000000000000000000002 /* NewsHomeView.swift */; };
 		22E39C2B3000BD9900C3ECB6 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 22E39C2A3000BD9900C3ECB6 /* WidgetKit.framework */; };
 		22E39C2D3000BD9900C3ECB6 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 22E39C2C3000BD9900C3ECB6 /* SwiftUI.framework */; };
 		22E39C3C3000BD9A00C3ECB6 /* NookWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 22E39C283000BD9900C3ECB6 /* NookWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -106,6 +107,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		A22000000000000000000002 /* NewsHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewsHomeView.swift; sourceTree = "<group>"; };
 		1342392267CEEBD4487A3A51 /* CalibrationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalibrationView.swift; sourceTree = "<group>"; };
 		136A9805F63042F505EC9EB7 /* CalibrationSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalibrationSession.swift; sourceTree = "<group>"; };
 		22E39C283000BD9900C3ECB6 /* NookWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = NookWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -293,6 +295,7 @@
 			children = (
 				2D105000000000000000000A /* NookiOSApp.swift */,
 				2D105000000000000000000C /* RootView.swift */,
+				A22000000000000000000002 /* NewsHomeView.swift */,
 				2D1051A555AB617CB74DE7F6 /* NestSplash.swift */,
 				2D10550B0EFDC776DFA2A5D1 /* LaunchScreen.storyboard */,
 				2DFACE000000000000000101 /* PrivacyInfo.xcprivacy */,
@@ -586,6 +589,7 @@
 			files = (
 				2D105000000000000000000B /* NookiOSApp.swift in Sources */,
 				2D105000000000000000000D /* RootView.swift in Sources */,
+				A22000000000000000000001 /* NewsHomeView.swift in Sources */,
 				2D1051B3D4ED510450813042 /* NestSplash.swift in Sources */,
 				2D1051C7E6525A9C376F8FA4 /* BackgroundRefresh.swift in Sources */,
 				2D1051A8D42008A8673C6254 /* HapticEngine.swift in Sources */,

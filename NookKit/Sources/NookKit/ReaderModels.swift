@@ -283,6 +283,8 @@ public struct Feed: Identifiable, Codable, Hashable, Sendable {
     /// A user-chosen name that overrides the feed-provided `title`. `nil` (or
     /// empty) uses `title`, which keeps updating from the feed on refresh.
     public var customTitle: String? = nil
+    /// Editorial section override, independent of the user folder.
+    public var newsCategoryOverride: NewsCategory? = nil
 
     public init(
         id: String,
@@ -295,7 +297,8 @@ public struct Feed: Identifiable, Codable, Hashable, Sendable {
         healthScore: Double,
         lastFetchedAt: Date? = nil,
         preferredViewMode: ReaderViewMode? = nil,
-        customTitle: String? = nil
+        customTitle: String? = nil,
+        newsCategoryOverride: NewsCategory? = nil
     ) {
         self.id = id
         self.title = title
@@ -308,6 +311,7 @@ public struct Feed: Identifiable, Codable, Hashable, Sendable {
         self.lastFetchedAt = lastFetchedAt
         self.preferredViewMode = preferredViewMode
         self.customTitle = customTitle
+        self.newsCategoryOverride = newsCategoryOverride
     }
 
     /// The name to show for this feed: the user's custom name when set,

@@ -156,7 +156,8 @@ public final class ReaderStore {
     /// is a source/selection switch, not a few new stories, so it snaps instead of
     /// springing hundreds of row identities on the main thread.
     private static let maxAnimatedRowDelta = 40
-    var lastRefreshedAt: Date?
+    public private(set) var lastRefreshedAt: Date?
+    public private(set) var newsRefreshOutcome: NewsRefreshOutcome?
     public var errorMessage: String?
     /// What the launch pipeline is doing right now, for the splash screen's
     /// progress readout on slow launches (large libraries, cold iCloud reads).
@@ -731,6 +732,7 @@ public final class ReaderStore {
         importProgress = nil
         aiCategorizeRunning = false
         lastRefreshedAt = nil
+        newsRefreshOutcome = nil
         errorMessage = nil
         bootstrapPhase = nil
         isBrowserPresented = false
@@ -1595,6 +1597,17 @@ public final class ReaderStore {
         guard feeds[index].customTitle != value else { return }
         feeds[index].customTitle = value
         recordCustomTitle(feedID, value)
+        scheduleShardSave()
+        saveAfterMutation()
+    }
+
+    /// Stored in the same per-device CRDT as other feed overrides.
+    public func setNewsCategoryOverride(_ feedID: Feed.ID, category: NewsCategory?) {
+        guard !Self.isManagedFeed(feedID),
+              let index = feeds.firstIndex(where: { $0.id == feedID }),
+              feeds[index].newsCategoryOverride != category else { return }
+        feeds[index].newsCategoryOverride = category
+        ownShard.setFeedNewsCategory(feedID, category, hlc: nextHLC())
         scheduleShardSave()
         saveAfterMutation()
     }
@@ -4470,7 +4483,8 @@ public final class ReaderStore {
         let service = feedService
         // Stamp `lastRefreshedAt` (an observable property) once per batch, not
         // once per completed feed.
-        var anyFeedMerged = false
+        var successfulFeeds = 0
+        var failedFeeds = 0
         let total = targets.count
         var completed = 0
         // `Error` isn't `Sendable`, so a child task returns the parsed feed or an
@@ -4537,13 +4551,14 @@ public final class ReaderStore {
                     // republish to once per ~400ms instead of once per feed.
                     enqueueBatchMerge(parsed, animated: mode.animatesInsertion)
                     ensureFavicon(for: parsed.feed)
-                    anyFeedMerged = true
+                    successfulFeeds += 1
                 } else {
                     // A fetch failure (offline, HTTP host down, parse error) must
                     // never interrupt the user: don't surface a global alert. Just
                     // flag the feed unhealthy so the list can show a quiet
                     // sync-failed indicator; the flag clears on the next successful
                     // refresh (merge resets healthScore).
+                    failedFeeds += 1
                     markFeedUnhealthy(feedID: feedID)
                 }
                 if next < targets.count {
@@ -4560,7 +4575,9 @@ public final class ReaderStore {
         // merged state, and the defer runs after them.
         flushBatchMerges()
 
-        if anyFeedMerged { lastRefreshedAt = Date.now }
+        let outcome = NewsRefreshOutcome(succeeded: successfulFeeds, failed: failedFeeds, completedAt: .now)
+        newsRefreshOutcome = outcome
+        if let date = outcome.successfulAt { lastRefreshedAt = date }
 
         // Recover real dates for any dateless items just merged — but not on the
         // iOS background task, whose tight time budget is for fetching + notifying.
@@ -4755,6 +4772,7 @@ public final class ReaderStore {
                 updated.category = updatedFeeds[feedIndex].category
                 updated.preferredViewMode = updatedFeeds[feedIndex].preferredViewMode
                 updated.customTitle = updatedFeeds[feedIndex].customTitle
+                updated.newsCategoryOverride = updatedFeeds[feedIndex].newsCategoryOverride
                 // Skip the write when nothing but the fetch stamp changed:
                 // `lastFetchedAt` is rendered nowhere, so it's equalized for the
                 // comparison (and intentionally not persisted on a no-op) — an

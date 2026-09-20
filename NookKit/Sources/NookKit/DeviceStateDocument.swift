@@ -89,6 +89,7 @@ public struct DeviceStateDocument: Codable, Sendable, Equatable {
         public var category: LWWRegister<String>?
         public var preferredViewMode: LWWRegister<ReaderViewMode?>?
         public var customTitle: LWWRegister<String?>?
+        public var newsCategoryOverride: LWWRegister<NewsCategory?>?
         public var tombstone: LWWRegister<Bool>?
         /// The feed's identity/content, so its membership is CRDT state (not just
         /// a baseline-file entry that a peer's overwrite could drop).
@@ -98,18 +99,20 @@ public struct DeviceStateDocument: Codable, Sendable, Equatable {
             category: LWWRegister<String>? = nil,
             preferredViewMode: LWWRegister<ReaderViewMode?>? = nil,
             customTitle: LWWRegister<String?>? = nil,
+            newsCategoryOverride: LWWRegister<NewsCategory?>? = nil,
             tombstone: LWWRegister<Bool>? = nil,
             seed: LWWRegister<FeedSeed>? = nil
         ) {
             self.category = category
             self.preferredViewMode = preferredViewMode
             self.customTitle = customTitle
+            self.newsCategoryOverride = newsCategoryOverride
             self.tombstone = tombstone
             self.seed = seed
         }
 
         var isEmpty: Bool {
-            category == nil && preferredViewMode == nil && customTitle == nil
+            category == nil && preferredViewMode == nil && customTitle == nil && newsCategoryOverride == nil
                 && tombstone == nil && seed == nil
         }
 
@@ -118,6 +121,7 @@ public struct DeviceStateDocument: Codable, Sendable, Equatable {
                 category: mergeRegisters(category, other.category),
                 preferredViewMode: mergeRegisters(preferredViewMode, other.preferredViewMode),
                 customTitle: mergeRegisters(customTitle, other.customTitle),
+                newsCategoryOverride: mergeRegisters(newsCategoryOverride, other.newsCategoryOverride),
                 tombstone: mergeRegisters(tombstone, other.tombstone),
                 seed: mergeRegisters(seed, other.seed)
             )
@@ -256,6 +260,9 @@ extension DeviceStateDocument {
             if existing?.preferredViewMode == nil, feed.preferredViewMode != nil {
                 setFeedViewMode(feed.id, feed.preferredViewMode, hlc: tick())
             }
+            if existing?.newsCategoryOverride == nil, feed.newsCategoryOverride != nil {
+                setFeedNewsCategory(feed.id, feed.newsCategoryOverride, hlc: tick())
+            }
             if existing?.customTitle == nil, feed.customTitle != nil {
                 setFeedTitle(feed.id, feed.customTitle, hlc: tick())
             }
@@ -327,6 +334,12 @@ extension DeviceStateDocument {
         feedState[id] = state
     }
 
+    public mutating func setFeedNewsCategory(_ id: Feed.ID, _ value: NewsCategory?, hlc: HLC) {
+        var state = feedState[id] ?? FeedState()
+        state.newsCategoryOverride = LWWRegister(value: value, hlc: hlc)
+        feedState[id] = state
+    }
+
     public mutating func setFeedTitle(_ id: Feed.ID, _ value: String?, hlc: HLC) {
         var state = feedState[id] ?? FeedState()
         state.customTitle = LWWRegister(value: value, hlc: hlc)
@@ -390,6 +403,7 @@ extension DeviceStateDocument {
             fold(state.category?.hlc)
             fold(state.preferredViewMode?.hlc)
             fold(state.customTitle?.hlc)
+            fold(state.newsCategoryOverride?.hlc)
             fold(state.tombstone?.hlc)
             fold(state.seed?.hlc)
         }
@@ -549,6 +563,7 @@ extension DeviceStateDocument {
             if let category = groupState?.category?.value { canonFeed.category = category }
             if let viewMode = groupState?.preferredViewMode { canonFeed.preferredViewMode = viewMode.value }
             if let customTitle = groupState?.customTitle { canonFeed.customTitle = customTitle.value }
+            if let section = groupState?.newsCategoryOverride { canonFeed.newsCategoryOverride = section.value }
             feeds.append(canonFeed)
         }
         let liveFeedIDs = Set(feeds.map(\.id))

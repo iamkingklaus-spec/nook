@@ -354,6 +354,7 @@ private struct RegularShell: View {
     @State private var isCreatingFolder = false
     @State private var newFolderName = ""
     @State private var isShowingSettings = false
+    @State private var preferredColumn: NavigationSplitViewColumn = .content
     /// The composer, present only while it is open — the same shape the phone uses.
     @State private var compose: ComposeSession?
     /// Kept between openings so a cancelled draft survives, and so a reader who
@@ -416,7 +417,7 @@ private struct RegularShell: View {
     }
 
     var body: some View {
-        NavigationSplitView {
+        NavigationSplitView(preferredCompactColumn: $preferredColumn) {
             Sidebar(
                 store: store,
                 chooseFolder: { importKind = .folder; isImporting = true },
@@ -428,7 +429,14 @@ private struct RegularShell: View {
                 onCompose: composeAction
             )
         } content: {
-            ArticleList(store: store, selection: $store.selectedArticleID, onShowAllArticles: { store.selectSmartSource(.all) })
+            if store.smartSelection == .all, store.feedSelection.isEmpty, store.categorySelection == nil {
+                NewsHomeView(store: store, onOpen: { article in
+                    store.selectedArticleID = article.id
+                    preferredColumn = .detail
+                }, onExplore: { isAddingFeed = true })
+            } else {
+                ArticleList(store: store, selection: $store.selectedArticleID, onShowAllArticles: { store.selectSmartSource(.all) })
+            }
         } detail: {
             ReaderDetailView(store: store)
         }
@@ -783,7 +791,6 @@ private struct CompactShell: View {
         let id = UUID()
         let store: PlusStore
     }
-    @State private var homeFilter: SmartSource = .unread
     @State private var feedsPath: [FeedTarget] = []
     /// Tutorial asked for the "tap a story" spotlight but it isn't shown yet
     /// (waiting to be on Home with articles). Owned here — the shell is always
@@ -791,12 +798,10 @@ private struct CompactShell: View {
     /// guaranteed when it becomes the selected tab.
     /// The spotlight is currently showing.
     /// The first article row's measured global frame, for an exact spotlight.
-    /// When the Home tab was last re-tapped, for double-tap segment cycling.
-    @State private var lastHomeReselect: ContinuousClock.Instant?
 
     var body: some View {
         TabView(selection: $selection) {
-            HomeTab(store: store, filter: $homeFilter, goToSettings: { selection = .settings })
+            HomeTab(store: store, goToSettings: { selection = .settings }, goToExplore: { selection = .feeds })
                 // Nook's own nest mark (from the icon/splash twig geometry) —
                 // on-brand and distinct from a generic house.
                 .tabItem {
@@ -861,7 +866,7 @@ private struct CompactShell: View {
         // a row to point at — even on a replay where every starter article is read.
         .onChange(of: tour.pendingFirstStoryHint) { _, requested in
             guard requested, !seenListHint else { return }
-            homeFilter = .all
+            store.selectSmartSource(.all)
             selection = .home
         }
         // Writing gets a screen of its own, reached from the bar rather than from
@@ -926,12 +931,6 @@ private struct CompactShell: View {
             // Switching tabs always restores the full bar (matches the native
             // minimize behavior and Instagram's).
             tabChrome.expand()
-        }
-        .onChange(of: homeFilter) { _, _ in
-            if selection == .home {
-                clearSearch()
-                store.selectSmartSource(homeFilter)
-            }
         }
     }
 
@@ -1117,34 +1116,12 @@ private struct CompactShell: View {
         reveal = .notInFeedYet(page: page, feed: feed)
     }
 
-    /// Native tab-bar re-tap semantics: a drilled-in Feeds tab pops to its
-    /// root; everything else scrolls the visible list back to the top. On the
-    /// Home tab, a quick second re-tap (double-tap) cycles the segment
-    /// (Unread → Today → All) instead — and each further tap inside the window
-    /// keeps cycling. Only re-taps count, so arriving from another tab (a
-    /// selection change) can never trigger it.
+    /// Re-tapping Home scrolls the current news section to the top.
     private func handleTabReselect(_ tab: AppTab) {
-        if tab == .home {
-            let now = ContinuousClock.now
-            if let last = lastHomeReselect, last.duration(to: now) < .milliseconds(400) {
-                advanceHomeFilter()
-            } else {
-                tabChrome.requestScrollToTop()
-            }
-            lastHomeReselect = now
-        } else if tab == .feeds, !feedsPath.isEmpty {
+        if tab == .feeds, !feedsPath.isEmpty {
             withAnimation { feedsPath.removeAll() }
         } else {
             tabChrome.requestScrollToTop()
-        }
-    }
-
-    /// Cycles Home's segmented filter to the next source, wrapping around.
-    private func advanceHomeFilter() {
-        let order: [SmartSource] = [.unread, .today, .all]
-        guard let index = order.firstIndex(of: homeFilter) else { return }
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
-            homeFilter = order[(index + 1) % order.count]
         }
     }
 
@@ -1159,7 +1136,7 @@ private struct CompactShell: View {
         clearSearch()
         switch tab {
         case .home:
-            store.selectSmartSource(homeFilter)
+            store.selectSmartSource(.all)
         case .starred:
             store.selectSmartSource(.starred)
         case .feeds:
@@ -1442,88 +1419,40 @@ private struct LiquidGlassTabBar: View {
 
 // MARK: - Home tab
 
-/// The default tab: a segmented Unread / Today / All filter over the article
-/// list, with inline search. The tab item carries the unread badge.
+/// The news front page, using the existing reader destination and selection state.
 private struct HomeTab: View {
     @Bindable var store: ReaderStore
-    @Binding var filter: SmartSource
     var goToSettings: () -> Void
-
-    private let filters: [SmartSource] = [.unread, .today, .all]
-
-    /// Width of the tab's content (≈ the nav bar), captured so the principal
-    /// segmented control can be given an explicit width — a principal toolbar item
-    /// only gets its intrinsic size, so maxWidth:.infinity can't stretch it.
-    @State private var contentWidth: CGFloat = 0
-
-    /// Short labels for the nav-bar segmented control — "All Articles" is too wide
-    /// there, so it shows as "All". The unread count is shown separately as a
-    /// badge (see `segmentBadge`), not inline.
-    private func segmentTitle(_ source: SmartSource) -> String {
-        source == .all ? String(localized: "All") : source.title
-    }
-
-    /// The unread count to badge on the Unread segment (nil when zero or for
-    /// other segments) — rendered as a number chip when focused, a dot otherwise.
-    private func segmentBadge(_ source: SmartSource) -> Int? {
-        guard source == .unread else { return nil }
-        let count = store.count(for: .unread)
-        return count > 0 ? count : nil
-    }
+    var goToExplore: () -> Void
+    @State private var pushed: Article?
+    @Environment(TabBarChrome.self) private var tabChrome
 
     var body: some View {
         NavigationStack {
             Group {
                 if store.isStorageConfigured {
-                    // The segmented filter lives in the navigation bar itself (no
-                    // separate strip, no redundant title). Search is the full native
-                    // search bar, revealed on demand by the toolbar button
-                    // (ReaderPushingList's CompactSearchButton) — not an always-
-                    // visible row, and not a cramped custom field.
-                    ReaderPushingList(store: store, onShowAllArticles: { filter = .all })
-                        .navigationBarTitleDisplayMode(.inline)
-                        .background(
-                            GeometryReader { geo in
-                                Color.clear
-                                    .onChange(of: geo.size.width, initial: true) { _, w in contentWidth = w }
-                            }
-                        )
-                        .toolbar {
-                            ToolbarItem(placement: .principal) {
-                                // A custom segmented control: tap a segment to switch
-                                // category; tap the active one again to flip its sort
-                                // order (saved per category). Native-looking (sliding
-                                // capsule), like the reader's custom bottom bar.
-                                SortableSegmentedControl(
-                                    sources: filters,
-                                    selection: $filter,
-                                    title: segmentTitle,
-                                    badge: segmentBadge,
-                                    sortImage: { store.sortOrder(for: $0).systemImage },
-                                    sortValue: {
-                                        store.sortOrder(for: $0) == .newest
-                                            ? String(localized: "Newest first")
-                                            : String(localized: "Oldest first")
-                                    },
-                                    onReselect: { store.toggleSortOrder(for: $0) }
-                                )
-                                // Principal items only get their intrinsic size, so
-                                // give an explicit width: the full content width
-                                // minus room for the trailing search button, so the
-                                // control stretches across to it.
-                                .frame(width: max(240, contentWidth - 88))
-                            }
-                        }
+                    NewsHomeView(store: store, isReading: pushed != nil, onOpen: { article in
+                        pushed = article
+                        store.selectedArticleID = article.id
+                    }, onExplore: goToExplore)
+                    .modifier(TabBarInset())
                 } else {
                     ContentUnavailableView {
                         Label("Set Up Sync", systemImage: "icloud.and.arrow.up")
                     } description: {
                         Text("Choose a sync folder so Nook keeps your feeds in sync across your devices.")
                     } actions: {
-                        Button("Choose Sync Folder") { goToSettings() }
+                        Button("Choose Sync Folder", action: goToSettings)
                     }
                     .background(Color("ListBackground").ignoresSafeArea())
                 }
+            }
+            .onChange(of: pushed == nil) { _, popped in
+                tabChrome.setReaderOpen(!popped)
+            }
+            .navigationDestination(item: $pushed) { _ in
+                ReaderDetailView(store: store, articleOverride: $pushed)
+                    .toolbar(.hidden, for: .tabBar)
             }
         }
     }
