@@ -45,10 +45,23 @@ jobs:
           python3 tools/capture-ios-screenshots.py \
             "$RUNNER_TEMP/screenshot-build/Build/Products/Debug-iphonesimulator/NookiOS.app" \
             "$RUNNER_TEMP/screenshots"
-      - name: Upload screenshots and diagnostics
+      - name: Upload screenshots and logs
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: nook-screenshots-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/screenshots/*.log
+            ${{ runner.temp }}/screenshots/*.json
+            ${{ runner.temp }}/screenshots/commit.txt
+            ${{ runner.temp }}/screenshots/*-attachments/*.png
+            ${{ runner.temp }}/screenshots/*-attachments/*.json
+            ${{ runner.temp }}/screenshots/*-attachments/*.txt
+          retention-days: 14
+      - name: Preserve complete XCTest diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: nook-screenshot-diagnostics-${{ github.run_id }}
           path: ${{ runner.temp }}/screenshots/
           retention-days: 14

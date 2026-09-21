@@ -85,9 +85,13 @@ that temporary library. No test-mode layout is compiled into the app.
 The UI test captures For You, scrolled horizontal/compact stories, World,
 Technology, typography hero, dark mode, the bottom of the list, and iPad. It also
 asserts that the final article can scroll completely above the tab bar and that
-all four destinations remain reachable. Devices match phase 2: iPhone 17 Pro
+all four destinations remain reachable, including an empty subscription library.
+SwiftUI exposes the context-menu story wrappers as accessibility `Other` elements;
+the UI queries follow that hierarchy. Devices match phase 2: iPhone 17 Pro
 (1206×2622) and iPad Pro 13-inch M5 (2064×2752). Images and XCTest results are kept
-as CI artifacts and must be visually inspected before acceptance.
+as CI artifacts and must be visually inspected before acceptance. Screenshots and
+text logs have a small review artifact; full XCTest bundles/recordings are retained
+in a separate diagnostics artifact.
 
 The existing baseline CI still owns unsigned Debug/Release builds and all
 NookKit tests. Image sharpness is still limited by RSS-provided sources; this

@@ -1175,8 +1175,6 @@ private struct CompactShell: View {
     }
 }
 
-/// Minimizes the tab bar as the user scrolls down (restoring on scroll-up / at
-/// the top) on iOS 26+, where the behavior is native; a no-op on earlier iOS.
 /// The custom editorial bar is inserted inside each navigation root so the
 /// ScrollView receives its actual safe-area height, rather than an overlay guess.
 private struct NativeTabBarHider: ViewModifier {
@@ -1294,7 +1292,6 @@ private struct HomeTab: View {
                         pushed = article
                         store.selectedArticleID = article.id
                     }, onExplore: goToExplore)
-                    .modifier(TabBarInset())
                 } else {
                     ContentUnavailableView {
                         Label("Set Up Sync", systemImage: "icloud.and.arrow.up")
@@ -1306,6 +1303,7 @@ private struct HomeTab: View {
                     .background(Color("ListBackground").ignoresSafeArea())
                 }
             }
+            .modifier(TabBarInset())
             .onChange(of: pushed == nil) { _, popped in
                 tabChrome.setReaderOpen(!popped)
             }
@@ -1645,8 +1643,6 @@ private struct FeedsTab: View {
                 if addButtonFrame != frame { addButtonFrame = frame }
             }
             .refreshable { await store.refreshAllAndWait() }
-            // Keep the library list's tail above the floating tab bar.
-            .modifier(TabBarInset())
             // Skipped the tour? This is where curiosity lands — teach instead
             // of showing a bare "All Articles" row.
             .overlay {
@@ -1663,6 +1659,8 @@ private struct FeedsTab: View {
                     .background(Color("ListBackground"))
                 }
             }
+            // Reserve the bar below both the list and its empty state.
+            .modifier(TabBarInset())
             .sheet(isPresented: $isShowingStarterPicks) {
                 StarterPicksSheet(store: store)
             }
@@ -1922,11 +1920,11 @@ private struct ReaderPushingList<Top: View>: View {
             top()
             ArticleList(store: store, selection: selectionBinding, managesSearch: false, onShowAllArticles: onShowAllArticles)
         }
-        // Keep the list tail above the floating tab bar (inside the stack, so
+        // Keep the list tail above the editorial tab bar (inside the stack, so
         // the inset actually reaches the scroll view).
         .modifier(TabBarInset())
         .modifier(CompactSearchButton(searchText: $store.searchText, isSearching: $isSearching, enabled: providesSearch))
-        // The custom glass tab bar pops away while a reader is pushed and
+        // The tab bar hides while a reader is pushed and
         // returns on pop (the store's selection survives pops, so the pushed
         // state here is the reliable signal).
         .onChange(of: pushed == nil) { _, popped in

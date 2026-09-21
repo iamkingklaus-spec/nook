@@ -149,6 +149,10 @@ def main():
                 article["rssImages"] = []
             seed_library(udid, app, bundle, typography)
             capture_test(udid, derived, output, "iphone-typography", "testTypographyHero")
+            run("xcrun", "simctl", "uninstall", udid, bundle)
+            run("xcrun", "simctl", "install", udid, str(app))
+            seed_library(udid, app, bundle, dict(feeds=[], articles=[], folders=[]))
+            capture_test(udid, derived, output, "iphone-empty", "testEmptyLibraryNavigation")
         else:
             capture_test(udid, derived, output, "ipad-light", "testIPad")
         run("xcrun", "simctl", "shutdown", udid)

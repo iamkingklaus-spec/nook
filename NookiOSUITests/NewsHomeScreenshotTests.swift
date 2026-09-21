@@ -4,7 +4,7 @@ import XCTest
 /// No screenshot launch mode or alternate layout is compiled into NookiOS.
 @MainActor
 final class NewsHomeScreenshotTests: XCTestCase {
-    private func launch() -> XCUIApplication {
+    private func launch(expectHero: Bool = true) -> XCUIApplication {
         continueAfterFailure = false
         let app = XCUIApplication()
         app.launchArguments = [
@@ -14,7 +14,11 @@ final class NewsHomeScreenshotTests: XCTestCase {
             "-usesLocalLibrary", "YES", "-autoRefreshEnabled", "NO"
         ]
         app.launch()
-        XCTAssertTrue(app.buttons["news.hero"].waitForExistence(timeout: 40))
+        if expectHero {
+            XCTAssertTrue(app.otherElements["news.hero"].waitForExistence(timeout: 40))
+        } else {
+            XCTAssertTrue(app.buttons["news.tab.home"].waitForExistence(timeout: 40))
+        }
         return app
     }
 
@@ -36,7 +40,7 @@ final class NewsHomeScreenshotTests: XCTestCase {
         capture(app, "02-horizontal-compact")
 
         let bar = app.otherElements["news.tabBar"]
-        let last = app.buttons["news.lastStory"]
+        let last = app.otherElements["news.lastStory"]
         for _ in 0..<45 {
             if last.exists, last.isHittable, last.frame.maxY <= bar.frame.minY { break }
             scroll.swipeUp()
@@ -60,10 +64,20 @@ final class NewsHomeScreenshotTests: XCTestCase {
             XCTAssertTrue(button.isHittable)
             button.tap()
         }
-        XCTAssertTrue(app.buttons["news.hero"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.otherElements["news.hero"].waitForExistence(timeout: 10))
     }
 
     func testTypographyHero() { capture(launch(), "05-typography-hero") }
     func testDarkMode() { capture(launch(), "06-dark-mode") }
     func testIPad() { capture(launch(), "08-ipad") }
+
+    func testEmptyLibraryNavigation() {
+        let app = launch(expectHero: false)
+        for tab in ["feeds", "starred", "settings", "home"] {
+            let button = app.buttons["news.tab." + tab]
+            XCTAssertTrue(button.isHittable, "Navigation must remain available with no subscriptions")
+            button.tap()
+        }
+        capture(app, "09-empty-library")
+    }
 }
