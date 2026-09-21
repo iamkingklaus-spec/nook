@@ -56,6 +56,9 @@ Rules are 0.5pt, with no shadows or card backgrounds. iPad's news column request
 The category rail retains horizontal scrolling, adds 24pt trailing room and an
 18pt alpha fade rather than a hard cut at the edge. Selection scrolls into view.
 Its underline is 32×2pt, and buttons retain at least a 44pt touch height.
+Once horizontally scrolled, the leading edge also fades instead of cutting a
+partial label sharply. A 1pt top safe-area inset extends an opaque background
+behind the status bar so scrolled headlines cannot overlap the clock or icons.
 
 Metadata displays **publication age**, not an inferred read-time estimate:
 Just now / integer min / integer hr / integer days. Publisher is slightly darker.

@@ -18,6 +18,7 @@ struct NewsHomeView: View {
     @State private var failedImages: Set<URL> = []
     @State private var limit = 100
     @State private var categoryScrollPosition: NewsHomeSection?
+    @State private var categoryHasLeadingOverflow = false
 
     private struct Input: Equatable, Sendable {
         let articles: [ArticleContent]
@@ -49,6 +50,13 @@ struct NewsHomeView: View {
                 .frame(maxWidth: .infinity)
             }
             .background(NewsPalette.backgroundPrimary.ignoresSafeArea())
+            // Keep moving stories behind an opaque status-bar surface. Only
+            // this background extends upward; header spacing stays compact.
+            .safeAreaInset(edge: .top, spacing: 0) {
+                Color.clear.frame(height: 1)
+                    .background(NewsPalette.backgroundPrimary, ignoresSafeAreaEdges: .top)
+                    .accessibilityHidden(true)
+            }
             .foregroundStyle(NewsPalette.textPrimary)
             .tint(NewsPalette.accentPrimary)
             .accessibilityIdentifier("news.home.scroll")
@@ -138,12 +146,21 @@ struct NewsHomeView: View {
             .padding(.trailing, 24)
         }
         .scrollPosition(id: $categoryScrollPosition, anchor: .center)
+        .onScrollGeometryChange(for: Bool.self) { geometry in
+            geometry.contentOffset.x + geometry.contentInsets.leading > 1
+        } action: { _, value in
+            categoryHasLeadingOverflow = value
+        }
         .onChange(of: section) { _, value in categoryScrollPosition = value }
         .accessibilityIdentifier("news.categories")
         // Fade the next item into the viewport; trailing padding keeps the last
         // item fully readable at the end. The gradient controls alpha only.
         .mask {
             HStack(spacing: 0) {
+                if categoryHasLeadingOverflow {
+                    LinearGradient(colors: [.clear, .black], startPoint: .leading, endPoint: .trailing)
+                        .frame(width: 18)
+                }
                 Color.black
                 LinearGradient(colors: [.black, .clear], startPoint: .leading, endPoint: .trailing)
                     .frame(width: 18)
