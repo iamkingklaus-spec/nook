@@ -1221,6 +1221,7 @@ private struct EditorialTabBar: View {
     @Binding var selection: AppTab
     var onReselect: (AppTab) -> Void
     var onCompose: (() -> Void)?
+    @ScaledMetric(relativeTo: .body) private var iconSlotHeight: CGFloat = 26
 
     var body: some View {
         VStack(spacing: 0) {
@@ -1254,13 +1255,16 @@ private struct EditorialTabBar: View {
             if selection == tab { onReselect(tab) } else { selection = tab }
         } label: {
             VStack(spacing: 3) {
-                if tab == .home {
-                    Image(uiImage: TabGlyph.nest).renderingMode(.template)
-                        .resizable().scaledToFit().frame(width: 23, height: 21)
-                } else {
-                    Image(systemName: selection == tab ? symbol + ".fill" : symbol)
-                        .newsFont(.tabIcon)
+                Group {
+                    if tab == .home {
+                        Image(uiImage: TabGlyph.nest).renderingMode(.template)
+                            .resizable().scaledToFit().frame(width: 23, height: 21)
+                    } else {
+                        Image(systemName: selection == tab ? symbol + ".fill" : symbol)
+                            .newsFont(.tabIcon)
+                    }
                 }
+                .frame(height: iconSlotHeight)
                 Text(title).newsFont(.tabLabel)
             }
             .foregroundStyle(selection == tab ? NewsPalette.accentPrimary : NewsPalette.tabInactive)
@@ -1300,7 +1304,8 @@ private struct HomeTab: View {
                     } actions: {
                         Button("Choose Sync Folder", action: goToSettings)
                     }
-                    .background(Color("ListBackground").ignoresSafeArea())
+                    .tint(NewsPalette.accentPrimary)
+                    .background(NewsPalette.backgroundPrimary.ignoresSafeArea())
                 }
             }
             .modifier(TabBarInset())
