@@ -9,7 +9,7 @@ permissions:
 jobs:
   screenshots:
     runs-on: macos-26
-    timeout-minutes: 30
+    timeout-minutes: 50
     env:
       DEVELOPER_DIR: /Applications/Xcode_26.5.app/Contents/Developer
     steps:
@@ -27,6 +27,7 @@ jobs:
             NookShareDiscover
             NookWidget
             NookiOS
+            NookiOSUITests
             tools
       - name: Build current app for Simulator
         shell: bash
@@ -34,10 +35,10 @@ jobs:
           set -o pipefail
           mkdir -p "$RUNNER_TEMP/screenshots"
           git rev-parse HEAD > "$RUNNER_TEMP/screenshots/commit.txt"
-          xcodebuild -project Nook.xcodeproj -scheme NookiOS \
+          xcodebuild -project Nook.xcodeproj -scheme NookScreenshots \
             -configuration Debug -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath "$RUNNER_TEMP/screenshot-build" \
-            -skipPackagePluginValidation CODE_SIGNING_ALLOWED=NO build \
+            -skipPackagePluginValidation CODE_SIGNING_ALLOWED=NO build-for-testing \
             2>&1 | tee "$RUNNER_TEMP/screenshots/build.log"
       - name: Capture real iPhone and iPad screens
         run: |

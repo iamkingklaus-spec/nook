@@ -17,6 +17,7 @@ struct NewsHomeView: View {
     @State private var projection: NewsHomeProjection?
     @State private var failedImages: Set<URL> = []
     @State private var limit = 100
+    @State private var categoryScrollPosition: NewsHomeSection?
 
     private struct Input: Equatable, Sendable {
         let articles: [ArticleContent]
@@ -35,7 +36,7 @@ struct NewsHomeView: View {
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: 24) {
+                LazyVStack(alignment: .leading, spacing: 16) {
                     header.id("news-top")
                     categoryBar
                     refreshStatus
@@ -43,16 +44,20 @@ struct NewsHomeView: View {
                 }
                 .frame(maxWidth: 820, alignment: .leading)
                 .padding(.horizontal, 22)
-                .padding(.top, 12)
-                .padding(.bottom, 32)
+                .padding(.top, 4)
+                .padding(.bottom, 24)
                 .frame(maxWidth: .infinity)
             }
-            .background(Color("ListBackground").ignoresSafeArea())
+            .background(NewsPalette.backgroundPrimary.ignoresSafeArea())
+            .foregroundStyle(NewsPalette.textPrimary)
+            .tint(NewsPalette.accentPrimary)
+            .accessibilityIdentifier("news.home.scroll")
             .refreshable {
                 await store.refreshAllAndWait()
                 readSnapshot = Dictionary(store.visibleArticles.map { ($0.id, $0.isRead) }, uniquingKeysWith: { a, _ in a })
                 editionDate = .now
             }
+            .onChange(of: section) { _, _ in proxy.scrollTo("news-top", anchor: .top) }
             .onChange(of: tabChrome.scrollToTopSignal) { _, _ in
                 withAnimation(reduceMotion ? nil : .easeOut(duration: 0.25)) {
                     proxy.scrollTo("news-top", anchor: .top)
@@ -86,10 +91,10 @@ struct NewsHomeView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(greeting).font(.subheadline).foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 2) {
+            Text(greeting).newsFont(.greeting).foregroundStyle(NewsPalette.textSecondary)
             Text(editionDate, format: .dateTime.month(.wide).day())
-                .font(.system(.largeTitle, design: .serif, weight: .bold))
+                .newsFont(.date)
                 .accessibilityAddTraits(.isHeader)
         }
     }
@@ -104,27 +109,47 @@ struct NewsHomeView: View {
 
     private var categoryBar: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 22) {
+            HStack(spacing: 20) {
                 ForEach(NewsHomeSection.navigation, id: \.self) { item in
                     Button {
                         section = item
                         limit = 100
                     } label: {
-                        VStack(spacing: 10) {
-                            Text(item.title).font(.subheadline.weight(section == item ? .semibold : .regular))
+                        VStack(spacing: 7) {
+                            Text(item.title).newsFont(.category)
+                                .fontWeight(section == item ? .semibold : .regular)
+                                .foregroundStyle(section == item ? NewsPalette.accentPrimary : NewsPalette.textPrimary)
                                 .fixedSize()
-                            Rectangle().fill(section == item ? Color.accentColor : .clear).frame(height: 2)
+                            Rectangle().fill(section == item ? NewsPalette.accentPrimary : .clear)
+                                .frame(width: 32, height: 2).frame(maxWidth: .infinity, alignment: .leading)
                         }
-                        .padding(.top, 10)
+                        .padding(.top, 7)
                         .padding(.bottom, 2)
+                        .frame(minHeight: 44)
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
+                    .id(item)
+                    .accessibilityIdentifier("news.section." + item.identifier)
                     .accessibilityAddTraits(section == item ? [.isSelected] : [])
                 }
             }
+            .scrollTargetLayout()
+            .padding(.trailing, 24)
         }
-        .overlay(alignment: .bottom) { Divider() }
+        .scrollPosition(id: $categoryScrollPosition, anchor: .center)
+        .onChange(of: section) { _, value in categoryScrollPosition = value }
+        .accessibilityIdentifier("news.categories")
+        // Fade the next item into the viewport; trailing padding keeps the last
+        // item fully readable at the end. The gradient controls alpha only.
+        .mask {
+            HStack(spacing: 0) {
+                Color.black
+                LinearGradient(colors: [.black, .clear], startPoint: .leading, endPoint: .trailing)
+                    .frame(width: 18)
+            }
+        }
+        .overlay(alignment: .bottom) { NewsRule() }
     }
 
     @ViewBuilder private var refreshStatus: some View {
@@ -132,14 +157,14 @@ struct NewsHomeView: View {
             Label(outcome.succeeded > 0
                   ? "Some feeds couldn’t refresh. Showing available stories."
                   : "Couldn’t refresh feeds. Showing saved stories.", systemImage: "wifi.exclamationmark")
-                .font(.caption).foregroundStyle(.secondary)
+                .newsFont(.metadata).foregroundStyle(NewsPalette.accentSecondary)
         }
         if let updated = store.lastRefreshedAt {
             TimelineView(.periodic(from: .now, by: 60)) { timeline in
                 if timeline.date.timeIntervalSince(updated) < 60 {
-                    Text("Updated just now").font(.caption).foregroundStyle(.secondary)
+                    Text("Updated just now").newsFont(.metadata).foregroundStyle(NewsPalette.textTertiary)
                 } else {
-                    Text("Updated \(updated, style: .relative) ago").font(.caption).foregroundStyle(.secondary)
+                    Text("Updated \(NewsMetadataFormat.age(updated, now: timeline.date)) ago").newsFont(.metadata).foregroundStyle(NewsPalette.textTertiary)
                 }
             }
         }
@@ -159,6 +184,7 @@ struct NewsHomeView: View {
         } else if let projection {
             if let hero = projection.hero {
                 storyButton(hero) { HeroStoryCard(story: hero, failedImages: $failedImages) }
+                    .accessibilityIdentifier("news.hero")
                     .background {
                         if tour.listHintActive {
                             GeometryReader { geometry in
@@ -167,11 +193,11 @@ struct NewsHomeView: View {
                         }
                     }
                 ForEach(projection.primaryStories) { story in
-                    Divider()
+                    NewsRule()
                     storyButton(story) { HorizontalStoryCard(story: story, failedImages: $failedImages) }
                 }
                 ForEach(Array(projection.secondaryStories.enumerated()), id: \.element.id) { index, story in
-                    Divider()
+                    NewsRule()
                     storyButton(story) {
                         if index % 3 == 2 {
                             HorizontalStoryCard(story: story, failedImages: $failedImages)
@@ -205,9 +231,10 @@ struct NewsHomeView: View {
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(story.article.title), \(story.publisher.name), \(story.classification.category.title), \(story.article.publishedAt.formatted(.relative(presentation: .named)))")
+        .accessibilityLabel("\(story.article.title), \(story.publisher.name), \(story.classification.category.title), \(NewsMetadataFormat.age(story.article.publishedAt, now: .now))")
         .accessibilityValue(live.isRead ? Text("Read") : Text("Unread"))
         .accessibilityHint("Open article")
+        .accessibilityIdentifier(story.id == projection?.stories.last?.id ? "news.lastStory" : "news.story." + story.id)
         .contextMenu {
             Button(live.isRead ? "Mark as Unread" : "Mark as Read") {
                 store.setRead(articleID: story.id, isRead: !live.isRead)
@@ -229,17 +256,17 @@ struct NewsHomeView: View {
 private struct HeroStoryCard: View {
     let story: NewsHomeStory
     @Binding var failedImages: Set<URL>
-    @ScaledMetric(relativeTo: .largeTitle) private var titleSize = 32.0
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            NewsStoryImage(url: story.imageURL, ratio: 16 / 9, corner: 16, failedImages: $failedImages)
-            Text(story.article.title).font(.system(size: titleSize, weight: .bold, design: .serif))
+        VStack(alignment: .leading, spacing: 17) {
+            NewsStoryImage(url: story.imageURL, ratio: 16 / 9, corner: 13, failedImages: $failedImages)
+            Text(story.article.title).newsFont(.hero).lineSpacing(1)
                 .fixedSize(horizontal: false, vertical: true)
             if let subtitle = story.article.subtitle, !subtitle.isEmpty {
-                Text(subtitle).font(.title3).foregroundStyle(.secondary)
+                Text(subtitle).newsFont(.heroSummary).lineSpacing(3).foregroundStyle(NewsPalette.textSecondary).lineLimit(3)
             } else if !story.article.summary.isEmpty {
-                Text(story.article.summary).font(.body).foregroundStyle(.secondary).lineLimit(3)
+                Text(story.article.summary).newsFont(.heroSummary).lineSpacing(3)
+                    .foregroundStyle(NewsPalette.textSecondary).lineLimit(3)
             }
             NewsStoryMetadata(story: story, includeCategory: true)
         }
@@ -254,15 +281,16 @@ private struct HorizontalStoryCard: View {
     var body: some View {
         HStack(alignment: .top, spacing: 16) {
             VStack(alignment: .leading, spacing: 9) {
-                Text(story.article.title).font(.system(.title3, design: .serif, weight: .semibold))
+                Text(story.article.title).newsFont(.horizontalTitle).lineSpacing(1)
                     .fixedSize(horizontal: false, vertical: true)
                 if !story.article.summary.isEmpty {
-                    Text(story.article.summary).font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
+                    Text(story.article.summary).newsFont(.summary).lineSpacing(3)
+                        .foregroundStyle(NewsPalette.textSecondary).lineLimit(2)
                 }
                 NewsStoryMetadata(story: story, includeCategory: false)
             }.frame(maxWidth: .infinity, alignment: .leading)
             if !typeSize.isAccessibilitySize, let url = story.imageURL, !failedImages.contains(url) {
-                NewsStoryImage(url: url, ratio: 4 / 3, corner: 8, failedImages: $failedImages)
+                NewsStoryImage(url: url, ratio: 4 / 3, corner: 9, failedImages: $failedImages)
                     .frame(maxWidth: 100)
             }
         }
@@ -273,7 +301,7 @@ private struct CompactStoryCard: View {
     let story: NewsHomeStory
     var body: some View {
         VStack(alignment: .leading, spacing: 9) {
-            Text(story.article.title).font(.system(.headline, design: .serif))
+            Text(story.article.title).newsFont(.compactTitle).lineSpacing(1)
                 .fixedSize(horizontal: false, vertical: true)
             NewsStoryMetadata(story: story, includeCategory: false)
         }
@@ -284,11 +312,13 @@ private struct NewsStoryMetadata: View {
     let story: NewsHomeStory
     var includeCategory: Bool
     var body: some View {
-        (Text(story.publisher.name) + Text(" · ")
-         + Text(includeCategory ? story.classification.category.title + " · " : "")
-         + Text(story.article.publishedAt, style: .relative))
-            .font(.caption).foregroundStyle(.secondary)
-            .fixedSize(horizontal: false, vertical: true)
+        TimelineView(.periodic(from: .now, by: 60)) { timeline in
+            (Text(story.publisher.name).foregroundColor(NewsPalette.textSecondary) + Text(" · ")
+             + Text(includeCategory ? story.classification.category.title + " · " : "")
+             + Text(NewsMetadataFormat.age(story.article.publishedAt, now: timeline.date)))
+                .newsFont(.metadata).foregroundStyle(NewsPalette.textTertiary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 }
 
@@ -324,11 +354,11 @@ private struct NewsHomeSkeleton: View {
         VStack(alignment: .leading, spacing: 24) {
             ForEach(0..<3) { index in
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Stories from your publishers").font(index == 0 ? .largeTitle : .title3)
-                    Text("A new edition is on its way.").font(.body)
-                    Text("Publisher · Section · Time").font(.caption)
+                    Text("Stories from your publishers").newsFont(index == 0 ? .hero : .horizontalTitle)
+                    Text("A new edition is on its way.").newsFont(.summary)
+                    Text("Publisher · Section · Time").newsFont(.metadata)
                 }.redacted(reason: .placeholder)
-                Divider()
+                NewsRule()
             }
         }.accessibilityElement(children: .ignore).accessibilityLabel("Loading stories")
     }
@@ -349,6 +379,13 @@ extension NewsCategory {
 }
 
 private extension NewsHomeSection {
+    var identifier: String {
+        switch self {
+        case .forYou: "forYou"
+        case .category(let category): category.rawValue
+        }
+    }
+
     var title: String {
         switch self {
         case .forYou: String(localized: "For You")

@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A26100000000000000000001 = {isa = PBXBuildFile; fileRef = A26100000000000000000002; };
+		A26000000000000000000001 /* NewsDesign.swift in Sources */ = {isa = PBXBuildFile; fileRef = A26000000000000000000002; };
 		A22000000000000000000001 /* NewsHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22000000000000000000002 /* NewsHomeView.swift */; };
 		22E39C2B3000BD9900C3ECB6 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 22E39C2A3000BD9900C3ECB6 /* WidgetKit.framework */; };
 		22E39C2D3000BD9900C3ECB6 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 22E39C2C3000BD9900C3ECB6 /* SwiftUI.framework */; };
@@ -49,6 +51,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		A26100000000000000000004 = {isa = PBXContainerItemProxy; containerPortal = 2D0E3A0A2D8A4A4700A00001; proxyType = 1; remoteGlobalIDString = 2D1050000000000000000001; remoteInfo = NookiOS; };
 		22E39C3A3000BD9A00C3ECB6 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 2D0E3A0A2D8A4A4700A00001 /* Project object */;
@@ -107,6 +110,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		A26100000000000000000002 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NookiOSUITests/NewsHomeScreenshotTests.swift; sourceTree = SOURCE_ROOT; };
+		A26100000000000000000003 = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; path = NookiOSUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A26000000000000000000002 /* NewsDesign.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewsDesign.swift; sourceTree = "<group>"; };
 		A22000000000000000000002 /* NewsHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewsHomeView.swift; sourceTree = "<group>"; };
 		1342392267CEEBD4487A3A51 /* CalibrationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalibrationView.swift; sourceTree = "<group>"; };
 		136A9805F63042F505EC9EB7 /* CalibrationSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalibrationSession.swift; sourceTree = "<group>"; };
@@ -187,6 +193,7 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		A26100000000000000000007 = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 		22E39C253000BD9900C3ECB6 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -252,6 +259,7 @@
 				22E39C433000BF2900C3ECB6 /* NookWidgetExtension.entitlements */,
 				2D0E3A192D8A4A4700A00001 /* Nook */,
 				2D1050000000000000000009 /* NookiOS */,
+				A26100000000000000000002 /* NewsHomeScreenshotTests.swift */,
 				22E39C2E3000BD9900C3ECB6 /* NookWidget */,
 				2D1053000000000000000001 /* NookShare */,
 				2D1061000000000000000001 /* NookShareSave */,
@@ -264,6 +272,7 @@
 		2D0E3A132D8A4A4700A00001 /* Products */ = {
 			isa = PBXGroup;
 			children = (
+				A26100000000000000000003 /* NookiOSUITests.xctest */,
 				2D0E3A122D8A4A4700A00001 /* Nook.app */,
 				22E39C283000BD9900C3ECB6 /* NookWidgetExtension.appex */,
 				2D1050000000000000000002 /* NookiOS.app */,
@@ -296,6 +305,7 @@
 				2D105000000000000000000A /* NookiOSApp.swift */,
 				2D105000000000000000000C /* RootView.swift */,
 				A22000000000000000000002 /* NewsHomeView.swift */,
+				A26000000000000000000002 /* NewsDesign.swift */,
 				2D1051A555AB617CB74DE7F6 /* NestSplash.swift */,
 				2D10550B0EFDC776DFA2A5D1 /* LaunchScreen.storyboard */,
 				2DFACE000000000000000101 /* PrivacyInfo.xcprivacy */,
@@ -321,6 +331,17 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		A26100000000000000000008 /* NookiOSUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A26100000000000000000009;
+			buildPhases = (A26100000000000000000006, A26100000000000000000007, );
+			buildRules = ();
+			dependencies = (A26100000000000000000005, );
+			name = NookiOSUITests;
+			productName = NookiOSUITests;
+			productReference = A26100000000000000000003;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 		22E39C273000BD9900C3ECB6 /* NookWidgetExtension */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 22E39C413000BD9A00C3ECB6 /* Build configuration list for PBXNativeTarget "NookWidgetExtension" */;
@@ -466,6 +487,7 @@
 				LastSwiftUpdateCheck = 2650;
 				LastUpgradeCheck = 2650;
 				TargetAttributes = {
+					A26100000000000000000008 = { CreatedOnToolsVersion = 26.5; TestTargetID = 2D1050000000000000000001; };
 					22E39C273000BD9900C3ECB6 = {
 						CreatedOnToolsVersion = 26.5;
 					};
@@ -500,6 +522,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
+				A26100000000000000000008 /* NookiOSUITests */,
 				2D0E3A112D8A4A4700A00001 /* Nook */,
 				22E39C273000BD9900C3ECB6 /* NookWidgetExtension */,
 				2D1050000000000000000001 /* NookiOS */,
@@ -564,6 +587,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		A26100000000000000000006 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A26100000000000000000001, ); runOnlyForDeploymentPostprocessing = 0; };
 		22E39C243000BD9900C3ECB6 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -590,6 +614,7 @@
 				2D105000000000000000000B /* NookiOSApp.swift in Sources */,
 				2D105000000000000000000D /* RootView.swift in Sources */,
 				A22000000000000000000001 /* NewsHomeView.swift in Sources */,
+				A26000000000000000000001 /* NewsDesign.swift in Sources */,
 				2D1051B3D4ED510450813042 /* NestSplash.swift in Sources */,
 				2D1051C7E6525A9C376F8FA4 /* BackgroundRefresh.swift in Sources */,
 				2D1051A8D42008A8673C6254 /* HapticEngine.swift in Sources */,
@@ -631,6 +656,7 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		A26100000000000000000005 = {isa = PBXTargetDependency; target = 2D1050000000000000000001; targetProxy = A26100000000000000000004; };
 		22E39C3B3000BD9A00C3ECB6 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 22E39C273000BD9900C3ECB6 /* NookWidgetExtension */;
@@ -654,6 +680,34 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		A2610000000000000000000B = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(NOOK_IOS_BUNDLE_ID).uitests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = NookiOS;
+			};
+			name = Release;
+		};
+		A2610000000000000000000A = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(NOOK_IOS_BUNDLE_ID).uitests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = NookiOS;
+			};
+			name = Debug;
+		};
 		22E39C3E3000BD9A00C3ECB6 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1164,6 +1218,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		A26100000000000000000009 = {isa = XCConfigurationList; buildConfigurations = (A2610000000000000000000A, A2610000000000000000000B, ); defaultConfigurationIsVisible = 0; defaultConfigurationName = Debug; };
 		22E39C413000BD9A00C3ECB6 /* Build configuration list for PBXNativeTarget "NookWidgetExtension" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

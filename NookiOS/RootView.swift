@@ -434,6 +434,7 @@ private struct RegularShell: View {
                     store.selectedArticleID = article.id
                     preferredColumn = .detail
                 }, onExplore: { isAddingFeed = true })
+                .navigationSplitViewColumnWidth(min: 320, ideal: 400, max: 560)
             } else {
                 ArticleList(store: store, selection: $store.selectedArticleID, onShowAllArticles: { store.selectSmartSource(.all) })
             }
@@ -820,7 +821,7 @@ private struct CompactShell: View {
                 .tabItem {
                     Image(uiImage: TabGlyph.symbol(selection == .feeds ? "square.stack.fill" : "square.stack"))
                         .renderingMode(.template)
-                        .accessibilityLabel(Text("Feeds"))
+                        .accessibilityLabel(Text("Explore"))
                 }
                 .modifier(NativeTabBarHider())
                 .tag(AppTab.feeds)
@@ -829,7 +830,7 @@ private struct CompactShell: View {
                 .tabItem {
                     Image(uiImage: TabGlyph.symbol(selection == .starred ? "star.fill" : "star"))
                         .renderingMode(.template)
-                        .accessibilityLabel(Text("Starred"))
+                        .accessibilityLabel(Text("Saved"))
                 }
                 .modifier(NativeTabBarHider())
                 .tag(AppTab.starred)
@@ -848,12 +849,9 @@ private struct CompactShell: View {
                 .modifier(NativeTabBarHider())
                 .tag(AppTab.settings)
         }
-        // The custom liquid-glass tab bar (iOS 26): glass capsule background,
-        // solid (no-glass) sliding pill under the selected item, shrinking in
-        // place while the list scrolls down and popping away when the reader
-        // opens. Below iOS 26 the native bar stays.
+        // Each tab's navigation root receives the same measured editorial bar.
         .modifier(
-            LiquidGlassTabBarHost(
+            EditorialTabBarHost(
                 selection: $selection,
                 onReselect: handleTabReselect,
                 onCompose: startComposing
@@ -1179,40 +1177,25 @@ private struct CompactShell: View {
 
 /// Minimizes the tab bar as the user scrolls down (restoring on scroll-up / at
 /// the top) on iOS 26+, where the behavior is native; a no-op on earlier iOS.
-/// Hides the system tab bar wherever the custom liquid-glass bar replaces it
-/// (iOS 26); earlier systems keep the native bar untouched.
+/// The custom editorial bar is inserted inside each navigation root so the
+/// ScrollView receives its actual safe-area height, rather than an overlay guess.
 private struct NativeTabBarHider: ViewModifier {
-    func body(content: Content) -> some View {
-        if #available(iOS 26, *) {
-            content.toolbarVisibility(.hidden, for: .tabBar)
-        } else {
-            content
-        }
-    }
+    func body(content: Content) -> some View { content.toolbar(.hidden, for: .tabBar) }
 }
 
-/// Reserves the custom tab bar's footprint as a bottom safe-area inset.
-/// Applied to each screen's content INSIDE its NavigationStack — insets added
-/// outside the stack (on the tab child or the TabView) don't reliably reach
-/// the nested scroll views and fixed bottom content, which left Settings
-/// buttons and list tails covered by the floating bar. Collapses to zero
-/// whenever the bar is away (reader/detail pushes). No-op below iOS 26 and
-/// where `enabled` is false (the iPad settings sheet).
+private extension EnvironmentValues {
+    @Entry var newsTabBar: AnyView? = nil
+}
+
 struct TabBarInset: ViewModifier {
     var enabled: Bool = true
     @Environment(TabBarChrome.self) private var chrome
-
-    /// The expanded bar's visual footprint: 44pt items + 8pt capsule padding
-    /// + 6pt breathing room.
-    static let barFootprint: CGFloat = 58
+    @Environment(\.newsTabBar) private var bar
 
     func body(content: Content) -> some View {
-        if enabled, #available(iOS 26, *) {
+        if enabled {
             content.safeAreaInset(edge: .bottom, spacing: 0) {
-                Color.clear
-                    .frame(height: chrome.barHidden ? 0 : Self.barFootprint)
-                    .allowsHitTesting(false)
-                    .animation(.spring(response: 0.4, dampingFraction: 0.85), value: chrome.barHidden)
+                if !chrome.barHidden, let bar { bar }
             }
         } else {
             content
@@ -1220,200 +1203,76 @@ struct TabBarInset: ViewModifier {
     }
 }
 
-/// Overlays the custom tab bar at the bottom of the shell (iOS 26); each tab
-/// reserves its footprint via `NativeTabBarHider`, so content lays out above
-/// it while still scrolling under the glass strip. Below iOS 26 this is a
-/// no-op and the native bar stays. Pushing a reader or a Settings detail
-/// dismisses the bar with a slide-down + shrink-away pop; popping brings it
-/// back the same way.
-private struct LiquidGlassTabBarHost: ViewModifier {
+private struct EditorialTabBarHost: ViewModifier {
     @Binding var selection: AppTab
     var onReselect: (AppTab) -> Void
     var onCompose: () -> Void
-    @Environment(TabBarChrome.self) private var chrome
-    /// Whether a Plus session exists. Read from the flag PlusCredential keeps in
-    /// defaults rather than from the Keychain, so the shell does not unlock the
-    /// Keychain to lay out a tab bar, and via AppStorage so signing in or out
-    /// moves the button without a relaunch.
     @AppStorage(PlusCredential.configuredKey) private var signedInToPlus = false
 
     func body(content: Content) -> some View {
-        if #available(iOS 26, *) {
-            content.overlay(alignment: .bottom) {
-                ZStack {
-                    if !chrome.barHidden {
-                        LiquidGlassTabBar(
-                            selection: $selection,
-                            collapsed: chrome.collapsed,
-                            onExpand: { chrome.expand() },
-                            onReselect: onReselect,
-                            onCompose: signedInToPlus ? onCompose : nil
-                        )
-                        .transition(
-                            .move(edge: .bottom)
-                                .combined(with: .scale(scale: 0.6, anchor: .bottom))
-                                .combined(with: .opacity)
-                        )
-                    }
-                }
-                .animation(.spring(response: 0.4, dampingFraction: 0.85), value: chrome.barHidden)
-            }
-        } else {
-            content
-        }
+        content.environment(\.newsTabBar, AnyView(EditorialTabBar(
+            selection: $selection, onReselect: onReselect,
+            onCompose: signedInToPlus ? onCompose : nil
+        )))
     }
 }
 
-/// The custom bottom bar, Instagram-on-iOS-26 style: a liquid-glass capsule
-/// holding the tab icons, the selected item sitting on a solid (no-glass) pill
-/// that slides between items like a segmented control. While the list scrolls
-/// down the whole bar shrinks in place; scrolling up (or tapping it) restores
-/// the full size.
-@available(iOS 26, *)
-private struct LiquidGlassTabBar: View {
+/// An opaque, full-width navigation strip. Its measured height reserves content
+/// space; the background alone extends behind the home indicator.
+private struct EditorialTabBar: View {
     @Binding var selection: AppTab
-    let collapsed: Bool
-    var onExpand: () -> Void
     var onReselect: (AppTab) -> Void
-    /// Nil for a reader with no publishing account, which is most people. They
-    /// get the bar exactly as it was.
     var onCompose: (() -> Void)?
 
-    /// Bumped on taps that aren't a selection change (restoring the minimized
-    /// bar, re-tap scroll-to-top) so they get their own impact haptic.
-    @State private var tapFeedback = 0
-
-    /// The pill slide: a low-damping spring for a chewy, overshooting settle.
-    private static let selectionSpring = Animation.spring(response: 0.4, dampingFraction: 0.62)
-
-    private static let tabOrder: [AppTab] = [.home, .feeds, .starred, .settings]
-    private static let itemWidth: CGFloat = 74
-    private static let itemHeight: CGFloat = 44
-    private static let itemSpacing: CGFloat = 2
-
     var body: some View {
-        GlassEffectContainer {
-            HStack(spacing: 8) {
-                tabRow
+        VStack(spacing: 0) {
+            NewsRule()
+            HStack(spacing: 0) {
+                tabButton(.home, title: "Home", symbol: "house")
+                tabButton(.feeds, title: "Explore", symbol: "square.stack")
+                tabButton(.starred, title: "Saved", symbol: "star")
+                tabButton(.settings, title: "Settings", symbol: "gearshape")
                 if let onCompose {
-                    composeButton(onCompose)
+                    Button(action: onCompose) {
+                        Image(systemName: "square.and.pencil")
+                            .newsFont(.tabIcon).foregroundStyle(NewsPalette.accentPrimary)
+                            .frame(minWidth: 44, minHeight: 44)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Write a post")
                 }
             }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .frame(minHeight: 52)
         }
-        // Scroll-down minimizes the bar in place (the whole capsule scales,
-        // nothing rearranges); any touch or scroll-up restores it.
-        .scaleEffect(collapsed ? 0.72 : 1, anchor: .bottom)
-        .frame(maxWidth: .infinity)
-        .padding(.horizontal, 16)
-        .padding(.top, 2)
-        // Hug the home indicator: sit right on the bottom safe-area edge.
-        .padding(.bottom, 0)
-        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: collapsed)
-        // Haptics: crisp selection tick on tab changes; a light impact for the
-        // non-selection taps (restore, re-tap scroll-to-top).
-        .sensoryFeedback(.selection, trigger: selection)
-        .sensoryFeedback(.impact(weight: .light), trigger: tapFeedback)
+        .background(NewsPalette.backgroundPrimary.ignoresSafeArea(edges: .bottom))
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("news.tabBar")
     }
 
-    /// Writing sits outside the tab row on purpose. The four tabs are places to
-    /// be; this is a thing to do, and giving it its own capsule keeps the
-    /// selection pill from ever sliding under it.
-    private func composeButton(_ action: @escaping () -> Void) -> some View {
+    private func tabButton(_ tab: AppTab, title: LocalizedStringKey, symbol: String) -> some View {
         Button {
-            if collapsed { onExpand() }
-            tapFeedback &+= 1
-            action()
+            if selection == tab { onReselect(tab) } else { selection = tab }
         } label: {
-            Image(systemName: "square.and.pencil")
-                .font(.system(size: 18, weight: .medium))
-                .foregroundStyle(Self.accent)
-                .frame(width: Self.itemHeight + 6, height: Self.itemHeight + 6)
-                .contentShape(Circle())
+            VStack(spacing: 3) {
+                if tab == .home {
+                    Image(uiImage: TabGlyph.nest).renderingMode(.template)
+                        .resizable().scaledToFit().frame(width: 23, height: 21)
+                } else {
+                    Image(systemName: selection == tab ? symbol + ".fill" : symbol)
+                        .newsFont(.tabIcon)
+                }
+                Text(title).newsFont(.tabLabel)
+            }
+            .foregroundStyle(selection == tab ? NewsPalette.accentPrimary : NewsPalette.tabInactive)
+            .frame(maxWidth: .infinity, minHeight: 44)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        // A tint this faint reads as warmth in the glass rather than as a
-        // coloured button: the point is to look like the same material as the bar,
-        // with Nook's colour behind it.
-        .glassEffect(.regular.tint(Self.accent.opacity(0.14)).interactive(), in: Circle())
-        .accessibilityLabel(Text("Write a post"))
-    }
-
-    /// Nook's brown, matching the app tint and the published pages. Shared with the
-    /// Plus screens rather than copied, so the signature cannot drift in one place.
-    fileprivate static let accent = PlusTheme.accent
-
-    private var tabRow: some View {
-        Group {
-            HStack(spacing: Self.itemSpacing) {
-                tabButton(.home, label: Text("Home"))
-                tabButton(.feeds, label: Text("Feeds"))
-                tabButton(.starred, label: Text("Starred"))
-                tabButton(.settings, label: Text("Settings"))
-            }
-            // One pill translated between seats. A transform-only animation:
-            // unlike matchedGeometryEffect (which re-laid-out all four buttons
-            // — and thus recomposed the glass — on every spring frame, jamming
-            // the same frames as the tab-content swap), an offset change
-            // animates on the render server for near-free.
-            .background(alignment: .leading) {
-                Capsule()
-                    .fill(Color(uiColor: .secondarySystemFill))
-                    .frame(width: Self.itemWidth, height: Self.itemHeight)
-                    .offset(x: selectionPillOffset)
-            }
-            .animation(Self.selectionSpring, value: selection)
-            .padding(4)
-            .glassEffect(.regular, in: Capsule())
-        }
-    }
-
-    private func tabButton(_ tab: AppTab, label: Text) -> some View {
-        Button {
-            if collapsed {
-                // A minimized bar's first tap just restores it, like the native
-                // minimize; re-tap semantics apply only to the full-size bar.
-                onExpand()
-                if selection == tab { tapFeedback &+= 1 }
-                selection = tab
-            } else if selection == tab {
-                tapFeedback &+= 1
-                onReselect(tab)
-            } else {
-                selection = tab
-            }
-        } label: {
-            icon(for: tab)
-                .foregroundStyle(selection == tab ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
-                .frame(width: Self.itemWidth, height: Self.itemHeight)
-                .contentShape(Capsule())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(label)
+        .accessibilityLabel(Text(title))
+        .accessibilityIdentifier("news.tab.\(tab)")
         .accessibilityAddTraits(selection == tab ? [.isSelected] : [])
-    }
-
-    /// The selection pill's leading offset within the item row — the solid
-    /// (no-glass) seat under the active tab, slid segmented-control style.
-    private var selectionPillOffset: CGFloat {
-        let index = CGFloat(Self.tabOrder.firstIndex(of: selection) ?? 0)
-        return index * (Self.itemWidth + Self.itemSpacing)
-    }
-
-    @ViewBuilder
-    private func icon(for tab: AppTab) -> some View {
-        switch tab {
-        case .home:
-            Image(uiImage: TabGlyph.nest).renderingMode(.template)
-        case .feeds:
-            Image(uiImage: TabGlyph.symbol(selection == .feeds ? "square.stack.fill" : "square.stack"))
-                .renderingMode(.template)
-        case .starred:
-            Image(uiImage: TabGlyph.symbol(selection == .starred ? "star.fill" : "star"))
-                .renderingMode(.template)
-        case .settings:
-            Image(uiImage: TabGlyph.symbol(selection == .settings ? "gearshape.fill" : "gearshape"))
-                .renderingMode(.template)
-        }
     }
 }
 
