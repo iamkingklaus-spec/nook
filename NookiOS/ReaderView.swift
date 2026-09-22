@@ -149,6 +149,7 @@ struct ReaderDetailView: View {
     /// each block's text as it arrives while preserving markup. The legacy
     /// `translatedBody` path above still handles plain-paragraph-only articles.
     @State private var nativeTranslator = NativeArticleTranslator()
+    @State private var blockTranslator = BlockReaderTranslationController()
     @State private var summaryController = ArticleSummaryController()
     @State private var summaryRequestedArticleID: String?
     @State private var summaryArticleID: String?
@@ -198,6 +199,28 @@ struct ReaderDetailView: View {
             return extracted
         }
         return article.contentHTML
+    }
+
+    private func blockReaderInput(for article: Article) -> BlockReaderInput? {
+        if store.usesReaderContentByDefault || store.isOfflineSaved(article.id) {
+            switch store.readerContentState(for: article) {
+            case .ready(let html):
+                return BlockReaderInput(articleID: article.id, url: article.url, html: html,
+                                        paragraphs: [], source: .extractedReaderContent)
+            case .loading, .none:
+                return nil
+            case .gone, .failed:
+                break
+            }
+        }
+        return BlockReaderInput(articleID: article.id, url: article.url, html: article.contentHTML,
+                                paragraphs: article.bodyParagraphs,
+                                source: article.contentSource ?? .rssFullContent)
+    }
+
+    private func showsBlockTranslation(_ article: Article) -> Bool {
+        blockTranslator.mode != .english && blockTranslator.isPrepared &&
+            blockTranslator.input == blockReaderInput(for: article)
     }
 
     /// Whether the currently-selected article is showing a translation. Rich
@@ -323,6 +346,12 @@ struct ReaderDetailView: View {
                     .id(summaryAnchorID(for: article))
 
                     Divider()
+
+                    BlockReaderControls(controller: blockTranslator) {
+                        nativeTranslator.stop()
+                        isTranslated = false
+                        isShowingTranslation = false
+                    }
 
                     readerBody(article)
 
@@ -571,6 +600,10 @@ struct ReaderDetailView: View {
                 }
             }
         }
+        .task(id: blockReaderInput(for: article)) {
+            await blockTranslator.load(blockReaderInput(for: article))
+        }
+        .onDisappear { blockTranslator.reset() }
         .task(id: article.id) {
             // Detect the article's language so translation is offered only when
             // it differs from the app's language; reset any prior translation.
@@ -796,7 +829,11 @@ struct ReaderDetailView: View {
                                 store.setReaderParser(.readability, for: article)
                             })
                     }
-                    HTMLContentView(html: html, baseURL: article.url, selectable: false, translator: nativeTranslator, typography: readerStyle.typography)
+                    if showsBlockTranslation(article) {
+                        BlockReaderContentView(controller: blockTranslator, typography: readerStyle.typography)
+                    } else {
+                        HTMLContentView(html: html, baseURL: article.url, selectable: false, translator: nativeTranslator, typography: readerStyle.typography)
+                    }
                 }
             case .gone:
                 VStack(alignment: .leading, spacing: 14) {
@@ -836,7 +873,9 @@ struct ReaderDetailView: View {
     /// The article's original feed content — the pre-experiment reading surface.
     @ViewBuilder
     private func originalArticleBody(_ article: Article) -> some View {
-        if let html = article.contentHTML {
+        if showsBlockTranslation(article) {
+            BlockReaderContentView(controller: blockTranslator, typography: readerStyle.typography)
+        } else if let html = article.contentHTML {
             // Text selection is disabled so the double-tap / long-press gestures
             // own the body. The translator streams translated blocks when active.
             // Deferred: a cold open renders plain paragraphs during the push and
@@ -1025,6 +1064,8 @@ struct ReaderDetailView: View {
     private func readerTranslateButton(_ article: Article) -> some View {
         if canTranslate {
             Button {
+                // The existing toolbar action remains the legacy translation path.
+                blockTranslator.mode = .english
                 toggleTranslation(article)
             } label: {
                 Group {

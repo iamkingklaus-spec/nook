@@ -108,9 +108,11 @@ public enum GeminiTranslator {
     public static func complete(
         system: String,
         prompt: String,
-        model: Model = .flashLite
+        model: Model = .flashLite,
+        structuredBlockResponse: Bool = false
     ) async throws -> String {
-        let data = try await postForData(model: model, system: system, prompt: prompt)
+        let data = try await postForData(model: model, system: system, prompt: prompt,
+                                         structuredBlockResponse: structuredBlockResponse)
         let result = parse(data)
         if let blockReason = result.blockReason {
             throw Failure(.blocked, message: "blocked: \(blockReason)")
@@ -161,13 +163,15 @@ public enum GeminiTranslator {
         }
     }
 
-    private static func postForData(model: Model, system: String, prompt: String) async throws -> Data {
+    private static func postForData(model: Model, system: String, prompt: String,
+                                    structuredBlockResponse: Bool = false) async throws -> Data {
         let request = try makeRequest(
             path: "\(model.rawValue):generateContent",
             system: system,
             prompt: prompt,
             model: model,
-            timeout: 60
+            timeout: 60,
+            structuredBlockResponse: structuredBlockResponse
         )
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
@@ -193,7 +197,8 @@ public enum GeminiTranslator {
         system: String,
         prompt: String,
         model: Model,
-        timeout: TimeInterval
+        timeout: TimeInterval,
+        structuredBlockResponse: Bool = false
     ) throws -> URLRequest {
         guard let key = GeminiCredential.apiKey else {
             throw Failure(.missingCredential, message: "Missing Gemini API key")
@@ -208,9 +213,13 @@ public enum GeminiTranslator {
         request.timeoutInterval = timeout
         // Gemini 3.x rejects the legacy candidateCount and is deprecating sampling
         // parameters. Translation determinism comes from the strict instructions.
-        let generationConfig: [String: Any] = [
+        var generationConfig: [String: Any] = [
             "thinkingConfig": ["thinkingLevel": model.thinkingLevel],
         ]
+        if structuredBlockResponse {
+            generationConfig["responseMimeType"] = "application/json"
+            generationConfig["responseJsonSchema"] = BlockTranslationProtocol.responseSchema
+        }
         var payload: [String: Any] = [
             "contents": [["role": "user", "parts": [["text": prompt]]]],
             "generationConfig": generationConfig,

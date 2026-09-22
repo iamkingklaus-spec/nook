@@ -3164,6 +3164,7 @@ public struct HTMLContentText: View {
     let baseSize: CGFloat?
     let bold: Bool
     let typography: ReaderTypography
+    private let secondaryText: Bool
     /// Computed once per view construction: the key concatenates the whole HTML
     /// fragment, and recomputing it on every body evaluation (cache probes +
     /// `.task(id:)`) was O(fragment bytes) per frame while blocks import.
@@ -3176,16 +3177,27 @@ public struct HTMLContentText: View {
         selectable: Bool = true,
         baseSize: CGFloat? = nil,
         bold: Bool = false,
-        typography: ReaderTypography = .platformDefault
+        typography: ReaderTypography = .platformDefault,
+        secondaryText: Bool = false
     ) {
         self.html = html
         self.selectable = selectable
         self.baseSize = baseSize
         self.bold = bold
         self.typography = typography
+        self.secondaryText = secondaryText
         let size = baseSize ?? typography.bodySize
         resolvedSize = size
         renderKey = HTMLTextFlow.cacheKey(html: html, baseSize: size, bold: bold, typography: typography)
+    }
+
+    private func displayed(_ original: AttributedString) -> AttributedString {
+        guard secondaryText else { return original }
+        var value = original
+        for run in original.runs where run.link == nil {
+            value[run.range].foregroundColor = .secondary
+        }
+        return value
     }
 
     public var body: some View {
@@ -3196,7 +3208,7 @@ public struct HTMLContentText: View {
         let ready = attributed ?? HTMLAttributedCache.shared.value(forKey: renderKey)
         return Group {
             if let ready {
-                let text = Text(ready).lineSpacing(typography.lineSpacing).tint(.accentColor)
+                let text = Text(displayed(ready)).lineSpacing(typography.lineSpacing).tint(.accentColor)
                 if selectable {
                     text.textSelection(.enabled)
                 } else {
