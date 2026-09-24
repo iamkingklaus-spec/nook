@@ -1494,6 +1494,7 @@ private struct FeedsTab: View {
     @State private var renameFolderName = ""
     @State private var feedPendingRename: Feed.ID?
     @State private var renameFeedName = ""
+    @State private var healthFeed: Feed?
     /// The writer's own publication, mirrored out of the Plus store so this screen
     /// needs neither a session nor a network call to offer it.
     @AppStorage(PlusOwnFeed.publicationURLKey) private var ownPublicationURL = ""
@@ -1510,6 +1511,14 @@ private struct FeedsTab: View {
                 }
                 .listRowBackground(Rectangle().fill(.ultraThinMaterial))
                 .id("feedsTop")
+
+                Section {
+                    NavigationLink {
+                        FeedHealthListView(feeds: store.feeds.filter { !ReaderStore.isManagedFeed($0.id) })
+                    } label: {
+                        Label("Feed Health / 订阅源诊断", systemImage: "stethoscope")
+                    }
+                }
 
                 // What the writer published, where they already look for something to
                 // read. Their own publication is a feed like any other, so this is a
@@ -1704,6 +1713,7 @@ private struct FeedsTab: View {
         .onDisappear {
             if showAddHint { dismissAddHint() }
         }
+        .sheet(item: $healthFeed) { FeedHealthSheet(feed: $0) }
         .sheet(isPresented: $isAddingFeed) {
             AddFeedView(folders: store.feedFolders) { feedURL, folder in
                 try await store.addFeed(urlString: feedURL, toFolder: folder)
@@ -1851,6 +1861,11 @@ private struct FeedsTab: View {
             .tint(.blue)
         }
         .contextMenu {
+            if !ReaderStore.isManagedFeed(feed.id) {
+                Button { healthFeed = feed } label: {
+                    Label("Test Feed / 检测订阅源", systemImage: "stethoscope")
+                }
+            }
             Button {
                 store.markFeedsRead(ids: [feed.id])
             } label: {

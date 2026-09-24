@@ -745,6 +745,15 @@ private struct FeedsSettingsScreen: View {
             }
             .warmRows()
 
+            Section {
+                NavigationLink {
+                    FeedHealthListView(feeds: sortedFeeds.filter { !ReaderStore.isManagedFeed($0.id) })
+                } label: {
+                    Label("Feed Health / 订阅源诊断", systemImage: "stethoscope")
+                }
+            }
+            .warmRows()
+
             Section("Background Diagnostics") {
                 LabeledContent("Notification Authorization", value: notificationStatus)
                 LabeledContent("Background App Refresh", value: backgroundStatus)

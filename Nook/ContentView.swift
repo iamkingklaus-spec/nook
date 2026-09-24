@@ -537,6 +537,7 @@ private struct FeedSidebar: View {
     @State private var renameFolderName = ""
     @State private var feedPendingRename: Feed.ID?
     @State private var renameFeedName = ""
+    @State private var healthFeed: Feed?
     @State private var dropTargetFolder: String?
     @State private var isTopLevelDropTargeted = false
     /// Mirrored by `PlusStore`, so the reader sidebar can expose the writer's
@@ -649,6 +650,7 @@ private struct FeedSidebar: View {
             // keeps it legible while staying native to the translucent sidebar.
             .glassEffect(.regular, in: Rectangle())
         }
+        .sheet(item: $healthFeed) { FeedHealthSheet(feed: $0) }
         .sheet(isPresented: $isManagingFolders) {
             FolderManagementView(store: store)
         }
@@ -1136,6 +1138,12 @@ private struct FeedSidebar: View {
         let selected = store.selectedFeedIDs
         let targets = (selected.contains(feed.id) && selected.count > 1) ? selected : [feed.id]
         let isMultiple = targets.count > 1
+
+        if !isMultiple, !ReaderStore.isManagedFeed(feed.id) {
+            Button { healthFeed = feed } label: {
+                Label("Test Feed / 检测订阅源", systemImage: "stethoscope")
+            }
+        }
 
         Button {
             store.refreshFeeds(ids: targets)

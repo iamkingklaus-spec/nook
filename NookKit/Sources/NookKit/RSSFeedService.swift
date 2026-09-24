@@ -52,6 +52,73 @@ public struct RSSFeedService: Sendable {
         }
     }
 
+    /// Strict, read-only diagnostic GET. Unlike fetch(), this never discovers and
+    /// fetches a replacement URL, nor rejects an otherwise valid empty feed.
+    func inspectFeed(url: URL, checkedAt: Date = .now) async -> FeedHealthSnapshot {
+        var report = FeedHealthReport(requestedURL: url, checkedAt: checkedAt)
+        guard FeedArticleLinkCheck.isWebURL(url) else {
+            report.errorReason = "不是有效的 HTTP / HTTPS Feed URL。"
+            return .init(report: report)
+        }
+        do {
+            var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 15)
+            request.setValue("Nook RSS Reader", forHTTPHeaderField: "User-Agent")
+            let (data, response) = try await session.data(for: request)
+            report.finalURL = response.url
+            guard let http = response as? HTTPURLResponse else {
+                report.errorReason = "未收到 HTTP 响应。"
+                return .init(report: report)
+            }
+            report.httpStatus = http.statusCode
+            guard (200...299).contains(http.statusCode) else {
+                report.errorReason = "HTTP \(http.statusCode)"
+                return .init(report: report)
+            }
+            let finalURL = response.url ?? url
+            let htmlResponse = ["text/html", "application/xhtml+xml"].contains(http.mimeType?.lowercased() ?? "")
+            let parser = FeedXMLParser(feedURL: finalURL)
+            let parsed: ParsedFeed
+            do { parsed = try parser.parse(data: data) }
+            catch {
+                report.format = parser.diagnosticFormat
+                let isHTML = parser.diagnosticIsHTML || htmlResponse && parser.diagnosticFormat == .unknown
+                report.parseResult = isHTML ? .webPage : .malformedXML
+                report.errorReason = error.localizedDescription
+                if isHTML {
+                    report.discoveredFeedURLs = FeedLinkDiscovery.feedLinks(in: String(decoding: data, as: UTF8.self), baseURL: finalURL)
+                }
+                return .init(report: report)
+            }
+            report.format = parser.diagnosticFormat
+            guard parser.diagnosticIsFeed else {
+                let isHTML = parser.diagnosticIsHTML || htmlResponse && parser.diagnosticFormat == .unknown
+                report.parseResult = isHTML ? .webPage : .notFeed
+                report.errorReason = isHTML ? "检测的是输入网页；未自动跟随其他 Feed。" : "缺少 RSS channel 或 Atom feed 根结构。"
+                if isHTML {
+                    report.discoveredFeedURLs = FeedLinkDiscovery.feedLinks(in: String(decoding: data, as: UTF8.self), baseURL: finalURL)
+                }
+                return .init(report: report)
+            }
+            report.parseResult = .success
+            report.articleLinks = parser.diagnosticArticleLinks(siteURL: parsed.feed.siteURL)
+            report.itemCount = report.articleLinks.count
+            var sampleArticles: [Article] = []
+            for (parsedArticle, link) in zip(parsed.articles, report.articleLinks) where link.status == .valid {
+                guard let url = link.url else { continue }
+                var article = parsedArticle
+                article.url = url // local copy: retain direct item evidence, never homepage fallback
+                // Normal reading may synthesize a title as preview text. That is
+                // not evidence that the publisher supplied an RSS summary.
+                if article.contentSource == nil { article.summary = "" }
+                sampleArticles.append(article)
+            }
+            return .init(report: report, articles: sampleArticles)
+        } catch {
+            report.errorReason = error.localizedDescription
+            return .init(report: report)
+        }
+    }
+
     private func fetchFeed(url: URL) async throws -> ParsedFeed {
         let data = try await fetchData(url: url)
         let parser = FeedXMLParser(feedURL: url)
@@ -408,6 +475,8 @@ final class FeedXMLParser: NSObject, XMLParserDelegate {
         var images: [ArticleImageMetadata] = []
         var published = ""
         var updated = ""
+        var diagnosticLink: String?
+        var diagnosticLinkBase: URL?
     }
 
     private let feedURL: URL
@@ -422,6 +491,15 @@ final class FeedXMLParser: NSObject, XMLParserDelegate {
     private var articleDrafts: [ArticleDraft] = []
     private var namespaces: [[String: String]] = []
     private var baseURLs: [URL] = []
+    private var diagnosticRoot = ""
+    private var diagnosticChannel = false
+    private(set) var diagnosticFormat: FeedHealthReport.Format = .unknown
+    var diagnosticIsHTML: Bool { diagnosticRoot == "html" }
+    var diagnosticIsFeed: Bool { diagnosticFormat == .atom || diagnosticFormat == .rss && diagnosticChannel }
+
+    func diagnosticArticleLinks(siteURL: URL) -> [FeedArticleLinkCheck] {
+        articleDrafts.map { .inspect($0.diagnosticLink, baseURL: $0.diagnosticLinkBase ?? feedURL, siteURL: siteURL) }
+    }
     private struct ContentCapture {
         var depth: Int
         var text = ""
@@ -543,6 +621,15 @@ final class FeedXMLParser: NSObject, XMLParserDelegate {
         elementStack.append(key)
         currentText = ""
 
+        if elementStack.count == 1 {
+            diagnosticRoot = key
+            if key == "rss" { diagnosticFormat = .rss }
+            if key == "feed", attributeDict["xmlns"] == nil || attributeDict["xmlns"] == "http://www.w3.org/2005/Atom" {
+                diagnosticFormat = .atom
+            }
+        }
+        if elementStack == ["rss", "channel"] { diagnosticChannel = true }
+
         if contentCapture != nil {
             let attributes = attributeDict.sorted { $0.key < $1.key }
                 .map { " \($0.key)=\"\(Self.xmlEscaped($0.value))\"" }.joined()
@@ -654,6 +741,8 @@ final class FeedXMLParser: NSObject, XMLParserDelegate {
                 currentArticle?.title += text
             case "link":
                 currentArticle?.link += text
+                currentArticle?.diagnosticLink = text
+                currentArticle?.diagnosticLinkBase = baseURLs.last
             case "guid":
                 currentArticle?.guid += text
             case "description":
@@ -741,6 +830,11 @@ final class FeedXMLParser: NSObject, XMLParserDelegate {
     private func handleAtomLink(_ attributes: [String: String]) {
         guard let href = attributes["href"] else { return }
         let rel = attributes["rel"] ?? "alternate"
+        if currentArticle != nil, parentElement == "entry", rel == "alternate" || rel.isEmpty,
+           currentArticle?.diagnosticLink == nil {
+            currentArticle?.diagnosticLink = href
+            currentArticle?.diagnosticLinkBase = baseURLs.last
+        }
 
         if currentArticle != nil, parentElement == "entry", rel == "enclosure" {
             var enclosure = attributes
