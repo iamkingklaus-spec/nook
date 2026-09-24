@@ -94,8 +94,10 @@ public struct FeedArticleLinkCheck: Equatable, Sendable {
         func canonical(_ url: URL) -> String {
             var c = URLComponents(url: url, resolvingAgainstBaseURL: true)
             c?.fragment = nil
-            c?.scheme = c?.scheme?.lowercased()
-            c?.host = c?.host?.lowercased()
+            let scheme = c?.scheme?.lowercased()
+            let host = c?.host?.lowercased()
+            c?.scheme = scheme
+            c?.host = host
             if var path = c?.path {
                 while path.hasSuffix("/") { path.removeLast() }
                 c?.path = path
