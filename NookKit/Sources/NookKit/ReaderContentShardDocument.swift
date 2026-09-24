@@ -44,7 +44,8 @@ public struct ReaderContentValue: Codable, Sendable, Equatable {
     }
 
     public var status: Status
-    /// The extracted reader HTML for `.success`; `nil` for `.failed`.
+    /// Renderable HTML for `.success` (including RSS fallback); nil for `.failed`.
+    /// Success denotes availability, not completeness: consult `quality`.
     public var html: String?
     /// The extractor that produced this. Absent in records written before this
     /// was tracked, which are treated as older than any current version.

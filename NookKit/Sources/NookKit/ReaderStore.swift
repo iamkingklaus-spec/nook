@@ -2959,7 +2959,9 @@ public final class ReaderStore {
         // does extract.
         guard readerContentStates[article.id] != nil else { return }
 
-        if !readerQualityEnabled, let cached = readerContentByEngine[article.id]?[engine], !cached.isEmpty {
+        if let cached = readerContentByEngine[article.id]?[engine], !cached.isEmpty,
+           !readerQualityEnabled || ReaderQualityEvaluator.assess(html: cached, summary: article.summary,
+                source: .extractedReaderContent, parserStatus: .succeeded).quality == .fullCandidate {
             // Stop whatever switch this one supersedes. Without this, switching away
             // and straight back left the earlier extraction running: its chip stayed
             // up and its result landed on top of the body just restored.
@@ -2969,6 +2971,8 @@ public final class ReaderStore {
             reparsingArticles[article.id] = nil
             noteReaderContentByEngine(cached, engine: engine, for: article.id)
             readerContentEngines[article.id] = engine
+            readerResolvedContent[article.id] = ReaderContentCandidate(html: cached, source: .extractedReaderContent,
+                summary: article.summary, extracted: .init(html: cached, engine: engine), isCached: true)
             readerContentStates[article.id] = .ready(cached)
             return
         }

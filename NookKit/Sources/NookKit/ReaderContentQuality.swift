@@ -70,7 +70,7 @@ enum ReaderQualityEvaluator {
         let plain = paragraphs.joined(separator: " ").trimmingCharacters(in: .whitespacesAndNewlines)
         let normalized = normalize(plain)
         let baseline = normalize(HTMLContentParser.plainText(summary))
-        let similarity = similarity(normalized, baseline)
+        let similarity = Self.similarity(normalized, baseline)
         let gatePhrases = ["subscribe to continue", "subscribe to read", "sign in to read", "sign in to continue",
                            "log in to read", "log in to continue", "login to continue", "unlock this article",
                            "already a subscriber", "this article is for subscribers", "subscription required",
