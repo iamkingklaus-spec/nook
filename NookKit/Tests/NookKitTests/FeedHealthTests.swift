@@ -385,7 +385,8 @@ struct FeedHealthDiagnosticTests {
         defer { try? FileManager.default.removeItem(at: root) }
         let storage = ReaderStorage(directoryURL: root)
         try storage.save(library)
-        let savedBefore = try encoder.encode(try #require(storage.load()))
+        let loadedBefore = try #require(try storage.load())
+        let savedBefore = try encoder.encode(loadedBefore)
         let service = net.service
         let diagnostics = FeedHealthDiagnostics(fetch: { await service.inspectFeed(url: $0) }, sample: { article in
             await FeedHealthDiagnostics.sampleArticle(article) { _ in .failed }
@@ -393,7 +394,8 @@ struct FeedHealthDiagnosticTests {
         await diagnostics.testFeed(net.url)
         await diagnostics.testArticleExtraction(net.url)
         #expect(try encoder.encode(library) == before)
-        #expect(try encoder.encode(try #require(storage.load())) == savedBefore)
+        let loadedAfter = try #require(try storage.load())
+        #expect(try encoder.encode(loadedAfter) == savedBefore)
         #expect(library.articles[0].isRead && library.articles[0].isStarred)
         #expect(library.articles[0].categories == ["custom"])
         #expect(library.feeds[0].feedURL == net.url)
