@@ -76,11 +76,26 @@ public struct ReaderContentValue: Codable, Sendable, Equatable {
     /// for them this is recorded and never read.
     public var sourceFingerprint: String?
 
+    /// Additive metadata: older shards decode with nil and are assessed on read.
+    public var quality: ReaderContentQuality?
+    public var qualityVersion: Int?
+    public var source: ArticleContentSource?
+
+    /// Derived from content, never from a parser verdict or assessment version.
+    public var contentHash: String? { html.map { ArticleDocument.digest([$0]) } }
+
+    var protectsBody: Bool {
+        status == .success && html?.isEmpty == false && (quality == nil || quality == .fullCandidate)
+    }
+
     public init(
         status: Status, html: String?, extractorVersion: Int? = currentExtractorVersion,
         sourceFingerprint: String? = nil,
         engine: ReaderParserEngine? = nil,
-        failedEngines: [String: Int]? = nil
+        failedEngines: [String: Int]? = nil,
+        quality: ReaderContentQuality? = nil,
+        qualityVersion: Int? = nil,
+        source: ArticleContentSource? = nil
     ) {
         self.status = status
         self.html = html
@@ -88,6 +103,9 @@ public struct ReaderContentValue: Codable, Sendable, Equatable {
         self.sourceFingerprint = sourceFingerprint
         self.engine = engine
         self.failedEngines = failedEngines
+        self.quality = quality
+        self.qualityVersion = qualityVersion
+        self.source = source
     }
 
     /// A failure record for `engine`, carrying forward whatever `previous` already
@@ -154,15 +172,19 @@ public struct ReaderContentValue: Codable, Sendable, Equatable {
         case sourceFingerprint = "f"
         case engine = "e"
         case failedEngines = "g"
+        case quality = "q"
+        case qualityVersion = "qv"
+        case source = "src"
     }
 }
 
 /// A state-based CRDT shard for reader-mode-extracted content, mirroring
 /// `ContentShardDocument`/`BodyShardDocument`: each device writes only its own
 /// `.nook/reader/<deviceID>.json`, and loads merge every shard with last-writer-
-/// wins per article (by `HLC`). This keeps macOS and iOS conflict-free — the two
+/// wins per article (by `HLC`), preferring preserved full bodies over failures or
+/// summaries. This keeps macOS and iOS conflict-free — the two
 /// devices never write the same file, and concurrent extractions of the same
-/// article converge deterministically (their content is equivalent anyway).
+/// article converge deterministically without discarding a full cached copy.
 ///
 /// Deliberately separate from the library/state/body sync: it is additive and
 /// never modifies the existing shards.

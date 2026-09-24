@@ -206,7 +206,7 @@ struct ReaderDetailView: View {
             switch store.readerContentState(for: article) {
             case .ready(let html):
                 return BlockReaderInput(articleID: article.id, url: article.url, html: html,
-                                        paragraphs: [], source: .extractedReaderContent)
+                                        paragraphs: [], source: store.readerContentSource(for: article))
             case .loading, .none:
                 return nil
             case .gone, .failed:
@@ -673,12 +673,12 @@ struct ReaderDetailView: View {
                 )
             }
         }
-        // If reader-mode content finishes extracting AFTER translation was turned
-        // on, restart the translator against the now-rendered extracted HTML so
-        // its per-block overrides line up with what's shown.
-        .onChange(of: store.readerContentState(for: article)) { _, newValue in
+        // A changed body invalidates legacy overrides; translating the new
+        // version remains an explicit action, never a refresh side effect.
+        .onChange(of: store.readerContentState(for: article)) { oldValue, newValue in
             guard nativeTranslator.isActive, case .ready(let extracted) = newValue else { return }
-            nativeTranslator.start(html: extracted, baseURL: article.url, title: article.title, into: targetLanguageName)
+            if case .ready(let previous) = oldValue, previous == extracted { return }
+            nativeTranslator.stop()
         }
         .onChange(of: summariesEnabled) { _, enabled in
             guard !enabled else { return }
@@ -821,6 +821,16 @@ struct ReaderDetailView: View {
             switch store.readerContentState(for: article) {
             case .ready(let html):
                 VStack(alignment: .leading, spacing: 12) {
+                    ReaderQualityNotice(quality: store.readerContentQuality(for: article), url: article.url,
+                        onRetry: { store.retryReaderContent(for: article) },
+                        onParser: { parser in
+                            if store.displayedReaderParser(for: article) == parser {
+                                store.retryReaderContent(for: article)
+                            } else {
+                                store.setReaderParser(parser, for: article)
+                            }
+                        })
+                        .disabled(store.isReparsing(article))
                     if store.droppedEmbedCount(for: article) > 0 {
                         ReaderDroppedEmbedsNotice(
                             count: store.droppedEmbedCount(for: article),

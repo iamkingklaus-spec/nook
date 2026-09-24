@@ -1488,7 +1488,7 @@ enum HTMLContentParser {
         return CGFloat(width / height)
     }
 
-    private static func plainText(_ html: String) -> String {
+    static func plainText(_ html: String) -> String {
         let withoutTags = replacingMatches(of: #"(?is)<[^>]+>"#, in: html, with: " ")
         guard let decoded = decodedText(withoutTags) else { return "" }
         let collapsed = replacingMatches(of: #"\s+"#, in: decoded, with: " ")

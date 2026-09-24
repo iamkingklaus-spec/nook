@@ -394,6 +394,7 @@ public final class ReaderStore {
     /// reader when the "reader content by default" experiment is on.
     public enum ReaderContentState: Equatable, Sendable {
         case loading
+        /// Renderable content, not a completeness verdict. Consult readerContentQuality.
         case ready(String)
         case failed
         /// The original page returned 404/410 — it's gone from the source, so the
@@ -404,6 +405,7 @@ public final class ReaderStore {
     /// Per-article reader-mode extraction state, observed by the reader views.
     /// Rebuilt per session; the durable results live in the CRDT reader shards.
     private(set) var readerContentStates: [Article.ID: ReaderContentState] = [:]
+    private var readerResolvedContent: [Article.ID: ReaderContentCandidate] = [:]
     private var readerContentTasks: [Article.ID: Task<Void, Never>] = [:]
 
     /// Which parser produced the content currently on screen for an article.
@@ -713,6 +715,7 @@ public final class ReaderStore {
         activeFaviconFetches = 0
         feedUpdateTokens = [:]
         readerContentStates = [:]
+        readerResolvedContent = [:]
         readerContentEngines = [:]
         readerContentGenerations = [:]
         reparsingArticles = [:]
@@ -2827,6 +2830,30 @@ public final class ReaderStore {
         UserDefaults.standard.object(forKey: Self.readerContentByDefaultKey) as? Bool ?? true
     }
 
+    /// Rollback switch for quality-aware selection; independent of translation.
+    public static let readerQualityEnabledKey = "readerQualityAssessmentEnabled"
+    public var readerQualityEnabled: Bool {
+        UserDefaults.standard.object(forKey: Self.readerQualityEnabledKey) as? Bool ?? true
+    }
+
+    public func readerContentQuality(for article: Article) -> ReaderContentQuality? {
+        guard readerQualityEnabled else { return nil }
+        if let candidate = displayedContentCandidate(for: article) { return candidate.assessment.quality }
+        if readerContentStates[article.id] == .failed || readerContentStates[article.id] == .gone { return .unavailable }
+        return nil
+    }
+
+    public func readerContentSource(for article: Article) -> ArticleContentSource {
+        displayedContentCandidate(for: article)?.source ?? .extractedReaderContent
+    }
+
+    private func displayedContentCandidate(for article: Article) -> ReaderContentCandidate? {
+        guard case .ready(let html) = readerContentStates[article.id] else { return nil }
+        if let candidate = readerResolvedContent[article.id], candidate.html == html { return candidate }
+        return ReaderContentCandidate(html: html, source: .extractedReaderContent,
+                                      summary: article.summary, isCached: true)
+    }
+
     /// The current reader-mode extraction state for an article (nil = not started).
     public func readerContentState(for article: Article) -> ReaderContentState? {
         readerContentStates[article.id]
@@ -2932,7 +2959,7 @@ public final class ReaderStore {
         // does extract.
         guard readerContentStates[article.id] != nil else { return }
 
-        if let cached = readerContentByEngine[article.id]?[engine], !cached.isEmpty {
+        if !readerQualityEnabled, let cached = readerContentByEngine[article.id]?[engine], !cached.isEmpty {
             // Stop whatever switch this one supersedes. Without this, switching away
             // and straight back left the earlier extraction running: its chip stayed
             // up and its result landed on top of the body just restored.
@@ -3045,6 +3072,11 @@ public final class ReaderStore {
             !extracted.html.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         else { return nil }
         let (html, engine) = (extracted.html, extracted.engine)
+        if readerQualityEnabled {
+            let assessment = ReaderQualityEvaluator.assess(html: html, summary: article.summary,
+                source: .extractedReaderContent, parserStatus: .succeeded)
+            guard assessment.quality == .fullCandidate else { return nil }
+        }
 
         OfflineArticleStore.shared.save(
             id: article.id, title: article.title, url: article.url,
@@ -3075,6 +3107,18 @@ public final class ReaderStore {
                 await warmReaderContent(html: refreshed.html, baseURL: article.url)
                 await loadCommentsIfNeeded(for: article)
                 note(html: refreshed.html, engine: refreshed.engine, for: article)
+                return
+            }
+            if readerQualityEnabled {
+                // Offline opening never needs a network request. Metadata lives
+                // beside the reader body; legacy downloads are assessed locally.
+                let value = await readerContentStore?.value(for: article.id)
+                let matching = value?.html == html ? value : nil
+                let source = matching?.source ?? (HTMLContentParser.plainText(html) == HTMLContentParser.plainText(article.summary)
+                    ? ArticleContentSource.rssDescription : .extractedReaderContent)
+                let candidate = ReaderContentCandidate(html: html, source: source, summary: article.summary,
+                    isCached: true, knownQuality: matching?.qualityVersion == ReaderQualityEvaluator.version ? matching?.quality : nil)
+                await publishQualityContent(candidate, for: article)
                 return
             }
             await warmReaderContent(html: html, baseURL: article.url)
@@ -3190,6 +3234,7 @@ public final class ReaderStore {
 
     private func performSaveOffline(_ article: Article, refreshList: Bool = true) async {
         let html = await offlineHTML(for: article)
+        guard !Task.isCancelled else { return }
         let feedTitle = feed(for: article.feedID)?.displayTitle ?? ""
         OfflineArticleStore.shared.save(
             id: article.id, title: article.title, url: article.url,
@@ -3219,6 +3264,12 @@ public final class ReaderStore {
     /// always has something readable, even for a summary-only feed we couldn't
     /// extract.
     private func offlineHTML(for article: Article) async -> String {
+        if readerQualityEnabled {
+            let saved = await OfflineArticleStore.shared.contentAsync(for: article.id)
+            let resolution = await resolveQualityContent(for: article, engine: .preferred,
+                forceParser: false, offlineHTML: saved)
+            return resolution.candidate?.html ?? saved ?? Self.feedBodyHTML(for: article)
+        }
         if readerContentStore == nil, let storage {
             readerContentStore = ReaderContentStore(storage: storage, deviceID: deviceID)
         }
@@ -3336,6 +3387,21 @@ public final class ReaderStore {
         acceptCacheFrom: ReaderParserEngine? = nil,
         reloadFromOrigin: Bool = false
     ) async {
+        if readerQualityEnabled {
+            if !immediate { try? await Task.sleep(for: .milliseconds(350)) }
+            guard !Task.isCancelled else { return }
+            let resolution = await resolveQualityContent(for: article, engine: engine,
+                forceParser: forceRefresh, reloadFromOrigin: reloadFromOrigin)
+            guard !Task.isCancelled else { return }
+            if let candidate = resolution.candidate {
+                await publishQualityContent(candidate, for: article)
+            } else if !abandonReparse(for: article) {
+                readerResolvedContent[article.id] = nil
+                readerContentStates[article.id] = resolution.originalGone ? .gone : .failed
+                readerContentEngines[article.id] = engine
+            }
+            return
+        }
         if readerContentStore == nil, let storage {
             readerContentStore = ReaderContentStore(storage: storage, deviceID: deviceID)
         }
@@ -3469,6 +3535,83 @@ public final class ReaderStore {
             readerContentStates[article.id] = .failed
             readerContentEngines[article.id] = engine
         }
+    }
+
+    private func resolveQualityContent(
+        for article: Article, engine: ReaderParserEngine, forceParser: Bool,
+        reloadFromOrigin: Bool = false, offlineHTML: String? = nil
+    ) async -> ReaderContentResolver.Resolution {
+        if readerContentStore == nil, let storage {
+            readerContentStore = ReaderContentStore(storage: storage, deviceID: deviceID)
+            await readerContentStore?.reload()
+        }
+        let value = await readerContentStore?.value(for: article.id)
+        var cached: ReaderContentCandidate?
+        if let value, value.status == .success, let html = value.html {
+            let source = value.source ?? .extractedReaderContent
+            cached = ReaderContentCandidate(html: html, source: source, summary: article.summary,
+                extracted: source == .extractedReaderContent ? .init(html: html, engine: value.recordedEngine) : nil,
+                isCached: true, knownQuality: value.qualityVersion == ReaderQualityEvaluator.version ? value.quality : nil)
+        }
+        if let visible = displayedContentCandidate(for: article), visible.assessment.quality == .fullCandidate {
+            cached = ReaderContentCandidate(html: visible.html, source: visible.source, summary: article.summary,
+                extracted: visible.extracted, isCached: true, knownQuality: visible.assessment.quality)
+        } else if let offlineHTML {
+            let saved = ReaderContentCandidate(html: offlineHTML, source: .extractedReaderContent,
+                                                summary: article.summary, isCached: true)
+            if cached == nil || saved.assessment.quality.rank > cached!.assessment.quality.rank { cached = saved }
+        }
+        let changed = value.map { !NookPostOrigin.cachedBodyIsCurrent($0.sourceFingerprint, for: article) } ?? false
+        // A current assessed summary is useful offline too. Retry is explicit;
+        // reopening alone must not hammer the same inaccessible publisher.
+        if !forceParser, !changed, let cached, value?.qualityVersion == ReaderQualityEvaluator.version {
+            return .init(candidate: cached, attempts: [], originalGone: false)
+        }
+        var checkedOriginal = false
+        var gone = false
+        let resolution = await ReaderContentResolver.resolve(article: article, cached: cached,
+            preferred: engine, forceParser: forceParser || changed) { parser in
+                if !checkedOriginal {
+                    gone = await self.originalIsGone(url: article.url, ignoringCache: reloadFromOrigin)
+                    checkedOriginal = true
+                }
+                if gone { return .gone }
+                if self.readerModeExtractor == nil { self.readerModeExtractor = ReaderModeExtractor() }
+                return await self.readerModeExtractor?.extract(url: article.url, engine: parser,
+                    reloadFromOrigin: reloadFromOrigin) ?? .timedOut
+            }
+        guard !Task.isCancelled else { return resolution }
+        readerParsersTried[article.id, default: []].formUnion(resolution.attempts)
+        if let candidate = resolution.candidate, !candidate.isCached, candidate.extracted?.fellBack != true {
+            await readerContentStore?.record(ReaderContentValue(status: .success, html: candidate.html,
+                sourceFingerprint: NookPostOrigin.fingerprint(of: article), engine: candidate.engine,
+                quality: candidate.assessment.quality, qualityVersion: ReaderQualityEvaluator.version,
+                source: candidate.source), for: article.id)
+        }
+        return resolution
+    }
+
+    private func publishQualityContent(_ candidate: ReaderContentCandidate, for article: Article) async {
+        guard candidate.assessment.quality != .unavailable else {
+            readerContentStates[article.id] = .failed
+            reparsingArticles[article.id] = nil
+            return
+        }
+        await warmReaderContent(html: candidate.html, baseURL: article.url)
+        guard !Task.isCancelled else { return }
+        if let extracted = candidate.extracted, !candidate.isCached {
+            if extracted.engine == .legibility { readerDroppedEmbeds[article.id] = extracted.droppedEmbeds }
+            noteComments(extracted.comments, engine: extracted.engine, for: article.id)
+            if let thread = extracted.comments { await warmComments(thread, baseURL: article.url) }
+        } else {
+            await loadCommentsIfNeeded(for: article)
+        }
+        guard !Task.isCancelled else { return }
+        if let engine = candidate.engine { noteReaderContentByEngine(candidate.html, engine: engine, for: article.id) }
+        readerResolvedContent[article.id] = candidate
+        readerContentEngines[article.id] = candidate.engine
+        reparsingArticles[article.id] = nil
+        readerContentStates[article.id] = .ready(candidate.html)
     }
 
     /// Records that `engine` found no article, keeping whatever verdict the shard
@@ -3831,6 +3974,7 @@ public final class ReaderStore {
         if selectedArticleID == articleID { selectedArticleID = nil }
         articles.removeAll { $0.id == articleID }
         readerContentStates[articleID] = nil
+        readerResolvedContent[articleID] = nil
         readerContentEngines[articleID] = nil
         readerContentGenerations[articleID] = nil
         reparsingArticles[articleID] = nil
