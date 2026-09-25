@@ -150,6 +150,7 @@ struct ReaderDetailView: View {
     /// `translatedBody` path above still handles plain-paragraph-only articles.
     @State private var nativeTranslator = NativeArticleTranslator()
     @State private var blockTranslator = BlockReaderTranslationController()
+    @AppStorage("readerLearningEnabled") private var readerLearningEnabled = true
     @State private var summaryController = ArticleSummaryController()
     @State private var summaryRequestedArticleID: String?
     @State private var summaryArticleID: String?
@@ -219,8 +220,14 @@ struct ReaderDetailView: View {
     }
 
     private func showsBlockTranslation(_ article: Article) -> Bool {
-        blockTranslator.mode != .english && blockTranslator.isPrepared &&
+        (blockTranslator.mode != .english || (readerLearningEnabled && !translationActive(article))) && blockTranslator.isPrepared &&
             blockTranslator.input == blockReaderInput(for: article)
+    }
+
+    private func learningContext(_ article: Article) -> LearningArticleContext? {
+        guard readerLearningEnabled else { return nil }
+        return LearningArticleContext(articleID: article.id, articleURL: article.url, title: article.title,
+                                      publisher: store.feed(for: article.feedID)?.displayTitle ?? article.url.host() ?? "")
     }
 
     /// Whether the currently-selected article is showing a translation. Rich
@@ -353,6 +360,12 @@ struct ReaderDetailView: View {
                         isShowingTranslation = false
                     }
 
+                    HStack {
+                        Toggle("英语学习", isOn: $readerLearningEnabled).fixedSize()
+                        Spacer()
+                        NavigationLink("Vocabulary") { VocabularyView() }
+                    }.font(.caption)
+
                     readerBody(article)
 
                     // The page's own discussion, under the article it belongs to. Only
@@ -376,18 +389,18 @@ struct ReaderDetailView: View {
                 .contentShape(Rectangle())
                 // Double-tap the body to star; press-and-hold (opt-in) to open the
                 // web view with a build-up of haptic taps ending in one deep pulse.
-                .onTapGesture(count: 2) {
+                .gesture(TapGesture(count: 2).onEnded {
                     let willStar = !article.isStarred
                     store.toggleStarred(articleID: article.id)
                     haptics.star(on: willStar)
                     triggerStarBurst(on: willStar)
-                }
+                }, including: readerLearningEnabled ? .subviews : .all)
                 // Single tap toggles the chrome, so it can be controlled without
                 // scrolling. It can only HIDE once the large inline title has
                 // scrolled away (same condition the scroll auto-hide uses) — a tap
                 // while the big title still shows does nothing; showing is always
                 // allowed. Disabled during the coach marks (chrome is frozen then).
-                .onTapGesture {
+                .gesture(TapGesture().onEnded {
                     guard coachStep == nil else { return }
                     if chromeHidden {
                         withAnimation(.easeInOut(duration: 0.25)) { chromeHidden = false }
@@ -395,9 +408,9 @@ struct ReaderDetailView: View {
                         scrollBook.accum = 0
                         withAnimation(.easeInOut(duration: 0.25)) { chromeHidden = true }
                     }
-                }
+                }, including: readerLearningEnabled ? .subviews : .all)
                 .modifier(LongPressToOpenBrowser(
-                    enabled: longPressOpensBrowser,
+                    enabled: longPressOpensBrowser && !readerLearningEnabled,
                     minimumDuration: hapticStartDelay + ReaderHaptics.buildupDuration,
                     onOpen: {
                         pendingBuildup?.cancel()
@@ -840,7 +853,8 @@ struct ReaderDetailView: View {
                             })
                     }
                     if showsBlockTranslation(article) {
-                        BlockReaderContentView(controller: blockTranslator, typography: readerStyle.typography)
+                        BlockReaderContentView(controller: blockTranslator, typography: readerStyle.typography,
+                                               learningArticle: learningContext(article))
                     } else {
                         HTMLContentView(html: html, baseURL: article.url, selectable: false, translator: nativeTranslator, typography: readerStyle.typography)
                     }
@@ -884,7 +898,8 @@ struct ReaderDetailView: View {
     @ViewBuilder
     private func originalArticleBody(_ article: Article) -> some View {
         if showsBlockTranslation(article) {
-            BlockReaderContentView(controller: blockTranslator, typography: readerStyle.typography)
+            BlockReaderContentView(controller: blockTranslator, typography: readerStyle.typography,
+                                   learningArticle: learningContext(article))
         } else if let html = article.contentHTML {
             // Text selection is disabled so the double-tap / long-press gestures
             // own the body. The translator streams translated blocks when active.

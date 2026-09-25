@@ -46,16 +46,20 @@ public struct BlockReaderControls: View {
 public struct BlockReaderContentView: View {
     private let controller: BlockReaderTranslationController
     private let typography: ReaderTypography
+    private let learningArticle: LearningArticleContext?
 
-    public init(controller: BlockReaderTranslationController, typography: ReaderTypography) {
+    public init(controller: BlockReaderTranslationController, typography: ReaderTypography,
+                learningArticle: LearningArticleContext? = nil) {
         self.controller = controller
         self.typography = typography
+        self.learningArticle = learningArticle
     }
 
     public var body: some View {
         if let document = controller.prepared {
             BlockReaderNodesView(nodes: document.nodes, translations: controller.translatedHTML,
-                                 mode: controller.mode, typography: typography)
+                                 mode: controller.mode, typography: typography,
+                                 document: document.document, learningArticle: learningArticle)
         }
     }
 }
@@ -65,6 +69,8 @@ private struct BlockReaderNodesView: View {
     let translations: [String: String]
     let mode: BlockReaderMode
     let typography: ReaderTypography
+    let document: ArticleDocument
+    let learningArticle: LearningArticleContext?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 19) {
@@ -77,7 +83,8 @@ private struct BlockReaderNodesView: View {
 
     // Type erasure is confined to recursive containers, not the text importer.
     private func children(_ nodes: [BlockReaderNode]) -> some View {
-        BlockReaderNodesView(nodes: nodes, translations: translations, mode: mode, typography: typography)
+        BlockReaderNodesView(nodes: nodes, translations: translations, mode: mode, typography: typography,
+                             document: document, learningArticle: learningArticle)
     }
 
     @ViewBuilder private func nodeView(_ node: BlockReaderNode) -> some View {
@@ -85,9 +92,7 @@ private struct BlockReaderNodesView: View {
         case .text(let id, let html, let heading):
             VStack(alignment: .leading, spacing: 7) {
                 if mode != .chinese || translations[id] == nil {
-                    HTMLContentText(html: html, selectable: false,
-                                    baseSize: heading.map { typography.headingSize($0) },
-                                    bold: heading != nil, typography: typography)
+                    sourceText(id: id, html: html, heading: heading)
                 }
                 if mode != .english, let translated = translations[id] {
                     HTMLContentText(html: translated, selectable: false,
@@ -121,5 +126,25 @@ private struct BlockReaderNodesView: View {
         var value = typography
         value.bodySize = max(10, value.bodySize - 2)
         return value
+    }
+
+    @ViewBuilder private func sourceText(id: String, html: String, heading: Int?) -> some View {
+        #if canImport(UIKit)
+        if let learningArticle {
+            LearningSourceText(html: html, blockID: id, document: document, article: learningArticle,
+                               typography: typography, heading: heading)
+                .id(document.documentHash + id)
+        } else {
+            originalSource(html: html, heading: heading)
+        }
+        #else
+        originalSource(html: html, heading: heading)
+        #endif
+    }
+
+    private func originalSource(html: String, heading: Int?) -> some View {
+        HTMLContentText(html: html, selectable: false,
+                        baseSize: heading.map { typography.headingSize($0) },
+                        bold: heading != nil, typography: typography)
     }
 }

@@ -1464,6 +1464,13 @@ private struct StarredTab: View {
     var body: some View {
         NavigationStack {
             ReaderPushingList(store: store)
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        NavigationLink { VocabularyView() } label: {
+                            Label("Vocabulary / 生词本", systemImage: "character.book.closed")
+                        }
+                    }
+                }
         }
     }
 }

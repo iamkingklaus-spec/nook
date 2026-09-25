@@ -847,7 +847,7 @@ enum HTMLTextFlow {
 /// navigation instead of re-imported for every block every time). Main-actor
 /// isolated because the importer and all reads run on the main actor.
 @MainActor
-private final class HTMLAttributedCache {
+final class HTMLAttributedCache {
     static let shared = HTMLAttributedCache()
     private let cache = NSCache<NSString, CacheBox<AttributedString>>()
     // Keyed per text fragment, so a long article alone can approach the old 600 and
@@ -3336,7 +3336,7 @@ public struct HTMLContentText: View {
         }
     }
 
-    private static func render(
+    static func render(
         _ html: String,
         baseSize: CGFloat,
         bold: Bool,
