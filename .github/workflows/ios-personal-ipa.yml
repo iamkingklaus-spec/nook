@@ -1,0 +1,94 @@
+name: Personal unsigned iPhoneOS IPA
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: personal-ipa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  personal-ipa:
+    name: iPhoneOS arm64 personal IPA
+    runs-on: macos-26
+    timeout-minutes: 60
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.5.app/Contents/Developer
+      GIT_TERMINAL_PROMPT: '0'
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            .github
+            Config
+            Nook.xcodeproj
+            Nook
+            NookKit
+            NookShare
+            NookShareSave
+            NookShareDiscover
+            NookWidget
+            NookiOS
+            tools
+
+      - name: Record device toolchain
+        run: |
+          mkdir -p "$RUNNER_TEMP/nook-device-logs"
+          {
+            sw_vers
+            xcodebuild -version
+            xcrun swift --version
+            xcrun --sdk iphoneos --show-sdk-version
+          } 2>&1 | tee "$RUNNER_TEMP/nook-device-logs/toolchain.log"
+
+      - name: Build unsigned iPhoneOS Release arm64
+        run: |
+          device_args=(
+            -project Nook.xcodeproj -scheme NookiOS -configuration Release
+            -sdk iphoneos -destination 'generic/platform=iOS'
+            -clonedSourcePackagesDirPath "$RUNNER_TEMP/nook-device-packages"
+            -derivedDataPath "$RUNNER_TEMP/nook-device-derived"
+            -skipPackagePluginValidation
+            ARCHS=arm64 ONLY_ACTIVE_ARCH=NO
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=
+            DEVELOPMENT_TEAM= NOOK_SIGNING_TEAM= PROVISIONING_PROFILE= PROVISIONING_PROFILE_SPECIFIER=
+          )
+          xcodebuild "${device_args[@]}" -showBuildSettings -json \
+            > "$RUNNER_TEMP/nook-device-logs/build-settings.json"
+          xcodebuild "${device_args[@]}" build \
+            2>&1 | tee "$RUNNER_TEMP/nook-device-logs/build-iphoneos-release.log"
+
+      - name: Package and verify personal IPA
+        run: |
+          python3 tools/package-personal-ipa.py \
+            --app "$RUNNER_TEMP/nook-device-derived/Build/Products/Release-iphoneos/NookiOS.app" \
+            --settings "$RUNNER_TEMP/nook-device-logs/build-settings.json" \
+            --entitlements Config/NookiOS-Personal.entitlements \
+            --output "$RUNNER_TEMP/nook-personal-ipa" \
+            2>&1 | tee "$RUNNER_TEMP/nook-device-logs/ipa-validation.log"
+
+      - name: Upload personal IPA
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: Nook-V1-Personal
+          path: ${{ runner.temp }}/nook-personal-ipa/
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 30
+
+      - name: Upload device build diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: nook-device-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/nook-device-logs/
+          if-no-files-found: warn
+          retention-days: 14
