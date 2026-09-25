@@ -43,12 +43,12 @@ struct BlockTranslationTests {
         #expect(before.document.blocks.map(\.id) == before.texts.map(\.blockID))
     }
 
-    @Test func repeatedParagraphsHaveDistinctStableIDs() {
-        let doc = BlockReaderDocument(input: input(["Same", "Same", "Other", "Same"]))
-        #expect(Set(doc.texts.map(\.blockID)).count == 4)
+    @Test func nonAdjacentRepeatedParagraphsHaveDistinctStableIDs() {
+        let doc = BlockReaderDocument(input: input(["Same", "Other", "Same", "Last", "Same"]))
+        #expect(Set(doc.texts.map(\.blockID)).count == 5)
         #expect(doc.texts[0].blockID.hasSuffix(":0"))
-        #expect(doc.texts[1].blockID.hasSuffix(":1"))
-        #expect(doc.texts[3].blockID.hasSuffix(":2"))
+        #expect(doc.texts[2].blockID.hasSuffix(":1"))
+        #expect(doc.texts[4].blockID.hasSuffix(":2"))
     }
 
     @Test func reorderedResponseUsesIDs() throws {

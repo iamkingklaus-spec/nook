@@ -31,18 +31,23 @@ struct BlockReaderDocument: Sendable {
     let document: ArticleDocument
     let nodes: [BlockReaderNode]
     let texts: [BlockTranslationText]
+    let preparationReasons: [ArticleNoiseFilter.Reason]
+    let eligibility: [String: TranslationEligibility]
 
     init(input: BlockReaderInput) {
-        let parsed = input.html.map { HTMLContentParser.parse($0, baseURL: input.url) }
-            ?? input.paragraphs.map { HTMLContentBlock.text(BlockTranslationText.escape($0)) }
-        self.init(blocks: parsed, source: input.source, baseURL: input.url)
+        let prepared = input.html.map { ReaderBlockPreparation.prepare($0, baseURL: input.url) }
+        let parsed = prepared?.blocks ?? input.paragraphs.map { HTMLContentBlock.text(BlockTranslationText.escape($0)) }
+        self.init(blocks: parsed, source: input.source, baseURL: input.url, reasons: prepared?.reasons ?? [])
     }
 
-    init(blocks: [HTMLContentBlock], source: ArticleContentSource, baseURL: URL?) {
+    init(blocks: [HTMLContentBlock], source: ArticleContentSource, baseURL: URL?, reasons: [ArticleNoiseFilter.Reason] = []) {
+        let normalized = BlockNormalizer.normalize(blocks)
         var builder = Builder(baseURL: baseURL)
-        nodes = builder.build(blocks)
+        nodes = builder.build(normalized.blocks)
         document = ArticleDocument(source: source, blocks: builder.blocks)
         texts = builder.texts
+        preparationReasons = reasons + normalized.reasons
+        eligibility = builder.eligibility
     }
 
     private struct Builder {
@@ -50,6 +55,7 @@ struct BlockReaderDocument: Sendable {
         var blocks: [ArticleBlock] = []
         var texts: [BlockTranslationText] = []
         var occurrences: [String: Int] = [:]
+        var eligibility: [String: TranslationEligibility] = [:]
 
         mutating func append(_ kind: ArticleBlock.Kind, _ content: String) -> ArticleBlock {
             let prototype = ArticleBlock(kind: kind, sourceContent: content, format: .html)
@@ -61,9 +67,11 @@ struct BlockReaderDocument: Sendable {
         }
 
         mutating func text(_ html: String, kind: ArticleBlock.Kind, heading: Int? = nil) -> BlockReaderNode {
-            let block = append(kind, html)
+            let allowed = TranslationEligibility.classify(html, allowMetadata: kind == .paragraph)
+            let block = append(allowed == .prose ? kind : .other, html)
             let text = BlockTranslationText(blockID: block.id, html: html)
-            if text.hasProse { texts.append(text) }
+            eligibility[block.id] = allowed == .prose && !text.hasProse ? .code : allowed
+            if allowed == .prose && text.hasProse { texts.append(text) }
             return .text(id: block.id, html: html, heading: heading)
         }
 

@@ -24,6 +24,14 @@ public final class BlockReaderTranslationController {
     public var isPrepared: Bool { prepared != nil }
     private(set) var prepared: BlockReaderDocument?
     private(set) var translatedHTML: [String: String] = [:]
+    private(set) var diagnostics = Diagnostics()
+    struct Diagnostics {
+        var candidateBlockCount = 0
+        var filteredNoiseCount = 0
+        var translatableBlockCount = 0
+        var cachedBlockCount = 0
+        var sentBlockCount = 0
+    }
     /// Read-only validated templates for paragraph presentation inside legacy
     /// composite blocks. Does not change cache identity or initiate translation.
     var presentationTranslations: [String: String] { translations }
@@ -53,6 +61,7 @@ public final class BlockReaderTranslationController {
         translations = [:]
         translatedHTML = [:]
         translatedCount = 0
+        diagnostics = Diagnostics()
         message = nil
         isLoading = input != nil
         guard let input else { return }
@@ -64,18 +73,30 @@ public final class BlockReaderTranslationController {
         prepared = document
         self.key = key
         apply(cached, document: document)
+        diagnostics = Diagnostics(candidateBlockCount: document.eligibility.count + document.preparationReasons.count,
+            filteredNoiseCount: document.preparationReasons.count, translatableBlockCount: document.texts.count,
+            cachedBlockCount: cached.count)
+        logDiagnostics()
         isLoading = false
     }
 
     public func translate() async {
+        guard !Task.isCancelled else { return }
         guard !isTranslating, !isLoading, !isComplete,
               let prepared, let key else { return }
         isTranslating = true
         message = nil
         let token = generation
         let model = model
-        work = Task { await run(document: prepared, key: key, model: model, token: token) }
-        await work?.value
+        let task = Task { await run(document: prepared, key: key, model: model, token: token) }
+        work = task
+        // The UI's explicit reset cancels this task, and cancellation of its
+        // caller must reach URLSession too rather than leave unstructured work.
+        await withTaskCancellationHandler {
+            await task.value
+        } onCancel: {
+            task.cancel()
+        }
     }
 
     public func cancel() {
@@ -103,6 +124,8 @@ public final class BlockReaderTranslationController {
             for batch in try BlockTranslationProtocol.batches(missing) {
                 try Task.checkCancellation()
                 guard generation == token else { return }
+                diagnostics.sentBlockCount += batch.count
+                logDiagnostics()
                 let response = try await transport.request(batch, model)
                 try Task.checkCancellation()
                 guard generation == token else { return }
@@ -117,6 +140,7 @@ public final class BlockReaderTranslationController {
         } catch is CancellationError {
             // Switching article/content cancels the old generation silently.
         } catch {
+            guard !Task.isCancelled else { return }
             guard generation == token else { return }
             if let failure = error as? GeminiTranslator.Failure {
                 switch failure.kind {
@@ -127,6 +151,12 @@ public final class BlockReaderTranslationController {
                 message = error.localizedDescription
             }
         }
+    }
+
+    private func logDiagnostics() {
+        #if DEBUG
+        print("[BlockReader] candidate=\(diagnostics.candidateBlockCount) filtered=\(diagnostics.filteredNoiseCount) translatable=\(diagnostics.translatableBlockCount) cached=\(diagnostics.cachedBlockCount) sent=\(diagnostics.sentBlockCount)")
+        #endif
     }
 
     private func apply(_ values: [String: String], document: BlockReaderDocument) {
