@@ -57,7 +57,8 @@ public struct BlockReaderContentView: View {
 
     public var body: some View {
         if let document = controller.prepared {
-            BlockReaderNodesView(nodes: document.nodes, translations: controller.translatedHTML,
+            BlockReaderNodesView(nodes: BlockReaderPresentation.nodes(document.nodes,
+                                 translations: controller.translatedHTML, templates: controller.presentationTranslations),
                                  mode: controller.mode, typography: typography,
                                  document: document.document, learningArticle: learningArticle)
         }
@@ -65,15 +66,14 @@ public struct BlockReaderContentView: View {
 }
 
 private struct BlockReaderNodesView: View {
-    let nodes: [BlockReaderNode]
-    let translations: [String: String]
+    let nodes: [BlockReaderPresentationNode]
     let mode: BlockReaderMode
     let typography: ReaderTypography
     let document: ArticleDocument
     let learningArticle: LearningArticleContext?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 19) {
+        VStack(alignment: .leading, spacing: BlockReaderPresentation.groupSpacing) {
             ForEach(Array(nodes.enumerated()), id: \.offset) { _, node in
                 nodeView(node)
             }
@@ -82,32 +82,33 @@ private struct BlockReaderNodesView: View {
     }
 
     // Type erasure is confined to recursive containers, not the text importer.
-    private func children(_ nodes: [BlockReaderNode]) -> some View {
-        BlockReaderNodesView(nodes: nodes, translations: translations, mode: mode, typography: typography,
+    private func children(_ nodes: [BlockReaderPresentationNode]) -> some View {
+        BlockReaderNodesView(nodes: nodes, mode: mode, typography: typography,
                              document: document, learningArticle: learningArticle)
     }
 
-    @ViewBuilder private func nodeView(_ node: BlockReaderNode) -> some View {
+    @ViewBuilder private func nodeView(_ node: BlockReaderPresentationNode) -> some View {
         switch node {
-        case .text(let id, let html, let heading):
-            VStack(alignment: .leading, spacing: 7) {
-                if mode != .chinese || translations[id] == nil {
-                    sourceText(id: id, html: html, heading: heading)
+        case .group(let group):
+            VStack(alignment: .leading, spacing: BlockReaderPresentation.pairSpacing) {
+                ForEach(group.texts(in: mode)) { text in
+                    if text.isTranslation {
+                        HTMLContentText(html: text.html, selectable: false,
+                                        baseSize: group.heading.map { max(10, typography.headingSize($0) - 2) },
+                                        bold: group.heading != nil, typography: chineseTypography, secondaryText: true)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        sourceText(id: group.blockID, html: text.html, heading: group.heading)
+                    }
                 }
-                if mode != .english, let translated = translations[id] {
-                    HTMLContentText(html: translated, selectable: false,
-                                    baseSize: heading.map { chineseTypography.headingSize($0) },
-                                    bold: heading != nil, typography: chineseTypography, secondaryText: true)
-                        .foregroundStyle(.secondary)
-                }
-            }
+            }.id(group.id)
         case .quote(let nodes):
             HStack(alignment: .top, spacing: 12) {
                 Rectangle().fill(.tertiary).frame(width: 3)
                 AnyView(children(nodes))
             }.fixedSize(horizontal: false, vertical: true)
         case .list(let ordered, let items):
-            VStack(alignment: .leading, spacing: 19) {
+            VStack(alignment: .leading, spacing: BlockReaderPresentation.groupSpacing) {
                 ForEach(Array(items.enumerated()), id: \.offset) { index, item in
                     HStack(alignment: .top, spacing: 8) {
                         Text(ordered ? "\(index + 1)." : "•")

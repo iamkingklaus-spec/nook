@@ -24,6 +24,9 @@ public final class BlockReaderTranslationController {
     public var isPrepared: Bool { prepared != nil }
     private(set) var prepared: BlockReaderDocument?
     private(set) var translatedHTML: [String: String] = [:]
+    /// Read-only validated templates for paragraph presentation inside legacy
+    /// composite blocks. Does not change cache identity or initiate translation.
+    var presentationTranslations: [String: String] { translations }
     @ObservationIgnored private var translations: [String: String] = [:]
     @ObservationIgnored private var key: BlockTranslationCacheKey?
     @ObservationIgnored private var model: GeminiTranslator.Model = .flashLite

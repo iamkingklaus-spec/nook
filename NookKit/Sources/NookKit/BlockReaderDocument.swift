@@ -147,6 +147,26 @@ struct BlockTranslationText: Sendable {
         return !InlineMarkupTranslator.stripMarkers(value).trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
+    /// Presentation-only identities reuse the exact tag-marker IDs that were
+    /// already sent and validated. Keep original block IDs and cached templates;
+    /// never infer paragraph correspondence from translated array/DOM order.
+    func presentationHTML(translation: String?) -> (source: String, translated: String?)? {
+        guard !markedHTML.localizedCaseInsensitiveContains("data-nook-presentation-id") else { return nil }
+        let entries = InlineMarkupTranslator.markify(markedHTML).entries.enumerated().map { index, entry in
+            guard !entry.opaque, ["p", "div", "section", "article"].contains(entry.name),
+                  let end = entry.raw.lastIndex(of: ">") else { return entry }
+            let raw = String(entry.raw[..<end]) + " data-nook-presentation-id=\"\(index)\">"
+            return InlineMarkupTranslator.Entry(raw: raw, name: entry.name, opaque: false)
+        }
+        func rebuild(_ value: String) -> String? {
+            guard var html = InlineMarkupTranslator.rebuild(value, entries: entries) else { return nil }
+            for (token, original) in protected { html = html.replacingOccurrences(of: token, with: original) }
+            return html
+        }
+        guard let source = rebuild(template) else { return nil }
+        return (source, translation.flatMap(rebuild))
+    }
+
     func restore(_ translation: String) throws -> String {
         guard !translation.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw BlockTranslationError.empty(blockID)
