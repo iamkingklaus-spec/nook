@@ -1,4 +1,21 @@
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#else
+import AppKit
+#endif
+
+enum LearningTextLayout {
+    static func applyingLineSpacing(_ source: NSAttributedString, spacing: CGFloat) -> NSAttributedString {
+        let result = NSMutableAttributedString(attributedString: source)
+        source.enumerateAttribute(.paragraphStyle, in: NSRange(location: 0, length: source.length)) { value, range, _ in
+            let style = (value as? NSParagraphStyle)?.mutableCopy() as? NSMutableParagraphStyle ?? NSMutableParagraphStyle()
+            style.lineSpacing = spacing
+            result.addAttribute(.paragraphStyle, value: style, range: range)
+        }
+        return result
+    }
+}
 
 public struct VocabularyView: View {
     @State private var store = ReaderLearningStore.shared
@@ -16,7 +33,8 @@ public struct VocabularyView: View {
                     Text(entry.meaning)
                     Text(entry.originalSentence).font(.subheadline).foregroundStyle(.secondary)
                     Link("\(entry.publisher) · \(entry.articleTitle)", destination: entry.articleURL).font(.caption)
-                    Button("删除", role: .destructive) { remove(entry.id) }.font(.caption)
+                    Button("删除", role: .destructive) { remove(entry.id) }
+                        .font(.caption).buttonStyle(.borderless)
                 }.padding(.vertical, 4)
             }
             .onDelete { indices in
@@ -164,7 +182,7 @@ private struct LearningSelectableText: UIViewRepresentable {
             ?? HTMLContentText.render(html, baseSize: size, bold: heading != nil, typography: typography)
         if let attributed {
             HTMLAttributedCache.shared.store(attributed, forKey: key)
-            view.attributedText = NSAttributedString(attributed)
+            view.attributedText = LearningTextLayout.applyingLineSpacing(NSAttributedString(attributed), spacing: typography.lineSpacing)
         } else {
             view.text = HTMLContentParser.decodeEntities(html.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression))
             view.font = .systemFont(ofSize: size); view.textColor = .label

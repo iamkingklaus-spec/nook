@@ -1,5 +1,10 @@
 import Foundation
 import Testing
+#if canImport(AppKit)
+import AppKit
+#else
+import UIKit
+#endif
 @testable import NookKit
 
 private enum LearningFixture {
@@ -25,6 +30,22 @@ private enum LearningFixture {
 
 @Suite("Reader learning selection and protocol")
 struct LearningSelectionTests {
+    @Test func selectableSourceKeepsReaderLineSpacingWithoutMutatingCache() throws {
+        let style = NSMutableParagraphStyle()
+        style.lineSpacing = 0; style.paragraphSpacing = 7
+        let source = NSAttributedString(string: "A linked bank", attributes: [.paragraphStyle: style])
+        let rendered = LearningTextLayout.applyingLineSpacing(source, spacing: 6)
+        let changed = try #require(rendered.attribute(.paragraphStyle, at: 0, effectiveRange: nil) as? NSParagraphStyle)
+        #expect(changed.lineSpacing == 6 && changed.paragraphSpacing == 7)
+        #expect(style.lineSpacing == 0)
+        #expect(rendered.string == source.string)
+    }
+    @Test func selectableSourcePreservesLinkURLs() {
+        let url = URL(string: "https://example.com/original")!
+        let source = NSAttributedString(string: "bank", attributes: [.link: url])
+        let rendered = LearningTextLayout.applyingLineSpacing(source, spacing: 4)
+        #expect(rendered.attribute(.link, at: 0, effectiveRange: nil) as? URL == url)
+    }
     @Test func wordUsesStableSourceBlockIdentity() throws {
         let selection = try LearningFixture.selection()
         #expect(selection.isWord)
