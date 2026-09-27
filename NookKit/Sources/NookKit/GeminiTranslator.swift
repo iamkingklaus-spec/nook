@@ -109,10 +109,12 @@ public enum GeminiTranslator {
         system: String,
         prompt: String,
         model: Model = .flashLite,
-        structuredBlockResponse: Bool = false
+        structuredBlockResponse: Bool = false,
+        structuredReaderCleanup: Bool = false
     ) async throws -> String {
         let data = try await postForData(model: model, system: system, prompt: prompt,
-                                         structuredBlockResponse: structuredBlockResponse)
+                                         structuredBlockResponse: structuredBlockResponse,
+                                         structuredReaderCleanup: structuredReaderCleanup)
         let result = parse(data)
         if let blockReason = result.blockReason {
             throw Failure(.blocked, message: "blocked: \(blockReason)")
@@ -164,14 +166,16 @@ public enum GeminiTranslator {
     }
 
     private static func postForData(model: Model, system: String, prompt: String,
-                                    structuredBlockResponse: Bool = false) async throws -> Data {
+                                    structuredBlockResponse: Bool = false,
+                                    structuredReaderCleanup: Bool = false) async throws -> Data {
         let request = try makeRequest(
             path: "\(model.rawValue):generateContent",
             system: system,
             prompt: prompt,
             model: model,
             timeout: 60,
-            structuredBlockResponse: structuredBlockResponse
+            structuredBlockResponse: structuredBlockResponse,
+            structuredReaderCleanup: structuredReaderCleanup
         )
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
@@ -198,7 +202,8 @@ public enum GeminiTranslator {
         prompt: String,
         model: Model,
         timeout: TimeInterval,
-        structuredBlockResponse: Bool = false
+        structuredBlockResponse: Bool = false,
+        structuredReaderCleanup: Bool = false
     ) throws -> URLRequest {
         guard let key = GeminiCredential.apiKey else {
             throw Failure(.missingCredential, message: "Missing Gemini API key")
@@ -216,9 +221,10 @@ public enum GeminiTranslator {
         var generationConfig: [String: Any] = [
             "thinkingConfig": ["thinkingLevel": model.thinkingLevel],
         ]
-        if structuredBlockResponse {
+        if structuredBlockResponse || structuredReaderCleanup {
             generationConfig["responseMimeType"] = "application/json"
-            generationConfig["responseJsonSchema"] = BlockTranslationProtocol.responseSchema
+            generationConfig["responseJsonSchema"] = structuredReaderCleanup
+                ? ReaderAICleanup.schema : BlockTranslationProtocol.responseSchema
         }
         var payload: [String: Any] = [
             "contents": [["role": "user", "parts": [["text": prompt]]]],

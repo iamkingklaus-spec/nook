@@ -614,7 +614,7 @@ struct ReaderDetailView: View {
             }
         }
         .task(id: blockReaderInput(for: article)) {
-            await blockTranslator.load(blockReaderInput(for: article))
+            await blockTranslator.open(blockReaderInput(for: article))
         }
         .onDisappear { blockTranslator.reset() }
         .task(id: article.id) {

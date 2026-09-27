@@ -23,7 +23,7 @@ public struct BlockReaderControls: View {
                     ProgressView("正在准备正文…").font(.caption)
                 } else if !controller.isComplete {
                     HStack {
-                        Button(controller.translatedCount == 0 ? "翻译为简体中文" : "继续翻译") {
+                        Button(controller.cleanupPending ? "重试清洗与翻译" : (controller.translatedCount == 0 ? "翻译为简体中文" : "继续翻译")) {
                             Task { await controller.translate() }
                         }
                         .disabled(controller.isTranslating || !controller.isPrepared)
@@ -32,7 +32,9 @@ public struct BlockReaderControls: View {
                         Text("\(controller.translatedCount)/\(controller.totalCount)").monospacedDigit()
                     }
                     .font(.subheadline)
-                    Text("Gemini · 仅点击翻译时发送正文；未完成的段落显示原文。")
+                    Text(controller.automaticPreparation
+                         ? "Gemini · 打开文章时自动清洗并翻译；缓存优先，未完成段落保留原文。"
+                         : "Gemini · 仅点击翻译时发送正文；未完成的段落显示原文。")
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 if let message = controller.message {
@@ -56,7 +58,10 @@ public struct BlockReaderContentView: View {
     }
 
     public var body: some View {
-        if let document = controller.prepared {
+        if controller.isCleaning && controller.mode != .english {
+            ProgressView("Gemini 正在清洗正文…切换 EN 可先阅读原文。")
+                .font(.subheadline).padding(.vertical, 20)
+        } else if let document = controller.prepared {
             BlockReaderNodesView(nodes: BlockReaderPresentation.nodes(document.nodes,
                                  translations: controller.translatedHTML, templates: controller.presentationTranslations),
                                  mode: controller.mode, typography: typography,

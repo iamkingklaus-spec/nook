@@ -35,6 +35,22 @@ struct BlockReaderDocument: Sendable {
     let preparationReasons: [ArticleNoiseFilter.Reason]
     let eligibility: [String: TranslationEligibility]
 
+    /// Preserve source identity for learning, cache matching and Original Website.
+    /// AI cleanup only masks display/translation candidates; it never rewrites it.
+    func presentationCopy(nodes: [BlockReaderNode], texts: [BlockTranslationText]) -> Self {
+        Self(document: document, nodes: nodes, texts: texts,
+             preparationReasons: preparationReasons, eligibility: eligibility)
+    }
+
+    private init(document: ArticleDocument, nodes: [BlockReaderNode], texts: [BlockTranslationText],
+                 preparationReasons: [ArticleNoiseFilter.Reason], eligibility: [String: TranslationEligibility]) {
+        self.document = document
+        self.nodes = nodes
+        self.texts = texts
+        self.preparationReasons = preparationReasons
+        self.eligibility = eligibility
+    }
+
     init(input: BlockReaderInput) {
         let prepared = input.html.map { ReaderBlockPreparation.prepare($0, baseURL: input.url) }
         let parsed = prepared?.blocks ?? input.paragraphs.map { HTMLContentBlock.text(BlockTranslationText.escape($0)) }
