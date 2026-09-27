@@ -109,7 +109,7 @@ struct PublisherReaderRegressionTests {
         let doc = BlockReaderDocument(blocks: [.image(image)], source: .extractedReaderContent, baseURL: nil)
         #expect(doc.texts.count == 1)
         #expect(doc.texts[0].template == "A scene.")
-        #expect(doc.eligibility.values.contains(.photoCredit))
+        #expect(doc.nodes.contains { if case .photoCredit = $0 { return true }; return false })
     }
 
     @Test func legacyDiagnosticsIdentifyExactMarkerInvariant() {

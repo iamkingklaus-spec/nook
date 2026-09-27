@@ -120,6 +120,8 @@ private struct BlockReaderNodesView: View {
             }
         case .unchanged(let block):
             HTMLBlockList(blocks: [block], selectable: false, typography: typography)
+        case .photoCredit(let credit):
+            Text(credit.text).font(.caption).foregroundStyle(.secondary)
         }
     }
 

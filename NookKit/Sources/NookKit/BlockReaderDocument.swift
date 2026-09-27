@@ -25,6 +25,7 @@ indirect enum BlockReaderNode: Sendable {
     case quote([BlockReaderNode])
     case list(ordered: Bool, items: [[BlockReaderNode]])
     case unchanged(HTMLContentBlock)
+    case photoCredit(ReaderPhotoCredit)
 }
 
 struct BlockReaderDocument: Sendable {
@@ -66,8 +67,11 @@ struct BlockReaderDocument: Sendable {
             return block
         }
 
-        mutating func text(_ html: String, kind: ArticleBlock.Kind, heading: Int? = nil) -> BlockReaderNode {
+        mutating func text(_ html: String, kind: ArticleBlock.Kind, heading: Int? = nil, imageURL: URL? = nil) -> BlockReaderNode {
             let allowed = TranslationEligibility.classify(html, allowMetadata: kind == .paragraph)
+            if allowed == .photoCredit {
+                return .photoCredit(ReaderPhotoCredit(text: ReaderHTMLSignals.plain(html), imageURL: imageURL))
+            }
             let block = append(allowed == .prose ? kind : .other, html)
             let text = BlockTranslationText(blockID: block.id, html: html, kind: kind)
             eligibility[block.id] = allowed == .prose && !text.hasProse ? .code : allowed
@@ -76,20 +80,26 @@ struct BlockReaderDocument: Sendable {
         }
 
         mutating func build(_ originals: [HTMLContentBlock], kind: ArticleBlock.Kind = .paragraph) -> [BlockReaderNode] {
-            originals.flatMap { block -> [BlockReaderNode] in
+            var precedingImage: URL?
+            return originals.flatMap { block -> [BlockReaderNode] in
                 switch block {
                 case .text(let html):
-                    return [text(html, kind: kind)]
+                    let associatedImage = precedingImage
+                    if TranslationEligibility.classify(html) != .photoCredit { precedingImage = nil }
+                    return [text(html, kind: kind, imageURL: associatedImage)]
                 case .heading(let level, let html):
+                    precedingImage = nil
                     // Heading level is structure, so include it in the document identity.
                     _ = append(.other, "heading:\(level)")
                     return [text(html, kind: .heading, heading: level)]
                 case .blockquote(let children):
+                    precedingImage = nil
                     _ = append(.other, "quote:open")
                     let nodes = build(children, kind: .quote)
                     _ = append(.other, "quote:close")
                     return [.quote(nodes)]
                 case .list(let ordered, let items):
+                    precedingImage = nil
                     _ = append(.other, "list:\(ordered):open")
                     let nodes = items.map { item in
                         _ = append(.other, "item:open")
@@ -100,20 +110,23 @@ struct BlockReaderDocument: Sendable {
                     _ = append(.other, "list:close")
                     return [.list(ordered: ordered, items: nodes)]
                 case .image(let media):
-                    _ = append(.image, ArticleMarkdown.render([block], baseURL: baseURL))
+                    precedingImage = media.url
+                    let parts = media.caption.map(ReaderPhotoCredit.splitCaption)
+                    let identityImage = HTMLMedia(url: media.url, title: media.title, caption: parts?.caption,
+                        posterURL: media.posterURL, aspectRatio: media.aspectRatio, declaredWidth: media.declaredWidth)
+                    _ = append(.image, ArticleMarkdown.render([.image(identityImage)], baseURL: baseURL))
                     guard let caption = media.caption, !caption.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
                         return [.unchanged(block)]
                     }
                     let picture = HTMLMedia(url: media.url, title: media.title, caption: nil,
                                             posterURL: media.posterURL, aspectRatio: media.aspectRatio,
                                             declaredWidth: media.declaredWidth)
-                    if let credit = caption.range(of: #"\s+(?:Photograph|Photo credit|Image credit):\s*"#, options: .regularExpression) {
-                        return [.unchanged(.image(picture)),
-                            text(BlockTranslationText.escape(String(caption[..<credit.lowerBound])), kind: .paragraph),
-                            text(BlockTranslationText.escape(String(caption[credit.lowerBound...]).trimmingCharacters(in: .whitespacesAndNewlines)), kind: .paragraph)]
-                    }
-                    return [.unchanged(.image(picture)), text(BlockTranslationText.escape(caption), kind: .paragraph)]
+                    var nodes: [BlockReaderNode] = [.unchanged(.image(picture))]
+                    if let caption = parts?.caption, !caption.isEmpty { nodes.append(text(BlockTranslationText.escape(caption), kind: .paragraph)) }
+                    if let credit = parts?.credit { nodes.append(.photoCredit(.init(text: credit, imageURL: media.url))) }
+                    return nodes
                 default:
+                    precedingImage = nil
                     // Code, tables and all media retain their original native renderer.
                     // Their contents participate in identity but never go to Gemini.
                     _ = append(.other, ArticleMarkdown.render([block], baseURL: baseURL))

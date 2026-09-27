@@ -100,7 +100,7 @@ enum ArticleTailBoundary {
         return nil
     }
 
-    private static func linksOnly(_ html: String) -> Bool {
+    static func linksOnly(_ html: String) -> Bool {
         let links = ReaderHTMLSignals.elements(html).filter { $0.name == "a" }
         guard !links.isEmpty else { return false }
         var remainder = html

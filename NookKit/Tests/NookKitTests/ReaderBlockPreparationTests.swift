@@ -62,8 +62,8 @@ struct ReaderBlockPreparationTests {
     @Test func photoCreditKeptButNotTranslated() {
         let doc = BlockReaderDocument(input: cleaningInput("<p>News.</p><p>Photograph: André Penner/AP</p>"))
         #expect(prose(doc) == ["News."])
-        #expect(doc.document.blocks.contains { $0.sourceContent.contains("André Penner/AP") })
-        #expect(doc.eligibility.values.contains(.photoCredit))
+        #expect(!doc.document.blocks.contains { $0.sourceContent.contains("André Penner/AP") })
+        #expect(doc.nodes.contains { if case .photoCredit = $0 { return true }; return false })
     }
 
     @Test func semanticAuthorPublisherAndPublishedTimeKept() {

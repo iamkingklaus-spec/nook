@@ -64,7 +64,6 @@ enum BlockNormalizer {
                    cleaned.range(of: #"<(?:code|pre)\b"#, options: [.regularExpression, .caseInsensitive]) == nil,
                    let reason = ArticleNoiseFilter.standaloneReason(plain) { reasons.append(reason); continue }
                 block = .text(cleaned)
-                if filterPhrases, output.last == block { reasons.append(.duplicate); continue }
                 if case .image(let media) = output.last, let caption = media.caption,
                    ReaderHTMLSignals.plain(caption) == plain { reasons.append(.duplicateCaption); continue }
             case .heading(let level, let html): block = .heading(level: level, html: whitespace(html))
@@ -77,9 +76,33 @@ enum BlockNormalizer {
                 block = .list(ordered: ordered, items: results.map(\.blocks))
             default: break // Code, media and table contents are never rewritten.
             }
+            if filterPhrases, let previous = output.last, let key = duplicateKey(block), key == duplicateKey(previous) {
+                if precision(block) > precision(previous) { output[output.count - 1] = block }
+                reasons.append(.duplicate)
+                continue
+            }
             output.append(block)
         }
         return Result(blocks: output, reasons: reasons)
+    }
+
+    private struct DuplicateKey: Equatable { let text: String; let links: [String] }
+    private static func duplicateKey(_ block: HTMLContentBlock) -> DuplicateKey? {
+        let html: String
+        switch block { case .text(let value), .heading(_, let value): html = value; default: return nil }
+        guard html.range(of: #"<(?:code|pre|img|table)\b"#, options: [.regularExpression, .caseInsensitive]) == nil else { return nil }
+        let plain = ReaderHTMLSignals.plain(html).precomposedStringWithCanonicalMapping
+        guard !plain.isEmpty else { return nil }
+        return DuplicateKey(text: plain, links: ReaderHTMLSignals.elements(html).filter { $0.name == "a" }.compactMap { $0.attributes["href"] })
+    }
+    private static func precision(_ block: HTMLContentBlock) -> Int {
+        switch block {
+        case .heading: return 100
+        case .text(let html):
+            let elements = ReaderHTMLSignals.elements(html)
+            return (elements.contains { $0.name == "p" } ? 20 : 0) - elements.filter { ["div", "span", "section"].contains($0.name) }.count
+        default: return 0
+        }
     }
 
     static func whitespace(_ html: String) -> String {
@@ -103,7 +126,7 @@ enum ReaderBlockPreparation {
     struct Result { let blocks: [HTMLContentBlock]; let reasons: [ArticleNoiseFilter.Reason] }
 
     static func prepare(_ html: String, baseURL: URL?) -> Result {
-        let filtered = ArticleNoiseFilter.filter(html)
+        let filtered = ArticleNoiseFilter.filter(html, sourceURL: baseURL)
         // Isolate explicitly identified metadata before the existing parser can
         // flatten it into neighbouring prose. This does not alter the RSS source.
         let normalizedHTML = ReaderSemanticHTML.normalize(filtered.html)
@@ -138,7 +161,8 @@ enum ReaderBlockPreparation {
             cursor = NSMaxRange(element.range)
         }
         blocks += HTMLContentParser.parse(ns.substring(from: cursor), baseURL: baseURL)
-        let tail = ArticleTailBoundary.clean(blocks, sourceURL: baseURL)
-        return Result(blocks: tail.blocks, reasons: filtered.reasons + tail.reasons)
+        let auxiliary = ReaderAuxiliaryMetadata.clean(blocks, sourceURL: baseURL)
+        let tail = ArticleTailBoundary.clean(auxiliary.blocks, sourceURL: baseURL)
+        return Result(blocks: tail.blocks, reasons: filtered.reasons + auxiliary.reasons + tail.reasons)
     }
 }

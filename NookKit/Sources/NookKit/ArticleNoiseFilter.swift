@@ -7,6 +7,7 @@ enum ArticleNoiseFilter {
         case semanticAdvertisement, navigation, newsletterPromotion, subscriptionPromotion
         case relatedContent, socialTools, appPromotion, privacyPrompt, footer
         case contactModule, tailBoundary
+        case liveEntryMetadata
         case empty, duplicate, duplicateCaption
     }
     struct Result: Sendable {
@@ -14,7 +15,7 @@ enum ArticleNoiseFilter {
         let reasons: [Reason]
     }
 
-    static func filter(_ html: String) -> Result {
+    static func filter(_ html: String, sourceURL: URL? = nil) -> Result {
         let elements = ReaderHTMLSignals.elements(html)
         let ns = html as NSString
         var removed: [NSRange] = []
@@ -27,6 +28,25 @@ enum ArticleNoiseFilter {
             // Legibility deliberately strips class/id. A topic-footer label plus
             // a link list is still explicit structure; article paragraphs veto it.
             let descendants = elements.filter { $0.range != element.range && NSLocationInRange($0.range.location, element.range) }
+            let inlineSentence = elements.contains { ancestor in
+                ancestor.name == "p" && ancestor.range != element.range &&
+                    NSLocationInRange(element.range.location, ancestor.range) &&
+                    ReaderHTMLSignals.plain(ns.substring(with: ancestor.range)) != text
+            }
+            if !inlineSentence, isRelatedCard(element, descendants: descendants, source: ns) {
+                removed.append(element.range); reasons.append(.relatedContent); continue
+            }
+            if LiveEntryMetadata.isGuardianLive(sourceURL),
+               LiveEntryMetadata.isChrome(element, descendants: descendants, source: ns) {
+                removed.append(element.range); reasons.append(.liveEntryMetadata); continue
+            }
+            let tokens = ReaderHTMLSignals.tokens(element.attributes)
+            let liveTokens: Set<String> = ["live-entry-meta", "live-entry-metadata", "entry-meta", "block-time",
+                "block-time-published", "block-relative-time", "liveblog-timestamp", "live-entry-author"]
+            if text.count < 300, !tokens.isDisjoint(with: liveTokens) ||
+                liveTokens.contains(element.attributes["data-component"] ?? "") {
+                removed.append(element.range); reasons.append(.liveEntryMetadata); continue
+            }
             // Explicit semantic modules can appear before, between, or after
             // article paragraphs. An aside alone is not sufficient evidence.
             if ["aside", "footer"].contains(element.name),
@@ -65,6 +85,33 @@ enum ArticleNoiseFilter {
         return Result(html: result, reasons: reasons)
     }
 
+    /// Whole linked card + a separate CTA leaf; never remove a prose paragraph
+    /// merely because it contains the words "read more".
+    private static func isRelatedCard(_ element: ReaderHTMLSignals.Element,
+                                      descendants: [ReaderHTMLSignals.Element], source: NSString) -> Bool {
+        guard ["a", "p", "div", "aside", "section"].contains(element.name) else { return false }
+        let ctas = descendants.filter {
+            ["span", "a", "button", "div"].contains($0.name) &&
+                ReaderHTMLSignals.plain(source.substring(with: $0.range)).lowercased() == "read more"
+        }
+        let links = ([element] + descendants).filter { $0.name == "a" && $0.attributes["href"] != nil }
+        guard !ctas.isEmpty, Set(links.compactMap { $0.attributes["href"] }).count == 1,
+              links.contains(where: { link in
+                  let title = ReaderHTMLSignals.plain(source.substring(with: link.range))
+                  return title.count < 500 && title.lowercased() != "read more" && !title.isEmpty
+              }) else { return false }
+        let ranges = (links + ctas).map(\.range)
+        let outer = Set(ranges).filter { range in
+            !ranges.contains { $0 != range && NSLocationInRange(range.location, $0) }
+        }
+        var remainder = source.substring(with: element.range)
+        for range in outer.sorted(by: { $0.location > $1.location }) {
+            remainder = (remainder as NSString).replacingCharacters(in:
+                NSRange(location: range.location - element.range.location, length: range.length), with: "")
+        }
+        return ReaderHTMLSignals.plain(remainder).isEmpty
+    }
+
     static func standaloneReason(_ text: String) -> Reason? {
         switch text.lowercased().trimmingCharacters(in: .whitespacesAndNewlines) {
         case "advertisement", "advertisement.", "sponsored content", "promoted content", "sponsor message": .semanticAdvertisement
@@ -80,6 +127,7 @@ enum ArticleNoiseFilter {
 
     private static func reason(tag: String, attributes: [String: String], text: String, allowPhrase: Bool) -> Reason? {
         let role = attributes["role"]?.lowercased()
+        if ["rich-link", "related-article", "related-content", "recommended-content"].contains(attributes["data-component"] ?? "") { return .relatedContent }
         if tag == "a", let href = attributes["href"] {
             if text == "Share", href.hasPrefix("mailto:") { return .socialTools }
             if text == "Reuse this content", href.hasPrefix("https://syndication.theguardian.com/") { return .socialTools }
@@ -95,6 +143,7 @@ enum ArticleNoiseFilter {
             (["subscription-prompt", "subscribe-prompt", "support-prompt", "login-prompt", "register-prompt"], .subscriptionPromotion),
             (["related-stories", "related-content", "recommended-stories", "most-viewed", "most-popular", "more-from"], .relatedContent),
             (["related-links", "related-internet-links", "recommended-content", "recommendations-module"], .relatedContent),
+            (["related-card", "related-article", "inline-related", "element-rich-link", "element--rich-link"], .relatedContent),
             (["social-share", "share-tools", "share-buttons", "follow-us"], .socialTools),
             (["app-promotion", "download-app"], .appPromotion),
             (["cookie-banner", "cookie-consent", "privacy-prompt"], .privacyPrompt),

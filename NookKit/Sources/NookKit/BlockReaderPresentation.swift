@@ -29,6 +29,7 @@ indirect enum BlockReaderPresentationNode {
     case quote([BlockReaderPresentationNode])
     case list(ordered: Bool, items: [[BlockReaderPresentationNode]])
     case unchanged(HTMLContentBlock)
+    case photoCredit(ReaderPhotoCredit)
 }
 
 enum BlockReaderPresentation {
@@ -62,6 +63,7 @@ enum BlockReaderPresentation {
             case .list(let ordered, let items):
                 return [.list(ordered: ordered, items: items.map { nodes($0, translations: translations, templates: templates) })]
             case .unchanged(let block): return [.unchanged(block)]
+            case .photoCredit(let credit): return [.photoCredit(credit)]
             }
         }
     }

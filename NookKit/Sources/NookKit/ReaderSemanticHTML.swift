@@ -17,7 +17,7 @@ enum ReaderSemanticHTML {
     }
     private struct Open { let name: String; let html: String; var children: [Node] }
     private static let wrappers: Set<String> = ["article", "section", "div", "aside", "main", "header", "footer"]
-    private static let blocks: Set<String> = wrappers.union(["p", "h1", "h2", "h3", "h4", "h5", "h6", "ul", "ol", "li", "blockquote", "figure", "pre", "table"])
+    private static let blocks: Set<String> = wrappers.union(["p", "h1", "h2", "h3", "h4", "h5", "h6", "ul", "ol", "li", "blockquote", "figure", "pre", "table", "img", "video", "audio", "iframe", "hr"])
     private static let voids: Set<String> = ["area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"]
 
     static func normalize(_ html: String) -> String {

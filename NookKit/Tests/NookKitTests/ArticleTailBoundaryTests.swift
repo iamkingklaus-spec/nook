@@ -102,7 +102,7 @@ struct ArticleTailBoundaryTests {
         let doc = tailDocument("<p>News.</p><p>Photograph: A Person/AP</p><p>Updated 19 minutes ago</p><p>Updated 19 minutes ago</p>")
         #expect(contents(doc).filter { $0 == "Updated 19 minutes ago" }.count == 1)
         #expect(doc.texts.count == 1)
-        #expect(doc.eligibility.values.contains(.photoCredit))
+        #expect(doc.nodes.contains { if case .photoCredit = $0 { return true }; return false })
     }
 
     @Test func cleanBodyIdentityAndBilingualPairOrderArePreserved() throws {

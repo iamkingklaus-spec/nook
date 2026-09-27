@@ -36,6 +36,7 @@ private func output(_ nodes: [BlockReaderPresentationNode], mode: BlockReaderMod
         case .unchanged(.codeBlock): return ["code"]
         case .unchanged(.table): return ["table"]
         case .unchanged: return ["unchanged"]
+        case .photoCredit(let credit): return [credit.text]
         }
     }
 }
