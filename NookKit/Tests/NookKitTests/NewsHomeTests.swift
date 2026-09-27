@@ -108,6 +108,46 @@ struct NewsClassificationTests {
 
 @Suite("News home projection")
 struct NewsHomeProjectionTests {
+    @Test func heroCopiesFromOtherFeedsAreExcludedByURL() {
+        let hero = story("hero", image: true)
+        var copy = story("copy", feed: "other")
+        copy.url = hero.url
+        let result = NewsHomeProjection(articles: [hero, copy, story("another")], feeds: [], now: edition)
+        #expect(result.hero?.id == hero.id)
+        #expect(result.stories.count == 2)
+        #expect(result.totalCount == 2)
+        #expect(!result.primaryStories.contains { $0.id == copy.id })
+    }
+
+    @Test func heroURLFragmentDoesNotCreateAnotherStory() {
+        let hero = story("hero", image: true)
+        var copy = story("copy"); copy.url = URL(string: hero.url.absoluteString + "#section")!
+        let result = NewsHomeProjection(articles: [hero, copy], feeds: [], now: edition)
+        #expect(result.stories.count == 1)
+        #expect(result.totalCount == 1)
+        #expect(copy.id != hero.id) // Input records remain unchanged.
+    }
+
+    @Test func identicalTitlesWithDifferentURLsRemainDistinct() {
+        let hero = story("hero", image: true)
+        var other = story("other"); other.title = hero.title
+        let result = NewsHomeProjection(articles: [hero, other], feeds: [], now: edition)
+        #expect(result.stories.count == 2)
+    }
+
+    @Test func oneStoryOnlyRendersHero() {
+        let result = NewsHomeProjection(articles: [story("single")], feeds: [], now: edition)
+        #expect(result.hero != nil)
+        #expect(result.primaryStories.isEmpty && result.secondaryStories.isEmpty)
+    }
+
+    @Test func heroExclusionAppliesToCategoryAndPagination() {
+        let hero = story("hero", category: .world, image: true)
+        var copy = story("copy", category: .world); copy.url = hero.url
+        let result = NewsHomeProjection(articles: [hero, copy], feeds: [], section: .category(.world), now: edition, limit: 1)
+        #expect(result.totalCount == result.stories.count)
+    }
+
     @Test func recentBeforeOldUnreadImage() {
         let result = NewsHomeProjection(articles: [story("old", hoursAgo: 25, image: true),
             story("new", hoursAgo: 1, read: true)], feeds: [], now: edition)

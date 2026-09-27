@@ -58,9 +58,6 @@ public struct NewsHomeProjection: Sendable {
             if lhs.article.publishedAt != rhs.article.publishedAt { return lhs.article.publishedAt > rhs.article.publishedAt }
             return lhs.id < rhs.id
         }
-        totalCount = candidates.count
-        // Bound layout work. More pages use the same edition date/read snapshot.
-        candidates = Array(candidates.prefix(max(1, limit) + 12))
         var ordered: [NewsHomeStory] = []
         if let first = candidates.first {
             let index = candidates.prefix(6).firstIndex {
@@ -68,7 +65,13 @@ public struct NewsHomeProjection: Sendable {
                     && isRead($0) == isRead(first) && $0.imageURL != nil
             } ?? 0
             ordered.append(candidates.remove(at: index))
+            let heroIdentity = StableArticleIdentity.key(ordered[0].article)
+            candidates.removeAll { StableArticleIdentity.key($0.article) == heroIdentity }
         }
+        totalCount = candidates.count + ordered.count
+        // Count after Hero exclusion so duplicate copies cannot create an endless
+        // More stories action. Only the projection changes, never library data.
+        candidates = Array(candidates.prefix(max(1, limit) + 12))
         while !candidates.isEmpty && ordered.count < max(1, limit) {
             var index = 0
             if section == .forYou, let previous = ordered.last, let first = candidates.first {
