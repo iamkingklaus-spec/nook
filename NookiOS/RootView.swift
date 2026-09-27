@@ -1445,12 +1445,66 @@ private struct StarredTab: View {
         NavigationStack {
             ReaderPushingList(store: store)
                 .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        NavigationLink { ReadingHistoryPage(store: store) } label: {
+                            Label("History / 阅读历史", systemImage: "clock.arrow.circlepath")
+                        }
+                    }
                     ToolbarItem(placement: .topBarTrailing) {
                         NavigationLink { VocabularyView() } label: {
                             Label("Vocabulary / 生词本", systemImage: "character.book.closed")
                         }
                     }
                 }
+        }
+    }
+}
+
+private struct ReadingHistoryPage: View {
+    let store: ReaderStore
+    @State private var history = ReadingHistoryStore.shared
+    @State private var pushed: Article?
+    @State private var confirmingClear = false
+    @Environment(TabBarChrome.self) private var tabChrome
+
+    var body: some View {
+        List {
+            if let error = history.errorMessage { Text(error).foregroundStyle(.secondary) }
+            ForEach(history.entries) { entry in
+                Button {
+                    let article = history.article(for: entry, in: store.articles)
+                    store.selectedArticleID = article.id
+                    pushed = article
+                } label: {
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text(entry.title).foregroundStyle(.primary)
+                        Text(entry.source).font(.caption).foregroundStyle(.secondary)
+                        Text(entry.lastOpenedAt, style: .relative).font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+                .accessibilityHint("重新打开文章")
+                .swipeActions { Button("删除", role: .destructive) { history.delete(entry.id) } }
+            }
+        }
+        .navigationTitle("History / 阅读历史")
+        .overlay {
+            if history.entries.isEmpty && history.errorMessage == nil {
+                ContentUnavailableView("暂无阅读历史", systemImage: "clock", description: Text("打开文章后会自动记录在此设备。"))
+            }
+        }
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("清空历史", role: .destructive) { confirmingClear = true }
+                    .disabled(history.entries.isEmpty && history.errorMessage == nil)
+            }
+        }
+        .confirmationDialog("清空此设备的阅读历史？", isPresented: $confirmingClear, titleVisibility: .visible) {
+            Button("清空历史", role: .destructive) { history.clear() }
+        }
+        .modifier(TabBarInset())
+        .onChange(of: pushed == nil) { _, popped in tabChrome.setReaderOpen(!popped) }
+        .navigationDestination(item: $pushed) { _ in
+            ReaderDetailView(store: store, articleOverride: $pushed).toolbar(.hidden, for: .tabBar)
         }
     }
 }

@@ -618,6 +618,9 @@ struct ReaderDetailView: View {
         }
         .onDisappear { blockTranslator.reset() }
         .task(id: article.id) {
+            ReadingHistoryStore.shared.recordOpened(article, feed: store.feed(for: article.feedID))
+        }
+        .task(id: article.id) {
             // Detect the article's language so translation is offered only when
             // it differs from the app's language; reset any prior translation.
             isShowingTranslation = false
