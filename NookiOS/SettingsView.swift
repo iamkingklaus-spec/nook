@@ -42,13 +42,10 @@ struct SettingsView: View {
     @AppStorage(TourFlags.seenReaderGestureHintKey) private var seenReaderGestureHint = false
     @AppStorage(TourFlags.seenListHintKey) private var seenListHint = false
 
-    /// A single file importer backs both the sync-folder picker and OPML import;
-    /// stacking two `.fileImporter` modifiers on one view makes only one work.
-    private enum ImportKind { case folder, opml }
-    @State private var importKind: ImportKind = .folder
+    // OPML uses its own fixed-type picker rather than changing folder mode.
+    @State private var isImportingOPML = false
     @State private var isImporting = false
     @State private var isExportingOPML = false
-    @State private var opmlImport: OPMLImportRequest?
 
     /// One-shot spotlight on the sync-folder row while the library is still
     /// app-local: the tour's sync page is skippable, so Settings gets a second
@@ -114,7 +111,6 @@ struct SettingsView: View {
                 if isTab {
                     Section("Data") {
                         Button {
-                            importKind = .folder
                             isImporting = true
                         } label: {
                             Label(
@@ -132,8 +128,7 @@ struct SettingsView: View {
                             }
                         }
                         Button {
-                            importKind = .opml
-                            isImporting = true
+                            isImportingOPML = true
                         } label: {
                             Label("Import OPML", systemImage: "square.and.arrow.down")
                         }
@@ -159,18 +154,14 @@ struct SettingsView: View {
                     }
                 }
             }
-            .modifier(DataActionsModifier(
-                isTab: isTab,
-                store: store,
-                importIsFolder: importKind == .folder,
-                isImporting: $isImporting,
-                isExportingOPML: $isExportingOPML,
-                opmlImport: $opmlImport
-            ))
             .navigationDestination(for: Destination.self) { destination in
                 destinationView(destination)
             }
         }
+        .modifier(DataActionsModifier(
+            isTab: isTab, store: store, isImporting: $isImporting,
+            isExportingOPML: $isExportingOPML, isImportingOPML: $isImportingOPML
+        ))
         .onAppear {
             onNavigationEvent?(.depthChanged(navigationPath.count))
             maybeShowSyncHint()
@@ -182,7 +173,7 @@ struct SettingsView: View {
         }
         // Tapping the spotlighted row means the hint found its mark.
         .onChange(of: isImporting) { _, importing in
-            if importing, importKind == .folder, showSyncHint { dismissSyncHint() }
+            if importing, showSyncHint { dismissSyncHint() }
         }
         .onPreferenceChange(SyncFolderRowFrameKey.self) { frame in
             if syncRowFrame != frame { syncRowFrame = frame }
@@ -249,31 +240,21 @@ struct SettingsView: View {
 private struct DataActionsModifier: ViewModifier {
     let isTab: Bool
     let store: ReaderStore
-    let importIsFolder: Bool
     @Binding var isImporting: Bool
     @Binding var isExportingOPML: Bool
-    @Binding var opmlImport: OPMLImportRequest?
+    @Binding var isImportingOPML: Bool
 
     func body(content: Content) -> some View {
         if isTab {
             content
                 .fileImporter(
                     isPresented: $isImporting,
-                    allowedContentTypes: importIsFolder ? [.folder] : [.opml, .xml],
+                    allowedContentTypes: [.folder],
                     allowsMultipleSelection: false
                 ) { result in
                     guard case .success(let urls) = result, let url = urls.first else { return }
-                    if importIsFolder {
-                        _ = url.startAccessingSecurityScopedResource()
-                        store.configureSyncFolder(url)
-                    } else {
-                        let candidates = store.parseOPML(at: url)
-                        if candidates.isEmpty {
-                            store.errorMessage = String(localized: "No feeds found in the OPML file.")
-                        } else {
-                            opmlImport = OPMLImportRequest(feeds: candidates)
-                        }
-                    }
+                    _ = url.startAccessingSecurityScopedResource()
+                    store.configureSyncFolder(url)
                 }
                 .fileExporter(
                     isPresented: $isExportingOPML,
@@ -283,14 +264,7 @@ private struct DataActionsModifier: ViewModifier {
                 ) { result in
                     store.handleOPMLExport(result)
                 }
-                .sheet(item: $opmlImport) { request in
-                    OPMLImportView(
-                        feeds: request.feeds,
-                        existingKeys: Set(store.feeds.flatMap { [$0.feedURL.feedIdentityKey, $0.siteURL.feedIdentityKey] })
-                    ) { selected in
-                        store.importFeeds(selected)
-                    }
-                }
+                .modifier(OPMLImportPickerModifier(store: store, isPresented: $isImportingOPML))
         } else {
             content
         }

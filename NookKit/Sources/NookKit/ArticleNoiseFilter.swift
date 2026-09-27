@@ -6,6 +6,7 @@ enum ArticleNoiseFilter {
     enum Reason: String, Sendable {
         case semanticAdvertisement, navigation, newsletterPromotion, subscriptionPromotion
         case relatedContent, socialTools, appPromotion, privacyPrompt, footer
+        case contactModule, tailBoundary
         case empty, duplicate, duplicateCaption
     }
     struct Result: Sendable {
@@ -26,6 +27,14 @@ enum ArticleNoiseFilter {
             // Legibility deliberately strips class/id. A topic-footer label plus
             // a link list is still explicit structure; article paragraphs veto it.
             let descendants = elements.filter { $0.range != element.range && NSLocationInRange($0.range.location, element.range) }
+            // Explicit semantic modules can appear before, between, or after
+            // article paragraphs. An aside alone is not sufficient evidence.
+            if ["aside", "footer"].contains(element.name),
+               descendants.contains(where: { ["a", "form"].contains($0.name) }),
+               let heading = descendants.first(where: { ["h2", "h3", "h4"].contains($0.name) }),
+               let reason = ArticleTailBoundary.marker(ReaderHTMLSignals.plain(ns.substring(with: heading.range))) {
+                removed.append(element.range); reasons.append(reason); continue
+            }
             let topicLabel = ["Explore more on these topics", "Related topics", "More on this story"]
                 .contains { text.hasPrefix($0 + " ") }
             let hasBodyParagraph = descendants.contains { paragraph in
@@ -77,13 +86,15 @@ enum ArticleNoiseFilter {
             if text == "Prefer the Guardian on Google", href.hasPrefix("https://www.google.com/preferences/source") { return .subscriptionPromotion }
         }
         if tag == "nav" || role == "navigation" { return .navigation }
-        if role == "contentinfo" { return .footer }
+        if tag == "footer" || role == "contentinfo" { return .footer }
         let tokens = ReaderHTMLSignals.tokens(attributes)
         let rules: [(Set<String>, Reason)] = [
             (["advertisement", "ad-container", "ad-slot", "sponsored-content", "promoted-content"], .semanticAdvertisement),
             (["newsletter-signup", "newsletter-promotion", "newsletter-form"], .newsletterPromotion),
+            (["contact-module", "contact-card", "author-contact", "author-contact-card", "get-in-touch", "contact-form"], .contactModule),
             (["subscription-prompt", "subscribe-prompt", "support-prompt", "login-prompt", "register-prompt"], .subscriptionPromotion),
             (["related-stories", "related-content", "recommended-stories", "most-viewed", "most-popular", "more-from"], .relatedContent),
+            (["related-links", "related-internet-links", "recommended-content", "recommendations-module"], .relatedContent),
             (["social-share", "share-tools", "share-buttons", "follow-us"], .socialTools),
             (["app-promotion", "download-app"], .appPromotion),
             (["cookie-banner", "cookie-consent", "privacy-prompt"], .privacyPrompt),

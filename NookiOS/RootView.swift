@@ -343,14 +343,11 @@ private struct RegularShell: View {
     @Bindable var store: ReaderStore
     @Environment(TourCoordinator.self) private var tour
 
-    /// A single file importer backs both the sync-folder picker and OPML import;
-    /// stacking two `.fileImporter` modifiers on one view makes only one work.
-    enum ImportKind { case folder, opml }
-    @State private var importKind: ImportKind = .folder
+    // Folder and OPML selection are independent, immutable picker sessions.
+    @State private var isImportingOPML = false
     @State private var isImporting = false
     @State private var isAddingFeed = false
     @State private var isExportingOPML = false
-    @State private var opmlImport: OPMLImportRequest?
     @State private var isCreatingFolder = false
     @State private var newFolderName = ""
     @State private var isShowingSettings = false
@@ -420,8 +417,8 @@ private struct RegularShell: View {
         NavigationSplitView(preferredCompactColumn: $preferredColumn) {
             Sidebar(
                 store: store,
-                chooseFolder: { importKind = .folder; isImporting = true },
-                importOPML: { importKind = .opml; isImporting = true },
+                chooseFolder: { isImporting = true },
+                importOPML: { isImportingOPML = true },
                 isAddingFeed: $isAddingFeed,
                 isExportingOPML: $isExportingOPML,
                 isCreatingFolder: $isCreatingFolder,
@@ -452,22 +449,12 @@ private struct RegularShell: View {
         }
         .fileImporter(
             isPresented: $isImporting,
-            allowedContentTypes: importKind == .folder ? [.folder] : [.opml, .xml],
+            allowedContentTypes: [.folder],
             allowsMultipleSelection: false
         ) { result in
             guard case .success(let urls) = result, let url = urls.first else { return }
-            switch importKind {
-            case .folder:
-                _ = url.startAccessingSecurityScopedResource()
-                store.configureSyncFolder(url)
-            case .opml:
-                let candidates = store.parseOPML(at: url)
-                if candidates.isEmpty {
-                    store.errorMessage = String(localized: "No feeds found in the OPML file.")
-                } else {
-                    opmlImport = OPMLImportRequest(feeds: candidates)
-                }
-            }
+            _ = url.startAccessingSecurityScopedResource()
+            store.configureSyncFolder(url)
         }
         .fileExporter(
             isPresented: $isExportingOPML,
@@ -485,14 +472,7 @@ private struct RegularShell: View {
         .sheet(isPresented: $isShowingSettings) {
             SettingsView(store: store)
         }
-        .sheet(item: $opmlImport) { request in
-            OPMLImportView(
-                feeds: request.feeds,
-                existingKeys: Set(store.feeds.flatMap { [$0.feedURL.feedIdentityKey, $0.siteURL.feedIdentityKey] })
-            ) { selected in
-                store.importFeeds(selected)
-            }
-        }
+        .modifier(OPMLImportPickerModifier(store: store, isPresented: $isImportingOPML))
         .alert("New Folder", isPresented: $isCreatingFolder) {
             TextField("Folder Name", text: $newFolderName)
             Button("Cancel", role: .cancel) { newFolderName = "" }

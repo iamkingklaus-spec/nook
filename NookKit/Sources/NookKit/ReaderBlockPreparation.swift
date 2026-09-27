@@ -138,6 +138,7 @@ enum ReaderBlockPreparation {
             cursor = NSMaxRange(element.range)
         }
         blocks += HTMLContentParser.parse(ns.substring(from: cursor), baseURL: baseURL)
-        return Result(blocks: blocks, reasons: filtered.reasons)
+        let tail = ArticleTailBoundary.clean(blocks, sourceURL: baseURL)
+        return Result(blocks: tail.blocks, reasons: filtered.reasons + tail.reasons)
     }
 }

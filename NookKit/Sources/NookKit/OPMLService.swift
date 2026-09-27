@@ -22,8 +22,20 @@ public struct OPMLFeed: Identifiable, Hashable, Sendable {
 public struct OPMLService: Sendable {
     public init() {}
 
+    public static func selectableIDs(_ feeds: [OPMLFeed], existingKeys: Set<String>) -> Set<OPMLFeed.ID> {
+        Set(feeds.filter {
+            !existingKeys.contains($0.feedURL.feedIdentityKey) &&
+                !($0.siteURL.map { existingKeys.contains($0.feedIdentityKey) } ?? false)
+        }.map(\.id))
+    }
+
     public func importFeeds(from fileURL: URL) throws -> [OPMLFeed] {
+        guard ["opml", "xml"].contains(fileURL.pathExtension.lowercased()) else { throw CocoaError(.fileReadUnsupportedScheme) }
         let data = try Data(contentsOf: fileURL)
+        return try importFeeds(data: data)
+    }
+
+    public func importFeeds(data: Data) throws -> [OPMLFeed] {
         let parser = OPMLOutlineParser()
         return try parser.parse(data: data)
     }
@@ -100,12 +112,26 @@ extension UTType {
     }
 }
 
+/// Stable iOS declaration plus the extension type supplied by the file provider.
+/// Keep XML compatibility without accepting arbitrary .data documents.
+public enum OPMLImportTypes {
+    public static let declared = UTType(importedAs: "org.opml.opml", conformingTo: .xml)
+    public static var allowed: [UTType] {
+        var types = [declared, UTType.xml]
+        if let inferred = UTType(filenameExtension: "opml"), !types.contains(inferred) { types.append(inferred) }
+        return types
+    }
+}
+
 private final class OPMLOutlineParser: NSObject, XMLParserDelegate {
     private var parserError: Error?
     private var feeds: [OPMLFeed] = []
     private var seenFeedURLs: Set<String> = []
     private var folderStack: [String] = []
     private var outlineIsFolder: [Bool] = []
+    private var depth = 0
+    private var inBody = false
+    private var sawBody = false
 
     func parse(data: Data) throws -> [OPMLFeed] {
         let parser = XMLParser(data: data)
@@ -118,6 +144,7 @@ private final class OPMLOutlineParser: NSObject, XMLParserDelegate {
             throw parser.parserError ?? parserError ?? CocoaError(.fileReadCorruptFile)
         }
 
+        guard sawBody else { throw CocoaError(.fileReadCorruptFile) }
         return feeds
     }
 
@@ -128,7 +155,12 @@ private final class OPMLOutlineParser: NSObject, XMLParserDelegate {
         qualifiedName qName: String?,
         attributes attributeDict: [String: String] = [:]
     ) {
-        guard elementName.lowercased() == "outline" else { return }
+        depth += 1
+        if depth == 1, elementName.lowercased() != "opml" {
+            parser.abortParsing(); return
+        }
+        if depth == 2, elementName.lowercased() == "body" { inBody = true; sawBody = true }
+        guard inBody, elementName.lowercased() == "outline" else { return }
 
         let rawFeedURL = (attributeDict["xmlUrl"] ?? attributeDict["xmlurl"])?
             .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -155,7 +187,9 @@ private final class OPMLOutlineParser: NSObject, XMLParserDelegate {
     }
 
     func parser(_ parser: XMLParser, didEndElement elementName: String, namespaceURI: String?, qualifiedName qName: String?) {
-        guard elementName.lowercased() == "outline", let wasFolder = outlineIsFolder.popLast() else { return }
+        defer { depth -= 1 }
+        if depth == 2, elementName.lowercased() == "body" { inBody = false }
+        guard inBody, elementName.lowercased() == "outline", let wasFolder = outlineIsFolder.popLast() else { return }
         if wasFolder, !folderStack.isEmpty {
             folderStack.removeLast()
         }
