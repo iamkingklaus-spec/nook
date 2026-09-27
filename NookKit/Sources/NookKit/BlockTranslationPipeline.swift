@@ -17,7 +17,7 @@ enum BlockTranslationError: Error, Equatable, LocalizedError {
 }
 
 enum BlockTranslationProtocol {
-    static let promptVersion = 1
+    static let promptVersion = 2
     static let targetLanguage = "zh-Hans"
     static let system = """
     Translate the supplied article text blocks into Simplified Chinese (zh-Hans).
@@ -63,6 +63,25 @@ enum BlockTranslationProtocol {
             result[id] = translation
         }
         guard result.count == source.count else { throw BlockTranslationError.missing }
+        return result
+    }
+
+    /// A damaged parent cannot discard unrelated, validated parents in its batch.
+    static func salvage(_ json: String, expected: [BlockTranslationText]) throws -> [String: String] {
+        guard let object = try? JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String: Any],
+              Set(object.keys) == ["translations"], let entries = object["translations"] as? [[String: Any]] else {
+            throw BlockTranslationError.malformed
+        }
+        var result: [String: String] = [:]
+        for block in expected {
+            let matches = entries.filter { ($0["blockID"] as? String) == block.blockID }
+            guard matches.count == 1, let entry = matches.first, Set(entry.keys) == ["blockID", "translatedText"],
+                  let value = entry["translatedText"] as? String else {
+                block.recordValidationFailure(rule: matches.isEmpty ? "missingBlockID" : "duplicateOrInvalidBlockID", response: json)
+                continue
+            }
+            if (try? block.restore(value)) != nil { result[block.blockID] = value }
+        }
         return result
     }
 
@@ -127,7 +146,7 @@ struct BlockTranslationCacheKey: Codable, Equatable, Sendable {
 }
 
 /// Separate namespace: legacy Markdown cache remains readable by its old path.
-/// Only complete, validated batches are persisted, allowing explicit resume.
+/// Validated blocks are persisted after every batch, allowing explicit resume.
 actor BlockTranslationCache {
     static let shared = BlockTranslationCache()
     let directory: URL?
@@ -181,7 +200,6 @@ actor BlockTranslationCache {
 struct BlockTranslationTransport: Sendable {
     let request: @Sendable ([BlockTranslationText], GeminiTranslator.Model) async throws -> String
     static let gemini = Self { blocks, model in
-        try await GeminiTranslator.complete(system: BlockTranslationProtocol.system,
-            prompt: BlockTranslationProtocol.prompt(blocks), model: model, structuredBlockResponse: true)
+        try await TextOnlyBlockTranslation.request(blocks, model: model)
     }
 }

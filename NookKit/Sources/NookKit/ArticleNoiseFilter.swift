@@ -23,6 +23,20 @@ enum ArticleNoiseFilter {
                   !element.protected,
                   !elements.contains(where: { ["blockquote", "pre", "code"].contains($0.name) && NSLocationInRange($0.range.location, element.range) }) else { continue }
             let text = ReaderHTMLSignals.plain(ns.substring(with: element.range))
+            // Legibility deliberately strips class/id. A topic-footer label plus
+            // a link list is still explicit structure; article paragraphs veto it.
+            let descendants = elements.filter { $0.range != element.range && NSLocationInRange($0.range.location, element.range) }
+            let topicLabel = ["Explore more on these topics", "Related topics", "More on this story"]
+                .contains { text.hasPrefix($0 + " ") }
+            let hasBodyParagraph = descendants.contains { paragraph in
+                paragraph.name == "p" && !descendants.contains { link in
+                    link.name == "a" && NSLocationInRange(paragraph.range.location, link.range)
+                }
+            }
+            if topicLabel, ["div", "section", "aside"].contains(element.name),
+               descendants.contains(where: { $0.name == "ul" || $0.name == "ol" }), !hasBodyParagraph {
+                removed.append(element.range); reasons.append(.relatedContent); continue
+            }
             let isInlineProse = elements.contains { ancestor in
                 ancestor.name == "p" && ancestor.range != element.range &&
                     NSLocationInRange(element.range.location, ancestor.range) &&
@@ -44,7 +58,8 @@ enum ArticleNoiseFilter {
 
     static func standaloneReason(_ text: String) -> Reason? {
         switch text.lowercased().trimmingCharacters(in: .whitespacesAndNewlines) {
-        case "advertisement", "advertisement.", "sponsored content", "promoted content": .semanticAdvertisement
+        case "advertisement", "advertisement.", "sponsored content", "promoted content", "sponsor message": .semanticAdvertisement
+        case "hide caption", "toggle caption", "view image in fullscreen": .socialTools
         case "sign up for our newsletter", "subscribe to our newsletter", "newsletter signup": .newsletterPromotion
         case "subscribe now", "support our journalism", "sign in", "register": .subscriptionPromotion
         case "share this article", "follow us": .socialTools
@@ -56,6 +71,11 @@ enum ArticleNoiseFilter {
 
     private static func reason(tag: String, attributes: [String: String], text: String, allowPhrase: Bool) -> Reason? {
         let role = attributes["role"]?.lowercased()
+        if tag == "a", let href = attributes["href"] {
+            if text == "Share", href.hasPrefix("mailto:") { return .socialTools }
+            if text == "Reuse this content", href.hasPrefix("https://syndication.theguardian.com/") { return .socialTools }
+            if text == "Prefer the Guardian on Google", href.hasPrefix("https://www.google.com/preferences/source") { return .subscriptionPromotion }
+        }
         if tag == "nav" || role == "navigation" { return .navigation }
         if role == "contentinfo" { return .footer }
         let tokens = ReaderHTMLSignals.tokens(attributes)
@@ -72,7 +92,8 @@ enum ArticleNoiseFilter {
         ]
         if let rule = rules.first(where: { !$0.0.isDisjoint(with: tokens) }) { return rule.1 }
         // Whole UI phrases only, never keyword containment or article headings.
-        return allowPhrase && ["p", "div", "span", "a", "button"].contains(tag) ? standaloneReason(text) : nil
+        let captionControl = ["b", "strong", "button"].contains(tag) && ["hide caption", "toggle caption"].contains(text.lowercased())
+        return (allowPhrase || captionControl) && ["p", "div", "span", "a", "button", "b", "strong"].contains(tag) ? standaloneReason(text) : nil
     }
 }
 
@@ -133,8 +154,17 @@ enum ReaderHTMLSignals {
     }
 
     static func plain(_ html: String) -> String {
-        let stripped = tags.stringByReplacingMatches(in: html,
-            range: NSRange(location: 0, length: (html as NSString).length), withTemplate: " ")
+        let ns = html as NSString
+        var stripped = "", cursor = 0
+        let boundaries: Set<String> = ["br", "p", "div", "section", "article", "aside", "li", "ul", "ol", "blockquote", "h1", "h2", "h3", "h4", "h5", "h6", "figcaption", "time"]
+        for tag in tags.matches(in: html, range: NSRange(location: 0, length: ns.length)) {
+            stripped += ns.substring(with: NSRange(location: cursor, length: tag.range.location - cursor))
+            if tag.range(at: 1).location != NSNotFound, boundaries.contains(ns.substring(with: tag.range(at: 1)).lowercased()) {
+                stripped += " "
+            }
+            cursor = NSMaxRange(tag.range)
+        }
+        stripped += ns.substring(from: cursor)
         return HTMLContentParser.decodeEntities(stripped)
             .replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
             .trimmingCharacters(in: .whitespacesAndNewlines)

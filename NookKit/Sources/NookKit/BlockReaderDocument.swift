@@ -69,7 +69,7 @@ struct BlockReaderDocument: Sendable {
         mutating func text(_ html: String, kind: ArticleBlock.Kind, heading: Int? = nil) -> BlockReaderNode {
             let allowed = TranslationEligibility.classify(html, allowMetadata: kind == .paragraph)
             let block = append(allowed == .prose ? kind : .other, html)
-            let text = BlockTranslationText(blockID: block.id, html: html)
+            let text = BlockTranslationText(blockID: block.id, html: html, kind: kind)
             eligibility[block.id] = allowed == .prose && !text.hasProse ? .code : allowed
             if allowed == .prose && text.hasProse { texts.append(text) }
             return .text(id: block.id, html: html, heading: heading)
@@ -107,6 +107,11 @@ struct BlockReaderDocument: Sendable {
                     let picture = HTMLMedia(url: media.url, title: media.title, caption: nil,
                                             posterURL: media.posterURL, aspectRatio: media.aspectRatio,
                                             declaredWidth: media.declaredWidth)
+                    if let credit = caption.range(of: #"\s+(?:Photograph|Photo credit|Image credit):\s*"#, options: .regularExpression) {
+                        return [.unchanged(.image(picture)),
+                            text(BlockTranslationText.escape(String(caption[..<credit.lowerBound])), kind: .paragraph),
+                            text(BlockTranslationText.escape(String(caption[credit.lowerBound...]).trimmingCharacters(in: .whitespacesAndNewlines)), kind: .paragraph)]
+                    }
                     return [.unchanged(.image(picture)), text(BlockTranslationText.escape(caption), kind: .paragraph)]
                 default:
                     // Code, tables and all media retain their original native renderer.
@@ -120,15 +125,19 @@ struct BlockReaderDocument: Sendable {
 }
 
 /// Inline attributes (including href) never leave the client. Inline code and
-/// literal URLs are opaque too. A damaged marker rejects the entire batch.
+/// literal URLs are opaque too. The legacy validator rejects damaged markers per block.
 struct BlockTranslationText: Sendable {
     let blockID: String
     let template: String
+    let kind: ArticleBlock.Kind
+    private let sourceHTML: String
     private let markedHTML: String
     private let protected: [String: String]
 
-    init(blockID: String, html: String) {
+    init(blockID: String, html: String, kind: ArticleBlock.Kind = .paragraph) {
         self.blockID = blockID
+        self.kind = kind
+        self.sourceHTML = html
         let prefix = "⟬nook:\(ArticleDocument.digest([html]).prefix(16)):"
         var protected: [String: String] = [:]
         func replace(_ source: String, pattern: String, escape: Bool) -> String {
@@ -177,11 +186,13 @@ struct BlockTranslationText: Sendable {
 
     func restore(_ translation: String) throws -> String {
         guard !translation.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            recordValidationFailure(rule: "emptyTranslation", response: translation)
             throw BlockTranslationError.empty(blockID)
         }
         var remaining = translation
         for token in protected.keys {
             guard remaining.components(separatedBy: token).count == 2 else {
+                recordValidationFailure(rule: "protectedSpanCount:\(token)", response: translation)
                 throw BlockTranslationError.markup(blockID)
             }
             remaining = remaining.replacingOccurrences(of: token, with: "")
@@ -192,17 +203,59 @@ struct BlockTranslationText: Sendable {
         let withoutMarkers = inlineMarkers.stringByReplacingMatches(in: remaining,
             range: NSRange(remaining.startIndex..., in: remaining), withTemplate: "")
         guard !withoutMarkers.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            recordValidationFailure(rule: "emptyProse", response: translation)
             throw BlockTranslationError.empty(blockID)
         }
         guard !withoutMarkers.contains("⟦"), !withoutMarkers.contains("⟧"),
               withoutMarkers.range(of: "(?:https?://|mailto:|www\\.)", options: [.regularExpression, .caseInsensitive]) == nil else {
+            recordValidationFailure(rule: "strayMarkerOrInventedURL", response: translation)
             throw BlockTranslationError.markup(blockID)
         }
         guard !remaining.contains("⟬"), !remaining.contains("⟭"),
               var html = InlineMarkupTranslator.rebuild(translation, entries: InlineMarkupTranslator.markify(markedHTML).entries)
-        else { throw BlockTranslationError.markup(blockID) }
+        else {
+            recordValidationFailure(rule: inlineFailureRule(translation) ?? "unknownProtectedSpan", response: translation)
+            throw BlockTranslationError.markup(blockID)
+        }
         for (token, original) in protected { html = html.replacingOccurrences(of: token, with: original) }
         return html
+    }
+
+    /// Identifies the exact legacy marker invariant without changing its repair
+    /// behavior. Available to offline regression tests as well as DEBUG logs.
+    func inlineFailureRule(_ translation: String) -> String? {
+        let entries = InlineMarkupTranslator.markify(markedHTML).entries
+        let value = InlineMarkupTranslator.normalizeMarkers(translation) as NSString
+        let regex = try! NSRegularExpression(pattern: #"⟦(=|/)?([0-9]+)⟧"#)
+        var stack: [Int] = [], seen = Set<Int>()
+        for match in regex.matches(in: value as String, range: NSRange(location: 0, length: value.length)) {
+            let kind = match.range(at: 1).location == NSNotFound ? "" : value.substring(with: match.range(at: 1))
+            guard let index = Int(value.substring(with: match.range(at: 2))), entries.indices.contains(index) else { return "unknownInlineMarker" }
+            if kind == "/" {
+                guard stack.popLast() == index else { return "misnestedClosingMarker:\(index)" }
+            } else {
+                guard !seen.contains(index) else { return "duplicateInlineMarker:\(index)" }
+                guard entries[index].opaque == (kind == "=") else { return "wrongMarkerKind:\(index)" }
+                seen.insert(index)
+                if kind != "=" { stack.append(index) }
+            }
+        }
+        if let index = stack.last { return "unclosedInlineMarker:\(index)" }
+        if let index = entries.indices.first(where: { !seen.contains($0) }) { return "missingInlineMarker:\(index)" }
+        return nil
+    }
+
+    func recordValidationFailure(rule: String, response: String) {
+        #if DEBUG
+        // Explicit diagnostic switch: no full article or credentials by default.
+        // The provider key is never part of this object or its response payload.
+        guard UserDefaults.standard.bool(forKey: "readerTranslationValidationDiagnostics") else { return }
+        let report: [String: Any] = ["blockID": blockID, "kind": kind.rawValue, "rule": rule,
+            "sourceInlineStructure": sourceHTML, "protectedSpans": protected,
+            "inlineTags": InlineMarkupTranslator.markify(markedHTML).entries.map(\.raw), "response": response]
+        if let data = try? JSONSerialization.data(withJSONObject: report, options: [.sortedKeys]),
+           let json = String(data: data, encoding: .utf8) { print("[BlockValidation] " + json) }
+        #endif
     }
 
     static func escape(_ value: String) -> String {

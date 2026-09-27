@@ -303,18 +303,18 @@ struct BlockReaderLifecycleTests {
         #expect(calls.dropFirst(2).flatMap { $0 }.allSatisfy { !savedIDs.contains($0) })
     }
 
-    @Test func invalidPartialResponseDoesNotCacheAnyOfBatch() async {
+    @Test func partialResponseCachesValidBlocksOnly() async {
         let (cache, directory) = temporaryCache()
         defer { try? FileManager.default.removeItem(at: directory) }
         let transport = BlockTranslationTransport { blocks, _ in try response([(blocks[0].blockID, "部分")]) }
         let controller = BlockReaderTranslationController(cache: cache, transport: transport)
         await controller.load(input())
         await controller.translate()
-        #expect(controller.translatedCount == 0)
+        #expect(controller.translatedCount == 1)
         #expect(controller.message != nil)
         let second = BlockReaderTranslationController(cache: cache, transport: transport)
         await second.load(input())
-        #expect(second.translatedCount == 0)
+        #expect(second.translatedCount == 1)
     }
 
     @Test func changingContentOrModelClearsVisibleTranslations() async {

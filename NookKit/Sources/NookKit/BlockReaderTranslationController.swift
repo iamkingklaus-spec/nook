@@ -129,7 +129,10 @@ public final class BlockReaderTranslationController {
                 let response = try await transport.request(batch, model)
                 try Task.checkCancellation()
                 guard generation == token else { return }
-                let validated = try BlockTranslationProtocol.validate(response, expected: batch)
+                let validated = (try? BlockTranslationProtocol.salvage(response, expected: batch)) ?? [:]
+                if validated.count != batch.count {
+                    message = "部分翻译失败；已保存成功段落，可重试未完成的段落。"
+                }
                 let merged = translations.merging(validated) { _, new in new }
                 apply(merged, document: document)
                 do { try await cache.store(merged, key: key) }

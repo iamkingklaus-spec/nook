@@ -49,8 +49,8 @@ struct BlockReaderPresentationTests {
     }
 
     @Test func compositeLegacyBlockAlternatesWithoutChangingIdentity() throws {
-        let document = BlockReaderDocument(input: readerInput(wrappedParagraphs))
-        // This is the regression: the existing parser retains one composite block.
+        let document = BlockReaderDocument(blocks: [.text(wrappedParagraphs)], source: .rssFullContent, baseURL: nil)
+        // Explicit legacy composite fixture: new extraction normalizes these before identity.
         #expect(document.texts.count == 1)
         let before = document.document.documentHash
         let nodes = try presentation(document)
@@ -61,7 +61,7 @@ struct BlockReaderPresentationTests {
         #expect(Set(groups.map(\.id)).count == 3)
         #expect(groups.allSatisfy { $0.blockID == document.texts[0].blockID })
         #expect(document.document.documentHash == before)
-        #expect(document.texts[0].template == BlockReaderDocument(input: readerInput(wrappedParagraphs)).texts[0].template)
+        #expect(document.texts[0].template == BlockReaderDocument(blocks: [.text(wrappedParagraphs)], source: .rssFullContent, baseURL: nil).texts[0].template)
     }
 
     @Test func reorderedResponseUsesSourceBlockOrder() throws {
@@ -76,7 +76,7 @@ struct BlockReaderPresentationTests {
     }
 
     @Test func reorderedParagraphMarkersStillPairByIdentity() throws {
-        let document = BlockReaderDocument(input: readerInput(wrappedParagraphs))
+        let document = BlockReaderDocument(blocks: [.text(wrappedParagraphs)], source: .rssFullContent, baseURL: nil)
         let text = try #require(document.texts.first)
         let value = "⟦0⟧⟦3⟧C-zh⟦/3⟧⟦1⟧A-zh⟦/1⟧⟦2⟧B-zh⟦/2⟧⟦/0⟧"
         let html = try text.restore(value)
@@ -92,7 +92,7 @@ struct BlockReaderPresentationTests {
     }
 
     @Test func emptyCompositeParagraphTranslationFallsBackToSource() throws {
-        let document = BlockReaderDocument(input: readerInput(wrappedParagraphs))
+        let document = BlockReaderDocument(blocks: [.text(wrappedParagraphs)], source: .rssFullContent, baseURL: nil)
         let text = try #require(document.texts.first)
         let value = translated(text.template).replacingOccurrences(of: "B-zh", with: " ")
         #expect(output(BlockReaderPresentation.nodes(document.nodes, translations: [text.blockID: try text.restore(value)],
@@ -151,7 +151,7 @@ struct BlockReaderPresentationTests {
     }
 
     @Test func compositeWithoutTranslationRemainsSourceOrdered() throws {
-        let document = BlockReaderDocument(input: readerInput(wrappedParagraphs))
+        let document = BlockReaderDocument(blocks: [.text(wrappedParagraphs)], source: .rssFullContent, baseURL: nil)
         let nodes = try presentation(document, omitted: Set(document.texts.map(\.blockID)))
         for mode in BlockReaderMode.allCases { #expect(output(nodes, mode: mode) == ["A", "B", "C"]) }
     }

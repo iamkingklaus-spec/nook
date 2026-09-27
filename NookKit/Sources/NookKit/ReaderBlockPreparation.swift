@@ -1,10 +1,18 @@
 import Foundation
 
 enum TranslationEligibility: String, Sendable {
-    case prose, photoCredit, author, publisher, publicationDate, numericMetadata, url, empty, code
+    case prose, photoCredit, author, authorRole, publisher, publicationDate, numericMetadata, url, empty, code
+
+    static func isAuthorRole(_ text: String) -> Bool {
+        text.range(of: #"^(?:[A-Z][A-Za-z-]*\s+){0,5}(?:reporter|correspondent|editor)$"#, options: .regularExpression) != nil
+    }
+    static func isPersonName(_ text: String) -> Bool {
+        text.range(of: #"^[\p{Lu}][\p{L}’'.-]+(?: [\p{Lu}][\p{L}’'.-]+){1,3}$"#, options: .regularExpression) != nil
+    }
 
     static func semantic(_ element: ReaderHTMLSignals.Element) -> Self? {
         let tokens = ReaderHTMLSignals.tokens(element.attributes)
+        if element.name == "time", element.attributes["datetime"] != nil { return .publicationDate }
         if !tokens.isDisjoint(with: ["photo-credit", "photograph-credit", "image-credit", "photographer"]) { return .photoCredit }
         if !tokens.isDisjoint(with: ["author", "byline", "article-author"]) || element.attributes["rel"] == "author" { return .author }
         if !tokens.isDisjoint(with: ["publisher", "publication-name"]) { return .publisher }
@@ -15,10 +23,15 @@ enum TranslationEligibility: String, Sendable {
     static func classify(_ html: String, allowMetadata: Bool = true) -> Self {
         let text = ReaderHTMLSignals.plain(html)
         guard !text.isEmpty else { return .empty }
+        for element in ReaderHTMLSignals.elements(html) {
+            if let kind = semantic(element), ReaderHTMLSignals.plain((html as NSString).substring(with: element.range)) == text { return kind }
+        }
         if allowMetadata {
-            for element in ReaderHTMLSignals.elements(html) {
-                if let kind = semantic(element), ReaderHTMLSignals.plain((html as NSString).substring(with: element.range)) == text { return kind }
-            }
+            if text == "By" { return .author }
+            if isAuthorRole(text) { return .authorRole }
+            if text.range(of: #"^[\p{Lu}][\p{L}’'.-]+(?: [\p{Lu}][\p{L}’'.-]+){1,3} for [A-Z]{2,6}$"#, options: .regularExpression) != nil { return .photoCredit }
+            if text.range(of: #"(?i)^Updated\s+(?:\d+\s+(?:minutes?|hours?|days?)\s+ago|\d{1,2}\s+[A-Za-z]+\s+\d{4})$"#, options: .regularExpression) != nil { return .publicationDate }
+            if text.range(of: #"(?i)^(?:(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+)?\d{1,2}\s+(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+\d{4}(?:\s+\d{1,2}[.:]\d{2}\s+[A-Z]{2,5})?$"#, options: .regularExpression) != nil { return .publicationDate }
             if text.range(of: #"(?i)^(?:photograph|photo(?:graph)? credit|image credit|photo):\s*\S.+$"#, options: .regularExpression) != nil { return .photoCredit }
             if text.range(of: #"^By [\p{Lu}][\p{L}’'.-]+(?: [\p{Lu}][\p{L}’'.-]+){1,4}$"#, options: .regularExpression) != nil { return .author }
             if text.range(of: #"^\d{4}-\d{2}-\d{2}(?:[T ][\d:.+Z-]+)?$"#, options: .regularExpression) != nil { return .publicationDate }
@@ -93,8 +106,9 @@ enum ReaderBlockPreparation {
         let filtered = ArticleNoiseFilter.filter(html)
         // Isolate explicitly identified metadata before the existing parser can
         // flatten it into neighbouring prose. This does not alter the RSS source.
-        let ns = filtered.html as NSString
-        let elements = ReaderHTMLSignals.elements(filtered.html)
+        let normalizedHTML = ReaderSemanticHTML.normalize(filtered.html)
+        let ns = normalizedHTML as NSString
+        let elements = ReaderHTMLSignals.elements(normalizedHTML)
         let metadata = elements.filter { candidate in
             !candidate.protected && TranslationEligibility.semantic(candidate) != nil &&
                 !elements.contains { ancestor in
@@ -105,6 +119,16 @@ enum ReaderBlockPreparation {
                     return ancestor.name == "p" && ReaderHTMLSignals.plain(ns.substring(with: ancestor.range)) !=
                         ReaderHTMLSignals.plain(ns.substring(with: candidate.range))
                 }
+        }.map { candidate in
+            // Take the enclosing paragraph too when it consists only of this
+            // metadata. Cutting out an inner span leaves unmatched <p> fragments
+            // that make the existing paragraph parser coalesce later prose.
+            elements.first { ancestor in
+                ancestor.name == "p" && !ancestor.protected &&
+                    NSLocationInRange(candidate.range.location, ancestor.range) &&
+                    ReaderHTMLSignals.plain(ns.substring(with: ancestor.range)) ==
+                        ReaderHTMLSignals.plain(ns.substring(with: candidate.range))
+            } ?? candidate
         }.sorted { $0.range.location < $1.range.location }
         var blocks: [HTMLContentBlock] = [], cursor = 0
         for element in metadata where element.range.location >= cursor {
