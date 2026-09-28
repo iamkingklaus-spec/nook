@@ -1473,7 +1473,7 @@ struct ReadingHistoryPage: View {
             if let error = history.errorMessage { Text(error).foregroundStyle(.secondary) }
             ForEach(history.search(query)) { entry in
                 Button {
-                    let article = history.article(for: entry, in: store.articles)
+                    let article = history.article(for: entry, in: store.libraryArticles)
                     store.selectedArticleID = article.id
                     pushed = article
                 } label: {
@@ -2719,7 +2719,7 @@ private struct ArticleList: View {
     @State private var historyArticle: Article?
     private var historyMatches: [ReadingHistoryEntry] {
         guard !store.searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return [] }
-        return history.search(store.searchText, excluding: store.articles)
+        return history.search(store.searchText, excluding: store.libraryArticles)
     }
 
     var body: some View {
@@ -2744,111 +2744,115 @@ private struct ArticleList: View {
         }
     }
 
+    private func libraryRow(_ article: Article) -> some View {
+        row(article)
+            // Drive the dwell-based, off-screen-cancelling title translation
+            // queue (no-op unless the experiment is enabled).
+            .onAppear { titleTranslator.rowAppeared(id: article.id, title: article.title) }
+            .onDisappear { titleTranslator.rowDisappeared(id: article.id) }
+            // Publish the first row's global frame so the tutorial can
+            // spotlight it exactly. Mounted only while the spotlight is
+            // live: an always-on GeometryReader would emit this preference
+            // on every scroll frame and re-evaluate the consumer forever.
+            .background {
+                if tour.listHintActive, article.id == store.visibleArticles.first?.id {
+                    GeometryReader { g in
+                        Color.clear.preference(key: FirstRowFrameKey.self, value: g.frame(in: .global))
+                    }
+                }
+            }
+            .tag(article.id)
+            // Paint the selection ourselves. A selected row's text is drawn
+            // in the white SwiftUI expects to sit on a filled highlight, but
+            // this plain list hides its own background for the warm one
+            // behind it — so the fill never appeared and the row read as an
+            // empty outlined box with white text on cream. Only the iPad
+            // split view keeps a selection; the compact shell's binding is
+            // nil whenever its list is on screen, so nothing changes there.
+            .listRowBackground(article.id == selection ? Color.accentColor : Color.clear)
+            .swipeActions(edge: .leading) {
+                Button {
+                    store.setRead(articleID: article.id, isRead: !article.isRead)
+                } label: {
+                    Label(
+                        article.isRead ? "Unread" : "Read",
+                        systemImage: article.isRead ? "circle" : "checkmark.circle"
+                    )
+                }
+                .tint(.blue)
+            }
+            .swipeActions(edge: .trailing) {
+                Button {
+                    store.toggleStarred(articleID: article.id)
+                } label: {
+                    Label("Star", systemImage: article.isStarred ? "star.slash" : "star")
+                }
+                .tint(.yellow)
+
+                // Saving is done from Settings › Offline; the row only offers
+                // removal of an already-saved article.
+                if store.isOfflineSaved(article.id) {
+                    Button(role: .destructive) {
+                        store.removeOffline(article.id)
+                    } label: {
+                        Label("Remove Download", systemImage: "arrow.down.circle.fill")
+                    }
+                    .tint(.indigo)
+                }
+            }
+            .contextMenu {
+                Button {
+                    store.setRead(articleID: article.id, isRead: !article.isRead)
+                } label: {
+                    Label(article.isRead ? "Mark as Unread" : "Mark as Read",
+                          systemImage: article.isRead ? "circle" : "checkmark.circle")
+                }
+                Button {
+                    store.toggleStarred(articleID: article.id)
+                } label: {
+                    Label(article.isStarred ? "Unstar" : "Star",
+                          systemImage: article.isStarred ? "star.slash" : "star")
+                }
+                if store.isOfflineSaved(article.id) {
+                    Button {
+                        store.removeOffline(article.id)
+                    } label: {
+                        Label("Remove Download", systemImage: "arrow.down.circle.fill")
+                    }
+                }
+                Menu {
+                    CategoryMenuItems(store: store, article: article)
+                } label: {
+                    Label("Categories", systemImage: "tag")
+                }
+                Button {
+                    store.selectedArticleID = article.id
+                    store.browserMode = store.feed(for: article.feedID)?.preferredViewMode ?? readerViewMode
+                    store.isBrowserPresented = true
+                } label: {
+                    Label("Open in Browser", systemImage: "safari")
+                }
+                ShareLink(item: article.url) {
+                    Label("Share", systemImage: "square.and.arrow.up")
+                }
+            }
+            // Transparent rows so the warm list background shows through.
+            .listRowBackground(Color.clear)
+            // No divider above the first row or below the last — only between rows.
+            .listRowSeparator(article.id == store.visibleArticles.first?.id ? .hidden : .automatic, edges: .top)
+            .listRowSeparator(article.id == store.visibleArticles.last?.id ? .hidden : .automatic, edges: .bottom)
+    }
+
     private var list: some View {
         List(selection: $selection) {
             ForEach(store.visibleArticles) { article in
-            row(article)
-                // Drive the dwell-based, off-screen-cancelling title translation
-                // queue (no-op unless the experiment is enabled).
-                .onAppear { titleTranslator.rowAppeared(id: article.id, title: article.title) }
-                .onDisappear { titleTranslator.rowDisappeared(id: article.id) }
-                // Publish the first row's global frame so the tutorial can
-                // spotlight it exactly. Mounted only while the spotlight is
-                // live: an always-on GeometryReader would emit this preference
-                // on every scroll frame and re-evaluate the consumer forever.
-                .background {
-                    if tour.listHintActive, article.id == store.visibleArticles.first?.id {
-                        GeometryReader { g in
-                            Color.clear.preference(key: FirstRowFrameKey.self, value: g.frame(in: .global))
-                        }
-                    }
-                }
-                .tag(article.id)
-                // Paint the selection ourselves. A selected row's text is drawn
-                // in the white SwiftUI expects to sit on a filled highlight, but
-                // this plain list hides its own background for the warm one
-                // behind it — so the fill never appeared and the row read as an
-                // empty outlined box with white text on cream. Only the iPad
-                // split view keeps a selection; the compact shell's binding is
-                // nil whenever its list is on screen, so nothing changes there.
-                .listRowBackground(article.id == selection ? Color.accentColor : Color.clear)
-                .swipeActions(edge: .leading) {
-                    Button {
-                        store.setRead(articleID: article.id, isRead: !article.isRead)
-                    } label: {
-                        Label(
-                            article.isRead ? "Unread" : "Read",
-                            systemImage: article.isRead ? "circle" : "checkmark.circle"
-                        )
-                    }
-                    .tint(.blue)
-                }
-                .swipeActions(edge: .trailing) {
-                    Button {
-                        store.toggleStarred(articleID: article.id)
-                    } label: {
-                        Label("Star", systemImage: article.isStarred ? "star.slash" : "star")
-                    }
-                    .tint(.yellow)
-
-                    // Saving is done from Settings › Offline; the row only offers
-                    // removal of an already-saved article.
-                    if store.isOfflineSaved(article.id) {
-                        Button(role: .destructive) {
-                            store.removeOffline(article.id)
-                        } label: {
-                            Label("Remove Download", systemImage: "arrow.down.circle.fill")
-                        }
-                        .tint(.indigo)
-                    }
-                }
-                .contextMenu {
-                    Button {
-                        store.setRead(articleID: article.id, isRead: !article.isRead)
-                    } label: {
-                        Label(article.isRead ? "Mark as Unread" : "Mark as Read",
-                              systemImage: article.isRead ? "circle" : "checkmark.circle")
-                    }
-                    Button {
-                        store.toggleStarred(articleID: article.id)
-                    } label: {
-                        Label(article.isStarred ? "Unstar" : "Star",
-                              systemImage: article.isStarred ? "star.slash" : "star")
-                    }
-                    if store.isOfflineSaved(article.id) {
-                        Button {
-                            store.removeOffline(article.id)
-                        } label: {
-                            Label("Remove Download", systemImage: "arrow.down.circle.fill")
-                        }
-                    }
-                    Menu {
-                        CategoryMenuItems(store: store, article: article)
-                    } label: {
-                        Label("Categories", systemImage: "tag")
-                    }
-                    Button {
-                        store.selectedArticleID = article.id
-                        store.browserMode = store.feed(for: article.feedID)?.preferredViewMode ?? readerViewMode
-                        store.isBrowserPresented = true
-                    } label: {
-                        Label("Open in Browser", systemImage: "safari")
-                    }
-                    ShareLink(item: article.url) {
-                        Label("Share", systemImage: "square.and.arrow.up")
-                    }
-                }
-                // Transparent rows so the warm list background shows through.
-                .listRowBackground(Color.clear)
-                // No divider above the first row or below the last — only between rows.
-                .listRowSeparator(article.id == store.visibleArticles.first?.id ? .hidden : .automatic, edges: .top)
-                .listRowSeparator(article.id == store.visibleArticles.last?.id ? .hidden : .automatic, edges: .bottom)
+                libraryRow(article)
             }
             if !historyMatches.isEmpty {
                 Section("阅读历史 / History") {
                     ForEach(historyMatches) { entry in
                         Button {
-                            let article = history.article(for: entry, in: store.articles)
+                            let article = history.article(for: entry, in: store.libraryArticles)
                             store.selectedArticleID = article.id
                             historyArticle = article
                         } label: {
