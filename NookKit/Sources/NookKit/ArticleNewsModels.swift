@@ -26,11 +26,15 @@ public struct ArticleImageMetadata: Codable, Hashable, Sendable {
     public var url: URL
     public var provenance: HeroImageProvenance
     public var mimeType: String?
+    public var width: Int?
+    public var height: Int?
 
-    public init(url: URL, provenance: HeroImageProvenance, mimeType: String? = nil) {
+    public init(url: URL, provenance: HeroImageProvenance, mimeType: String? = nil, width: Int? = nil, height: Int? = nil) {
         self.url = url
         self.provenance = provenance
         self.mimeType = mimeType
+        self.width = width
+        self.height = height
     }
 }
 

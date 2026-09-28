@@ -1,5 +1,6 @@
 import NookKit
 import SwiftUI
+import ImageIO
 
 /// One editorial surface for the phone stack and the iPad's middle column.
 /// Projection work stays outside body and runs off the main actor.
@@ -15,7 +16,6 @@ struct NewsHomeView: View {
     @State private var editionDate = Date.now
     @State private var readSnapshot: [Article.ID: Bool] = [:]
     @State private var projection: NewsHomeProjection?
-    @State private var failedImages: Set<URL> = []
     @State private var limit = 100
     @State private var categoryScrollPosition: NewsHomeSection?
     @State private var categoryHasLeadingOverflow = false
@@ -200,7 +200,7 @@ struct NewsHomeView: View {
             }
         } else if let projection {
             if let hero = projection.hero {
-                storyButton(hero) { HeroStoryCard(story: hero, failedImages: $failedImages) }
+                storyButton(hero) { HeroStoryCard(story: hero) }
                     .accessibilityIdentifier("news.hero")
                     .background {
                         if tour.listHintActive {
@@ -211,13 +211,13 @@ struct NewsHomeView: View {
                     }
                 ForEach(projection.primaryStories) { story in
                     NewsRule()
-                    storyButton(story) { HorizontalStoryCard(story: story, failedImages: $failedImages) }
+                    storyButton(story) { HorizontalStoryCard(story: story) }
                 }
                 ForEach(Array(projection.secondaryStories.enumerated()), id: \.element.id) { index, story in
                     NewsRule()
                     storyButton(story) {
                         if index % 3 == 2 {
-                            HorizontalStoryCard(story: story, failedImages: $failedImages)
+                            HorizontalStoryCard(story: story)
                         } else {
                             CompactStoryCard(story: story)
                         }
@@ -272,11 +272,10 @@ struct NewsHomeView: View {
 
 private struct HeroStoryCard: View {
     let story: NewsHomeStory
-    @Binding var failedImages: Set<URL>
 
     var body: some View {
         VStack(alignment: .leading, spacing: 17) {
-            NewsStoryImage(url: story.imageURL, ratio: 16 / 9, corner: 13, failedImages: $failedImages)
+            NewsStoryImage(article: story.article, use: .hero, ratio: 16 / 9, corner: 13)
             Text(story.article.title).newsFont(.hero).lineSpacing(1)
                 .fixedSize(horizontal: false, vertical: true)
             if let subtitle = story.article.subtitle, !subtitle.isEmpty {
@@ -292,11 +291,11 @@ private struct HeroStoryCard: View {
 
 private struct HorizontalStoryCard: View {
     let story: NewsHomeStory
-    @Binding var failedImages: Set<URL>
+    @State private var hasImage = false
     @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
-        HStack(alignment: .top, spacing: 16) {
+        HStack(alignment: .top, spacing: hasImage ? 16 : 0) {
             VStack(alignment: .leading, spacing: 9) {
                 Text(story.article.title).newsFont(.horizontalTitle).lineSpacing(1)
                     .fixedSize(horizontal: false, vertical: true)
@@ -306,9 +305,10 @@ private struct HorizontalStoryCard: View {
                 }
                 NewsStoryMetadata(story: story, includeCategory: false)
             }.frame(maxWidth: .infinity, alignment: .leading)
-            if !typeSize.isAccessibilitySize, let url = story.imageURL, !failedImages.contains(url) {
-                NewsStoryImage(url: url, ratio: 4 / 3, corner: 9, failedImages: $failedImages)
-                    .frame(maxWidth: 100)
+            if !typeSize.isAccessibilitySize {
+                NewsStoryImage(article: story.article, use: .card, ratio: 4 / 3, corner: 9,
+                               onAvailability: { hasImage = $0 })
+                    .frame(maxWidth: hasImage ? 100 : 0)
             }
         }
     }
@@ -340,27 +340,47 @@ private struct NewsStoryMetadata: View {
 }
 
 private struct NewsStoryImage: View {
-    let url: URL?
+    let article: Article
+    let use: ArticleImageUse
     let ratio: CGFloat
     let corner: CGFloat
-    @Binding var failedImages: Set<URL>
+    var onAvailability: (Bool) -> Void = { _ in }
+    @State private var image: Image?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        if let url, !failedImages.contains(url) {
-            AsyncImage(url: url) { phase in
-                switch phase {
-                case .success(let image):
-                    Color.clear.aspectRatio(ratio, contentMode: .fit)
-                        .overlay { image.resizable().scaledToFill() }
-                        .clipShape(RoundedRectangle(cornerRadius: corner))
-                        .accessibilityHidden(true)
-                case .failure:
-                    Color.clear.frame(height: 0).onAppear { failedImages.insert(url) }
-                default:
-                    // No empty image rectangle. Text is immediately readable;
-                    // successful images join the layout when available.
-                    Color.clear.frame(height: 0)
-                }
+        Group {
+            if let image {
+                Color.clear.aspectRatio(ratio, contentMode: .fit)
+                    .overlay { image.resizable().scaledToFill() }
+                    .clipShape(RoundedRectangle(cornerRadius: corner))
+                    .accessibilityHidden(true)
+            } else {
+                Color.clear.frame(width: 0, height: 0)
+            }
+        }
+        .onChange(of: image != nil) { _, available in onAvailability(available) }
+        .task(id: ArticleContent(article)) {
+            let resolution = await ArticleImageResolver.shared.resolve(article)
+            guard !Task.isCancelled else { return }
+            guard let candidate = resolution.image(for: use),
+                  let data = try? await ArticleImageCache.shared.data(for: candidate.url) else {
+                image = nil
+                return
+            }
+            // Decode only the display-size raster; keep original bytes shared
+            // in the URL cache for other cards and future consumers.
+            let raster = await Task.detached(priority: .utility) {
+                guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil as CGImage? }
+                return CGImageSourceCreateThumbnailAtIndex(source, 0, [
+                    kCGImageSourceCreateThumbnailFromImageAlways: true,
+                    kCGImageSourceThumbnailMaxPixelSize: 1800,
+                    kCGImageSourceCreateThumbnailWithTransform: true
+                ] as CFDictionary)
+            }.value
+            guard !Task.isCancelled else { return }
+            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) {
+                image = raster.map { Image(decorative: $0, scale: 1) }
             }
         }
     }

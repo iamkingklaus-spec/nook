@@ -872,7 +872,9 @@ final class FeedXMLParser: NSObject, XMLParserDelegate {
             guard medium == "image" || mime?.hasPrefix("image/") == true
                     || ["jpg", "jpeg", "png", "gif", "webp", "avif", "heic"].contains(url.pathExtension.lowercased()) else { return }
         }
-        let image = ArticleImageMetadata(url: url, provenance: provenance, mimeType: mime)
+        let image = ArticleImageMetadata(url: url, provenance: provenance, mimeType: mime,
+                                         width: attributes["width"].flatMap(Int.init),
+                                         height: attributes["height"].flatMap(Int.init))
         if currentArticle?.images.contains(image) == false { currentArticle?.images.append(image) }
     }
 

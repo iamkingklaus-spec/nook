@@ -20,8 +20,7 @@ public struct NewsHomeStory: Identifiable, Sendable {
         self.article = article
         publisher = NewsPublisher(feed: feed, articleURL: article.url)
         classification = NewsClassificationService().classify(article, feed: feed)
-        imageURL = ([article.heroImageURL].compactMap { $0 } + article.rssImages.map(\.url))
-            .first { ["https", "http"].contains($0.scheme?.lowercased() ?? "") && $0.host != nil }
+        imageURL = ArticleImagePolicy.ranked(ArticleImagePolicy.rssCandidates(article)).first?.url
     }
 }
 

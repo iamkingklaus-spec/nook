@@ -82,13 +82,18 @@ public final class ReaderModeExtractor {
         guard let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https" else {
             return .failed
         }
+        await ArticleImagePageStore.shared.beginExtraction(url)
         return await withCheckedContinuation { continuation in
             var session: ExtractionSession!
             session = ExtractionSession(
                 url: url, engine: engine, timeout: timeout, reloadFromOrigin: reloadFromOrigin
             ) { [weak self] outcome in
+                let imageHTML = session.imageSourceHTML
                 self?.retain.remove(session)
-                continuation.resume(returning: outcome)
+                Task {
+                    await ArticleImagePageStore.shared.endExtraction(url, html: imageHTML)
+                    continuation.resume(returning: outcome)
+                }
             }
             retain.insert(session)
             session.start()
@@ -119,6 +124,7 @@ final class ExtractionSession: NSObject, WKNavigationDelegate, WKScriptMessageHa
     private var timeoutTask: Task<Void, Never>?
     private var parseTask: Task<Void, Never>?
     private var finished = false
+    fileprivate var imageSourceHTML: String?
 
     init(
         url: URL,
@@ -209,6 +215,7 @@ final class ExtractionSession: NSObject, WKNavigationDelegate, WKScriptMessageHa
 
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         guard message.name == "nookExtract", let body = message.body as? [String: Any] else { return }
+        imageSourceHTML = body["source"] as? String ?? body["imageSource"] as? String ?? imageSourceHTML
 
         // The legibility path posts the page, not an article: the engine runs
         // natively, in its own web view, and the answer comes back here.
@@ -288,6 +295,7 @@ final class ExtractionSession: NSObject, WKNavigationDelegate, WKScriptMessageHa
                       refreshed != source
                 else { break }
                 source = refreshed
+                imageSourceHTML = refreshed
             }
             if !finished { finish(.failed) }
         }
@@ -407,6 +415,7 @@ final class ExtractionSession: NSObject, WKNavigationDelegate, WKScriptMessageHa
       var attempts = 0;
 
       function done(payload) {
+        try { payload.imageSource = window.__nook.source(); } catch (_) {}
         try { window.webkit.messageHandlers.nookExtract.postMessage(payload); } catch (e) {}
       }
 
