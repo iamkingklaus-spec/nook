@@ -67,6 +67,19 @@ public final class ReadingHistoryStore {
     }
     public func clear() { save([]) }
 
+    /// Search persisted metadata even when the live RSS library no longer has
+    /// the article. Exclusions avoid duplicate live/history search results.
+    public func search(_ query: String, excluding articles: [Article] = []) -> [ReadingHistoryEntry] {
+        let words = query.split(whereSeparator: \.isWhitespace).map(String.init)
+        let ids = Set(articles.map(\.id))
+        let urls = Set(articles.map { StableArticleIdentity.canonicalURL($0.url) })
+        return entries.filter { entry in
+            !ids.contains(entry.articleID) && !urls.contains(entry.canonicalURL) && words.allSatisfy {
+                (entry.title + " " + entry.source).range(of: $0, options: [.caseInsensitive, .diacriticInsensitive]) != nil
+            }
+        }
+    }
+
     public func article(for entry: ReadingHistoryEntry, in articles: [Article]) -> Article {
         if let current = articles.first(where: { $0.id == entry.articleID })
             ?? articles.first(where: { StableArticleIdentity.canonicalURL($0.url) == entry.canonicalURL }) { return current }

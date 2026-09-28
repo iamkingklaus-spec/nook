@@ -28,6 +28,7 @@ struct SettingsView: View {
     private enum Destination: Hashable {
         case general
         case reading
+        case history
         case reader
         case feeds
         case articleRules
@@ -65,6 +66,10 @@ struct SettingsView: View {
                     NavigationLink(value: Destination.reading) {
                         Label("Reading", systemImage: "book")
                     }
+                    NavigationLink(value: Destination.history) {
+                        Label("阅读历史 / History", systemImage: "clock.arrow.circlepath")
+                    }
+                    .accessibilityIdentifier("settings.readingHistory")
                     NavigationLink(value: Destination.reader) {
                         Label("Reader", systemImage: "textformat")
                     }
@@ -214,6 +219,8 @@ struct SettingsView: View {
             GeneralSettingsScreen()
         case .reading:
             ReadingSettingsScreen()
+        case .history:
+            ReadingHistoryPage(store: store)
         case .reader:
             ReaderSettingsScreen()
         case .feeds:

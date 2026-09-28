@@ -1460,17 +1460,18 @@ private struct StarredTab: View {
     }
 }
 
-private struct ReadingHistoryPage: View {
+struct ReadingHistoryPage: View {
     let store: ReaderStore
     @State private var history = ReadingHistoryStore.shared
     @State private var pushed: Article?
     @State private var confirmingClear = false
+    @State private var query = ""
     @Environment(TabBarChrome.self) private var tabChrome
 
     var body: some View {
         List {
             if let error = history.errorMessage { Text(error).foregroundStyle(.secondary) }
-            ForEach(history.entries) { entry in
+            ForEach(history.search(query)) { entry in
                 Button {
                     let article = history.article(for: entry, in: store.articles)
                     store.selectedArticleID = article.id
@@ -1486,7 +1487,8 @@ private struct ReadingHistoryPage: View {
                 .swipeActions { Button("删除", role: .destructive) { history.delete(entry.id) } }
             }
         }
-        .navigationTitle("History / 阅读历史")
+        .navigationTitle("阅读历史 / History")
+        .searchable(text: $query, prompt: "搜索阅读历史")
         .overlay {
             if history.entries.isEmpty && history.errorMessage == nil {
                 ContentUnavailableView("暂无阅读历史", systemImage: "clock", description: Text("打开文章后会自动记录在此设备。"))
@@ -2713,6 +2715,12 @@ private struct ArticleList: View {
     /// Shared, on-device title translator for the opt-in "translate list titles"
     /// experiment. Reading its `state(for:)` in `row` observes streaming updates.
     private let titleTranslator = ListTitleTranslator.shared
+    @State private var history = ReadingHistoryStore.shared
+    @State private var historyArticle: Article?
+    private var historyMatches: [ReadingHistoryEntry] {
+        guard !store.searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return [] }
+        return history.search(store.searchText, excluding: store.articles)
+    }
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -2737,7 +2745,8 @@ private struct ArticleList: View {
     }
 
     private var list: some View {
-        List(store.visibleArticles, selection: $selection) { article in
+        List(selection: $selection) {
+            ForEach(store.visibleArticles) { article in
             row(article)
                 // Drive the dwell-based, off-screen-cancelling title translation
                 // queue (no-op unless the experiment is enabled).
@@ -2834,6 +2843,28 @@ private struct ArticleList: View {
                 // No divider above the first row or below the last — only between rows.
                 .listRowSeparator(article.id == store.visibleArticles.first?.id ? .hidden : .automatic, edges: .top)
                 .listRowSeparator(article.id == store.visibleArticles.last?.id ? .hidden : .automatic, edges: .bottom)
+            }
+            if !historyMatches.isEmpty {
+                Section("阅读历史 / History") {
+                    ForEach(historyMatches) { entry in
+                        Button {
+                            let article = history.article(for: entry, in: store.articles)
+                            store.selectedArticleID = article.id
+                            historyArticle = article
+                        } label: {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(entry.title).foregroundStyle(.primary)
+                                Text(entry.source).font(.caption).foregroundStyle(.secondary)
+                                Text(entry.lastOpenedAt, style: .relative).font(.caption).foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        .onChange(of: historyArticle == nil) { _, popped in tabChrome.setReaderOpen(!popped) }
+        .navigationDestination(item: $historyArticle) { _ in
+            ReaderDetailView(store: store, articleOverride: $historyArticle).toolbar(.hidden, for: .tabBar)
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
@@ -2874,7 +2905,7 @@ private struct ArticleList: View {
         }
         .refreshable { await refreshCurrent() }
         .overlay {
-            if store.visibleArticles.isEmpty { emptyState }
+            if store.visibleArticles.isEmpty && historyMatches.isEmpty { emptyState }
         }
         .onAppear { configureTitleTranslator() }
         .onChange(of: translateListTitles) { _, _ in configureTitleTranslator() }

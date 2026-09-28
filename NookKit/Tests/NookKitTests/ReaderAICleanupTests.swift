@@ -82,11 +82,11 @@ struct ReaderAICleanupTests {
         #expect(kept.nodes.count == doc.nodes.count)
     }
 
-    @Test func missingDecisionKeepsOriginalButDoesNotSpendTranslationTokens() {
+    @Test func missingDecisionKeepsOriginalAvailableForTranslation() {
         let doc = BlockReaderDocument(input: cleanupInput())
         let cleaned = ReaderAICleanup.filtered(doc, decisions: [:])
         #expect(cleaned.nodes.count == doc.nodes.count)
-        #expect(cleaned.texts.isEmpty)
+        #expect(cleaned.texts.map(\.blockID) == doc.texts.map(\.blockID))
     }
 
     @Test func quoteListAndQAOrderArePreserved() throws {
@@ -103,7 +103,7 @@ struct ReaderAICleanupTests {
 
     @Test func longCleanupUsesMultipleBlocksAndKeepsOriginalNeighborhoodOnRetry() throws {
         let all = (0..<70).map { ReaderAICleanup.Candidate(blockID: "id\($0)", kind: "paragraph", text: "English \($0)") }
-        #expect(ReaderAICleanup.batches(all).map(\.count) == [32, 32, 6])
+        #expect(ReaderAICleanup.batches(all).map(\.count) == [12, 12, 12, 12, 12, 10])
         let prompt = try ReaderAICleanup.prompt([all[5], all[8]], all: all)
         let root = try #require(JSONSerialization.jsonObject(with: Data(prompt.utf8)) as? [String: Any])
         let context = try #require(root["context"] as? [[String: String]])
@@ -128,7 +128,10 @@ private actor CleanupSpy {
     var translationCalls: [[String]] = []
     let omitFirst: Bool
     let failAt: Int?
-    init(omitFirst: Bool = false, failAt: Int? = nil) { self.omitFirst = omitFirst; self.failAt = failAt }
+    let translationFailAt: Int?
+    init(omitFirst: Bool = false, failAt: Int? = nil, translationFailAt: Int? = nil) {
+        self.omitFirst = omitFirst; self.failAt = failAt; self.translationFailAt = translationFailAt
+    }
     func clean(_ blocks: [ReaderAICleanup.Candidate]) throws -> String {
         cleanupCalls.append(blocks.map(\.blockID))
         if cleanupCalls.count == failAt { throw URLError(.notConnectedToInternet) }
@@ -137,6 +140,7 @@ private actor CleanupSpy {
     }
     func translate(_ blocks: [BlockTranslationText]) throws -> String {
         translationCalls.append(blocks.map(\.blockID))
+        if translationCalls.count == translationFailAt { throw URLError(.timedOut) }
         return String(decoding: try JSONSerialization.data(withJSONObject: ["translations": blocks.map {
             ["blockID": $0.blockID, "translatedText": $0.template.replacingOccurrences(of: "English", with: "中文")]
         }]), as: UTF8.self)
@@ -145,6 +149,115 @@ private actor CleanupSpy {
 
 @Suite("Automatic bilingual reader lifecycle") @MainActor
 struct AutomaticReaderTests {
+    private func longInput(_ count: Int = 64) -> BlockReaderInput {
+        cleanupInput((0..<count).map { "English reporting paragraph \($0). A complete account of this event." })
+    }
+
+    @Test func longArticleAllCleanupBatchesSucceed() async {
+        let directory = cleanupDirectory(); defer { try? FileManager.default.removeItem(at: directory) }
+        let spy = CleanupSpy()
+        let current = controller(directory, spy: spy)
+        await current.open(longInput())
+        #expect(current.translatedCount == 64 && current.isComplete)
+        #expect(await spy.cleanupCalls.map(\.count) == [12, 12, 12, 12, 12, 4])
+    }
+
+    @Test func middleCleanupFailureKeepsAll64BlocksAndLaterBatchesProceed() async {
+        let directory = cleanupDirectory(); defer { try? FileManager.default.removeItem(at: directory) }
+        let spy = CleanupSpy(failAt: 3), input = longInput()
+        let reader = controller(directory, spy: spy)
+        await reader.open(input)
+        #expect(reader.translatedCount == 64)
+        #expect(reader.cleanupPending && reader.isComplete)
+        #expect(await spy.cleanupCalls.count == 6)
+        #expect(reader.prepared?.texts.map(\.blockID) == BlockReaderDocument(input: input).texts.map(\.blockID))
+        #expect(reader.cleanupMessage?.contains("本地正文回退") == true)
+        let oldCalls = await spy.translationCalls.count
+        await reader.retryAICleanup()
+        let cleanupCalls = await spy.cleanupCalls
+        #expect(cleanupCalls.last == cleanupCalls[2])
+        #expect(await spy.translationCalls.count == oldCalls)
+        #expect(!reader.cleanupPending)
+    }
+
+    @Test func firstCleanupBatchFailureDoesNotLeave41TranslationsAtZero() async {
+        let directory = cleanupDirectory(); defer { try? FileManager.default.removeItem(at: directory) }
+        let spy = CleanupSpy(failAt: 1)
+        let current = controller(directory, spy: spy)
+        await current.open(longInput(41))
+        #expect(current.translatedCount == 41)
+        #expect(await spy.cleanupCalls.count == 4)
+    }
+
+    @Test func everyCleanupResponseMalformedStillTranslatesLocalDocument() async {
+        let directory = cleanupDirectory(); defer { try? FileManager.default.removeItem(at: directory) }
+        let spy = CleanupSpy()
+        let reader = BlockReaderTranslationController(cache: .init(directory: directory.appendingPathComponent("translations")),
+            transport: .init { blocks, _ in try await spy.translate(blocks) },
+            cleanupTransport: .init { _, _, _ in "malformed" }, cleanupCache: .init(directory: directory.appendingPathComponent("cleanup")))
+        await reader.open(longInput(41))
+        #expect(reader.translatedCount == 41)
+        #expect(reader.cleanupPending && reader.isComplete)
+    }
+
+    @Test func translationRetryDoesNotRepeatCleanupOrSuccessfulTranslations() async {
+        let directory = cleanupDirectory(); defer { try? FileManager.default.removeItem(at: directory) }
+        let spy = CleanupSpy(failAt: 2, translationFailAt: 2)
+        let current = controller(directory, spy: spy)
+        await current.open(longInput())
+        #expect(current.translatedCount == 12)
+        let successful = Set(current.translatedHTML.keys)
+        let cleanupCount = await spy.cleanupCalls.count
+        await current.translate()
+        #expect(current.translatedCount == 64)
+        #expect(await spy.cleanupCalls.count == cleanupCount)
+        #expect(await spy.translationCalls.dropFirst(2).flatMap { $0 }.allSatisfy { !successful.contains($0) })
+    }
+
+    @Test func reopenRetriesFailedCleanupWithoutTranslatingSuccessfulBlocksAgain() async {
+        let directory = cleanupDirectory(); defer { try? FileManager.default.removeItem(at: directory) }
+        let spy = CleanupSpy(failAt: 2)
+        await controller(directory, spy: spy).open(longInput())
+        let translated = await spy.translationCalls.count
+        let reopened = controller(directory, spy: spy)
+        await reopened.open(longInput())
+        #expect(reopened.translatedCount == 64)
+        #expect(await spy.cleanupCalls.map(\.count) == [12, 12, 12, 12, 12, 4, 12])
+        #expect(await spy.translationCalls.count == translated)
+    }
+
+    @Test func cleanupCacheWriteFailureDoesNotBlockTranslation() async {
+        let directory = cleanupDirectory(); defer { try? FileManager.default.removeItem(at: directory) }
+        let spy = CleanupSpy()
+        let reader = BlockReaderTranslationController(cache: .init(directory: directory),
+            transport: .init { blocks, _ in try await spy.translate(blocks) },
+            cleanupTransport: .init { batch, _, _ in try await spy.clean(batch) }, cleanupCache: .init(directory: nil))
+        await reader.open(longInput(41))
+        #expect(reader.translatedCount == 41)
+        #expect(reader.cleanupMessage?.contains("暂未保存") == true)
+    }
+
+    @Test func cleanupByteBudgetSplitsUnicodeBlocks() {
+        let candidates = (0..<20).map {
+            ReaderAICleanup.Candidate(blockID: "id\($0)", kind: "paragraph", text: String(repeating: "文", count: 2_000))
+        }
+        let batches = ReaderAICleanup.batches(candidates)
+        #expect(batches.count == 10)
+        #expect(batches.allSatisfy { $0.reduce(0) { $0 + $1.text.utf8.count } <= 12_000 })
+    }
+
+    @Test func deterministicBaselineCacheRestoresIDsAndInvalidatesChangedContent() async throws {
+        let directory = cleanupDirectory(); defer { try? FileManager.default.removeItem(at: directory) }
+        let first = await ReaderLocalDocumentCache(directory: directory).prepare(longInput())
+        let second = await ReaderLocalDocumentCache(directory: directory).prepare(longInput())
+        #expect(first.document == second.document)
+        #expect(first.texts.map(\.blockID) == second.texts.map(\.blockID))
+        #expect(try FileManager.default.contentsOfDirectory(atPath: directory.path).count == 1)
+        let changed = await ReaderLocalDocumentCache(directory: directory).prepare(longInput(41))
+        #expect(changed.document.documentHash != first.document.documentHash)
+        #expect(try FileManager.default.contentsOfDirectory(atPath: directory.path).count == 2)
+    }
+
     private func controller(_ directory: URL, spy: CleanupSpy) -> BlockReaderTranslationController {
         .init(cache: BlockTranslationCache(directory: directory.appendingPathComponent("translation")),
             transport: .init { blocks, _ in try await spy.translate(blocks) },
@@ -198,12 +311,12 @@ struct AutomaticReaderTests {
         let partial = controller(directory, spy: spy)
         await partial.open(cleanupInput())
         #expect(partial.cleanupPending)
-        #expect(partial.translatedCount == 1)
-        #expect(!partial.isComplete)
-        await partial.translate()
+        #expect(partial.translatedCount == 2)
+        #expect(partial.isComplete)
+        await partial.retryAICleanup()
         #expect(partial.isComplete)
         #expect(await spy.cleanupCalls.map(\.count) == [2, 1])
-        #expect(await spy.translationCalls.map(\.count) == [1, 1])
+        #expect(await spy.translationCalls.map(\.count) == [2])
     }
 
     @Test func laterCleanupFailurePersistsEarlierDecisionsForReopen() async {
@@ -213,11 +326,11 @@ struct AutomaticReaderTests {
         await first.open(input)
         #expect(first.cleanupPending)
         #expect(first.prepared?.nodes.count == 40)
-        #expect(await spy.translationCalls.isEmpty)
+        #expect(first.translatedCount == 40)
         let second = controller(directory, spy: spy)
         await second.open(input)
         #expect(second.isComplete)
-        #expect(await spy.cleanupCalls.map(\.count) == [32, 8, 8])
+        #expect(await spy.cleanupCalls.map(\.count) == [12, 12, 12, 4, 12])
     }
 
     @Test func failedCleanupShowsOriginalAndOffersRetry() async {
@@ -227,21 +340,26 @@ struct AutomaticReaderTests {
         await failing.open(cleanupInput())
         #expect(failing.prepared?.nodes.count == 2)
         #expect(failing.cleanupPending && !failing.isCleaning)
-        #expect(failing.message != nil)
-        #expect(await spy.translationCalls.isEmpty)
-        await failing.translate()
+        #expect(failing.cleanupMessage != nil)
+        #expect(failing.translatedCount == 2)
+        await failing.retryAICleanup()
         #expect(failing.isComplete)
     }
 
     @Test func classifierCannotHideEntireStory() async {
         let directory = cleanupDirectory(); defer { try? FileManager.default.removeItem(at: directory) }
         let reader = BlockReaderTranslationController(cache: .init(directory: directory),
-            transport: .init { _, _ in Issue.record("Must not translate after invalid cleanup"); return "" },
+            transport: .init { blocks, _ in
+                String(decoding: try JSONSerialization.data(withJSONObject: ["translations": blocks.map {
+                    ["blockID": $0.blockID, "translatedText": "有效译文"]
+                }]), as: UTF8.self)
+            },
             cleanupTransport: .init { batch, _, _ in try cleanupResponse(batch.map { ($0.blockID, "hide") }) },
             cleanupCache: .init(directory: directory.appendingPathComponent("cleanup")))
         await reader.open(cleanupInput())
         #expect(reader.prepared?.nodes.count == 2)
         #expect(reader.cleanupPending)
+        #expect(reader.translatedCount == 2)
     }
 
     @Test func resetCancelsCleanupAndLateResponseCannotTranslate() async {
@@ -299,7 +417,7 @@ struct AutomaticReaderTests {
         let reopened = controller(directory, spy: spy)
         await reopened.open(input)
         #expect(reopened.translatedCount == 17)
-        #expect(await spy.cleanupCalls.count == 1)
+        #expect(await spy.cleanupCalls.count == 2)
         #expect(await spy.translationCalls.map(\.count) == [12, 5, 5])
     }
 }

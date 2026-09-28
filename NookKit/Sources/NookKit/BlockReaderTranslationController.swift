@@ -20,10 +20,11 @@ public final class BlockReaderTranslationController {
     public private(set) var isCleaning = false
     public private(set) var automaticPreparation = false
     public private(set) var cleanupPending = false
+    public private(set) var cleanupMessage: String?
     public private(set) var message: String?
     public private(set) var translatedCount = 0
     public var totalCount: Int { prepared?.texts.count ?? 0 }
-    public var isComplete: Bool { prepared != nil && !cleanupPending && translatedCount == totalCount }
+    public var isComplete: Bool { prepared != nil && translatedCount == totalCount }
     public var isPrepared: Bool { prepared != nil }
     private(set) var prepared: BlockReaderDocument?
     private(set) var translatedHTML: [String: String] = [:]
@@ -50,16 +51,19 @@ public final class BlockReaderTranslationController {
     @ObservationIgnored private let transport: BlockTranslationTransport
     @ObservationIgnored private let cleanupTransport: ReaderCleanupTransport?
     @ObservationIgnored private let cleanupCache: ReaderCleanupCache
+    @ObservationIgnored private let localCache: ReaderLocalDocumentCache?
     @ObservationIgnored private var originalDocument: BlockReaderDocument?
 
-    public convenience init() { self.init(cache: .shared, transport: .gemini, cleanupTransport: .gemini) }
+    public convenience init() { self.init(cache: .shared, transport: .gemini, cleanupTransport: .gemini, localCache: .shared) }
 
     init(cache: BlockTranslationCache, transport: BlockTranslationTransport,
-         cleanupTransport: ReaderCleanupTransport? = nil, cleanupCache: ReaderCleanupCache = .shared) {
+         cleanupTransport: ReaderCleanupTransport? = nil, cleanupCache: ReaderCleanupCache = .shared,
+         localCache: ReaderLocalDocumentCache? = nil) {
         self.cache = cache
         self.transport = transport
         self.cleanupTransport = cleanupTransport
         self.cleanupCache = cleanupCache
+        self.localCache = localCache
     }
 
     /// Called only by the visible Reader task, never feed refresh/preloading.
@@ -71,7 +75,7 @@ public final class BlockReaderTranslationController {
         await load(input, model: model)
         guard !Task.isCancelled, self.input == input, self.model == model else { return }
         if changed || firstAutomaticOpen { cleanupPending = cleanupTransport != nil && prepared != nil }
-        await translate()
+        if cleanupPending { await retryAICleanup() } else { await translate() }
     }
 
     public func load(_ input: BlockReaderInput?, model: GeminiTranslator.Model = .flashLite) async {
@@ -83,6 +87,7 @@ public final class BlockReaderTranslationController {
         prepared = nil
         originalDocument = nil
         cleanupPending = false
+        cleanupMessage = nil
         key = nil
         translations = [:]
         translatedHTML = [:]
@@ -91,7 +96,9 @@ public final class BlockReaderTranslationController {
         message = nil
         isLoading = input != nil
         guard let input else { return }
-        let document = await Task.detached(priority: .userInitiated) { BlockReaderDocument(input: input) }.value
+        let document: BlockReaderDocument
+        if let localCache { document = await localCache.prepare(input) }
+        else { document = await Task.detached(priority: .userInitiated) { BlockReaderDocument(input: input) }.value }
         guard generation == token, !Task.isCancelled else { return }
         let key = BlockTranslationCacheKey(input: input, document: document.document, model: model)
         let cached = await cache.load(key, texts: document.texts)
@@ -108,15 +115,23 @@ public final class BlockReaderTranslationController {
     }
 
     public func translate() async {
+        await performWork(cleanup: false)
+    }
+
+    public func retryAICleanup() async {
+        await performWork(cleanup: true)
+    }
+
+    private func performWork(cleanup: Bool) async {
         guard !Task.isCancelled else { return }
-        guard !isTranslating, !isLoading, !isComplete,
+        guard !isTranslating, !isLoading, (!isComplete || cleanup && cleanupPending),
               let prepared, let key else { return }
         isTranslating = true
         message = nil
         let token = generation
         let model = model
         let task = Task {
-            if automaticPreparation, cleanupTransport != nil {
+            if cleanup, cleanupTransport != nil {
                 await cleanAndTranslate(key: key, model: model, token: token)
             } else {
                 await run(document: prepared, key: key, model: model, token: token)
@@ -146,6 +161,7 @@ public final class BlockReaderTranslationController {
         prepared = nil
         originalDocument = nil
         cleanupPending = false
+        cleanupMessage = nil
         translatedHTML = [:]
         translations = [:]
         translatedCount = 0
@@ -159,22 +175,22 @@ public final class BlockReaderTranslationController {
         let candidates = ReaderAICleanup.candidates(originalDocument)
         let identity = ReaderCleanupCache.identity(key, candidates: candidates)
         var decisions = await cleanupCache.load(identity)
-        do {
-            try Task.checkCancellation()
-            guard generation == token else { return }
-            let expectedIDs = Set(candidates.map(\.blockID))
-            decisions = decisions.filter { expectedIDs.contains($0.key) }
-            if !originalDocument.texts.isEmpty && originalDocument.texts.allSatisfy({ decisions[$0.blockID] == .hide }) {
-                decisions = [:] // Corrupt/old cache must not blank out the reader.
-            }
-            // Original neighborhoods, including already cached neighbors, matter
-            // for author portraits/related cards during a partial retry.
-            for batch in ReaderAICleanup.batches(candidates) {
-                let missing = batch.filter { decisions[$0.blockID] == nil }
-                if missing.isEmpty { continue }
-                guard missing.allSatisfy({ $0.text.utf8.count <= 48_000 }) else { throw BlockTranslationError.tooLarge }
-                try Task.checkCancellation()
-                guard generation == token else { return }
+        guard generation == token, !Task.isCancelled else { return }
+        let expectedIDs = Set(candidates.map(\.blockID))
+        decisions = decisions.filter { expectedIDs.contains($0.key) }
+        if !originalDocument.texts.isEmpty && originalDocument.texts.allSatisfy({ decisions[$0.blockID] == .hide }) {
+            decisions = [:] // Corrupt/old cache must not blank out the reader.
+        }
+        // Original neighborhoods, including already cached neighbors, matter
+        // for author portraits/related cards during a partial retry.
+        for batch in ReaderAICleanup.batches(candidates) {
+            let missing = batch.filter { decisions[$0.blockID] == nil }
+            if missing.isEmpty { continue }
+            guard generation == token, !Task.isCancelled else { return }
+            do {
+                // Oversized single blocks fall back locally; never create an
+                // unbounded cleanup request or poison unrelated batches.
+                guard missing.allSatisfy({ $0.text.utf8.count <= 12_000 }) else { throw BlockTranslationError.tooLarge }
                 let response = try await cleanupTransport.request(missing, candidates, model)
                 try Task.checkCancellation()
                 guard generation == token else { return }
@@ -185,30 +201,24 @@ public final class BlockReaderTranslationController {
                     throw BlockTranslationError.malformed
                 }
                 decisions = merged
-                try await cleanupCache.store(decisions, identity: identity)
-            }
-            try Task.checkCancellation()
-            guard generation == token else { return }
-            cleanupPending = candidates.contains { decisions[$0.blockID] == nil }
-            let cleaned = ReaderAICleanup.filtered(originalDocument, decisions: decisions)
-            prepared = cleaned
-            apply(translations, document: cleaned)
-            isCleaning = false
-            if cleanupPending { message = "部分内容尚未完成清洗，已保留原文；可重试清洗与翻译。" }
-            await run(document: cleaned, key: key, model: model, token: token)
-        } catch {
-            guard generation == token, !Task.isCancelled else { return }
-            cleanupPending = true
-            // No successful source text is destroyed on a failed cleanup. A
-            // later explicit retry resumes cached decisions and translations.
-            prepared = originalDocument
-            apply(translations, document: originalDocument)
-            if let failure = error as? GeminiTranslator.Failure, case .missingCredential = failure.kind {
-                message = "请先在设置中配置 Gemini API Key；当前显示原文。"
-            } else {
-                message = "Gemini 清洗未完成，当前保留原文；可重试清洗与翻译。"
+                do { try await cleanupCache.store(decisions, identity: identity) }
+                catch { cleanupMessage = "AI 清洗结果暂未保存；本次继续使用，重新打开可能需要重试。" }
+            } catch {
+                guard generation == token, !Task.isCancelled else { return }
+                // No keep decision is fabricated/cached for failed blocks.
+                // They stay visible and translatable, and can be retried.
+                continue
             }
         }
+        guard generation == token, !Task.isCancelled else { return }
+        cleanupPending = candidates.contains { decisions[$0.blockID] == nil }
+        let cleaned = ReaderAICleanup.filtered(originalDocument, decisions: decisions)
+        prepared = cleaned
+        apply(translations, document: cleaned)
+        isCleaning = false
+        if cleanupPending { cleanupMessage = "AI 清洗部分完成，已使用本地正文回退；翻译继续进行。" }
+        else if cleanupMessage?.contains("暂未保存") != true { cleanupMessage = nil }
+        await run(document: cleaned, key: key, model: model, token: token)
     }
 
     private func run(document: BlockReaderDocument, key: BlockTranslationCacheKey,

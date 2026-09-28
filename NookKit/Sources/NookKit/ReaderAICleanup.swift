@@ -69,7 +69,7 @@ enum ReaderAICleanup {
             }
         }
         return document.presentationCopy(nodes: filter(document.nodes),
-            texts: document.texts.filter { decisions[$0.blockID] == .keep })
+            texts: document.texts.filter { decisions[$0.blockID] != .hide })
     }
 
     static let system = """
@@ -136,7 +136,7 @@ enum ReaderAICleanup {
         var result: [[Candidate]] = [], current: [Candidate] = []
         var bytes = 0
         for candidate in candidates {
-            if !current.isEmpty && (current.count >= 32 || bytes + candidate.text.utf8.count > 24_000) {
+            if !current.isEmpty && (current.count >= 12 || bytes + candidate.text.utf8.count > 12_000) {
                 result.append(current); current = []; bytes = 0
             }
             current.append(candidate); bytes += candidate.text.utf8.count

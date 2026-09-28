@@ -35,6 +35,12 @@ struct BlockReaderDocument: Sendable {
     let preparationReasons: [ArticleNoiseFilter.Reason]
     let eligibility: [String: TranslationEligibility]
 
+    func withBaseline(_ baseline: ArticleDocument) -> Self {
+        guard baseline == document else { return self }
+        return Self(document: baseline, nodes: nodes, texts: texts,
+                    preparationReasons: preparationReasons, eligibility: eligibility)
+    }
+
     /// Preserve source identity for learning, cache matching and Original Website.
     /// AI cleanup only masks display/translation candidates; it never rewrites it.
     func presentationCopy(nodes: [BlockReaderNode], texts: [BlockTranslationText]) -> Self {

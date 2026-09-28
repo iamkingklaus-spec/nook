@@ -8,6 +8,45 @@ struct ReadingHistoryTests {
     private let first = Date(timeIntervalSince1970: 100)
     private let later = Date(timeIntervalSince1970: 200)
 
+    @Test func archivedArticleRemainsSearchableAfterLeavingRSS() throws {
+        let file = location(); defer { try? FileManager.default.removeItem(at: file) }
+        let history = ReadingHistoryStore(file: file)
+        var article = Fixture.article("old", feedID: "f"); article.title = "Rare woodland discovery"
+        history.recordOpened(article, feed: Fixture.feed("BBC"), at: first)
+        let restarted = ReadingHistoryStore(file: file)
+        let result = try #require(restarted.search("WOODLAND", excluding: []).first)
+        #expect(result.source == "BBC")
+        #expect(restarted.article(for: result, in: []).id == article.id)
+    }
+
+    @Test func globalSearchDoesNotRepeatCurrentRSSMatches() {
+        let file = location(); defer { try? FileManager.default.removeItem(at: file) }
+        let history = ReadingHistoryStore(file: file), article = Fixture.article("article", feedID: "f")
+        history.recordOpened(article, feed: nil)
+        #expect(history.search("article", excluding: [article]).isEmpty)
+        var alias = article; alias.id = "new-id"
+        #expect(history.search("article", excluding: [alias]).isEmpty)
+    }
+
+    @Test func historySearchKeepsRecentOrderAndSupportsSource() {
+        let file = location(); defer { try? FileManager.default.removeItem(at: file) }
+        let history = ReadingHistoryStore(file: file)
+        history.recordOpened(Fixture.article("one", feedID: "f"), feed: Fixture.feed("BBC"), at: first)
+        history.recordOpened(Fixture.article("two", feedID: "f"), feed: Fixture.feed("BBC"), at: later)
+        #expect(history.search("bbc").map(\.articleID) == ["two", "one"])
+        #expect(history.search("BBC one").map(\.articleID) == ["one"])
+    }
+
+    @Test func searchDoesNotRecordAnOpenAndDeletionRemovesSearchResult() throws {
+        let file = location(); defer { try? FileManager.default.removeItem(at: file) }
+        let history = ReadingHistoryStore(file: file)
+        history.recordOpened(Fixture.article("article", feedID: "f"), feed: nil, at: first)
+        let entry = try #require(history.search("article").first)
+        #expect(entry.lastOpenedAt == first)
+        history.delete(entry.id)
+        #expect(ReadingHistoryStore(file: file).search("article").isEmpty)
+    }
+
     @Test func onlyExplicitOpenRecordsAnEntry() {
         let file = location(); defer { try? FileManager.default.removeItem(at: file) }
         let store = ReadingHistoryStore(file: file), article = Fixture.article("a", feedID: "f")

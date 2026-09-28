@@ -23,7 +23,7 @@ public struct BlockReaderControls: View {
                     ProgressView("正在准备正文…").font(.caption)
                 } else if !controller.isComplete {
                     HStack {
-                        Button(controller.cleanupPending ? "重试清洗与翻译" : (controller.translatedCount == 0 ? "翻译为简体中文" : "继续翻译")) {
+                        Button(controller.translatedCount == 0 ? "翻译为简体中文" : "继续翻译") {
                             Task { await controller.translate() }
                         }
                         .disabled(controller.isTranslating || !controller.isPrepared)
@@ -36,6 +36,13 @@ public struct BlockReaderControls: View {
                          ? "Gemini · 打开文章时自动清洗并翻译；缓存优先，未完成段落保留原文。"
                          : "Gemini · 仅点击翻译时发送正文；未完成的段落显示原文。")
                         .font(.caption).foregroundStyle(.secondary)
+                }
+                if controller.cleanupPending {
+                    Button("重试 AI 清洗") { Task { await controller.retryAICleanup() } }
+                        .font(.subheadline).disabled(controller.isTranslating || controller.isLoading)
+                }
+                if let message = controller.cleanupMessage {
+                    Text(message).font(.caption).foregroundStyle(.secondary)
                 }
                 if let message = controller.message {
                     Text(message).font(.caption).foregroundStyle(.secondary)
