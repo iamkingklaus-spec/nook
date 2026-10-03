@@ -24,6 +24,7 @@ private struct ScrollSnapshot: Equatable {
 
 struct ReaderDetailView: View {
     @Bindable var store: ReaderStore
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     /// The article to show, as a binding the compact tab shell owns, so the pushed
     /// reader is driven by its own value — not the shared, scope-dependent
     /// `store.selectedArticle` (which another tab's scope change can null out) — and
@@ -289,7 +290,7 @@ struct ReaderDetailView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color("ListBackground").ignoresSafeArea())
+        .nookScreen()
         // Keep the left-edge swipe-to-go-back working even while the reader hides
         // its back button (immersive reading). Hiding the back button otherwise
         // makes the system disable the interactive pop gesture.
@@ -333,6 +334,12 @@ struct ReaderDetailView: View {
         withAnimation(.easeInOut(duration: 0.28)) { coachStep = step.next }
     }
 
+    private var learningControlLayout: AnyLayout {
+        dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: NookTheme.Space.inline))
+            : AnyLayout(HStackLayout(spacing: NookTheme.Space.inline))
+    }
+
     private func reader(_ article: Article) -> some View {
         GeometryReader { proxy in
             ScrollViewReader { scrollProxy in
@@ -360,11 +367,17 @@ struct ReaderDetailView: View {
                         isShowingTranslation = false
                     }
 
-                    HStack {
-                        Toggle("英语学习", isOn: $readerLearningEnabled).fixedSize()
-                        Spacer()
-                        NavigationLink("Vocabulary") { VocabularyView() }
-                    }.font(.caption)
+                    learningControlLayout {
+                        Toggle("英语学习", isOn: $readerLearningEnabled)
+                        NavigationLink { VocabularyView() } label: {
+                            Label("Vocabulary", systemImage: "character.book.closed")
+                        }
+                        .buttonStyle(NookActionStyle(.quiet))
+                    }
+                    .font(NookTypography.metadata)
+                    .padding(.horizontal, NookTheme.Space.item)
+                    .padding(.vertical, NookTheme.Space.tight)
+                    .nookCard()
 
                     readerBody(article)
 
@@ -381,7 +394,7 @@ struct ReaderDetailView: View {
 
                     Spacer(minLength: 0)
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, NookTheme.Space.page)
                 .padding(.vertical, 16)
                 // Fill at least the whole viewport so the gestures also fire in
                 // the empty space below a short article, not only on the text.
@@ -943,7 +956,7 @@ struct ReaderDetailView: View {
             // Title first and prominent (system text style, Dynamic Type), the way
             // Safari Reader / News present an article.
             Text(displayTitle(article))
-                .font(.title.weight(.bold))
+                .font(NookTypography.articleTitle)
                 .textSelection(.enabled)
                 .fixedSize(horizontal: false, vertical: true)
                 .background(
@@ -1039,7 +1052,7 @@ struct ReaderDetailView: View {
                     readerSecondaryControls(article, for: effectiveSide)
                 }
             }
-            .tint(Color("AccentColor"))
+            .tint(NookTheme.accentPrimary)
             .foregroundStyle(Color.accentColor)
         }
         .padding(.horizontal, 16)
@@ -1777,9 +1790,7 @@ struct TranslationProgressBanner: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
-        .background(.regularMaterial, in: Capsule())
-        .overlay(Capsule().strokeBorder(Color.primary.opacity(0.08)))
-        .shadow(color: .black.opacity(0.12), radius: 8, y: 3)
+        .nookGlass(radius: NookTheme.Radius.card)
         .padding(.top, 10)
         .transition(.move(edge: .top).combined(with: .opacity))
     }

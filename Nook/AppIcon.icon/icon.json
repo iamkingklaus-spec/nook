@@ -1,189 +1,89 @@
 {
-  "fill" : {
-    "automatic-gradient" : "srgb:1.00000,0.98311,0.86998,1.00000"
+  "fill": {
+    "automatic-gradient": "srgb:0.90980,0.94902,1.00000,1.00000"
   },
-  "groups" : [
+  "groups": [
     {
-      "layers" : [
+      "layers": [
         {
-          "fill-specializations" : [
+          "image-name": "BackPage.svg",
+          "name": "BackPage",
+          "glass": false,
+          "fill-specializations": [
             {
-              "value" : {
-                "automatic-gradient" : "display-p3:0.28234,0.23103,0.12362,1.00000"
+              "value": {
+                "solid": "srgb:0.62745,0.76471,1.00000,1.00000"
               }
             },
             {
-              "appearance" : "tinted",
-              "value" : "automatic"
+              "appearance": "tinted",
+              "value": "automatic"
             }
-          ],
-          "image-name" : "6 – Layer 2.svg",
-          "name" : "6 – Layer 2",
-          "opacity" : 0.8,
-          "position" : {
-            "scale" : 1,
-            "translation-in-points" : [
-              -34.267837365084006,
-              -13.052021803247612
-            ]
-          }
+          ]
         },
         {
-          "fill-specializations" : [
+          "image-name": "BluePage.svg",
+          "name": "BluePage",
+          "glass": false,
+          "fill-specializations": [
             {
-              "value" : {
-                "automatic-gradient" : "display-p3:0.36629,0.22432,0.08458,1.00000"
+              "value": {
+                "solid": "srgb:0.23529,0.47059,0.91765,1.00000"
               }
             },
             {
-              "appearance" : "tinted",
-              "value" : "automatic"
+              "appearance": "tinted",
+              "value": "automatic"
             }
-          ],
-          "image-name" : "5 – Layer 2.svg",
-          "name" : "5 – Layer 2",
-          "opacity" : 0.8,
-          "position" : {
-            "scale" : 1,
-            "translation-in-points" : [
-              21.457818850950844,
-              1.551875876700933
-            ]
-          }
+          ]
         },
         {
-          "fill-specializations" : [
+          "image-name": "FrontPage.svg",
+          "name": "FrontPage",
+          "glass": false,
+          "fill-specializations": [
             {
-              "value" : {
-                "solid" : "display-p3:0.47398,0.28733,0.14062,1.00000"
+              "value": {
+                "solid": "srgb:1.00000,1.00000,1.00000,1.00000"
               }
             },
             {
-              "appearance" : "tinted",
-              "value" : "automatic"
+              "appearance": "tinted",
+              "value": "automatic"
             }
-          ],
-          "image-name" : "4 – Layer 2.svg",
-          "name" : "4 – Layer 2",
-          "opacity" : 0.8
+          ]
         },
         {
-          "fill-specializations" : [
+          "image-name": "ReadingMark.svg",
+          "name": "ReadingMark",
+          "glass": false,
+          "fill-specializations": [
             {
-              "value" : {
-                "solid" : "display-p3:0.39857,0.26728,0.07585,1.00000"
+              "value": {
+                "solid": "srgb:0.14118,0.35686,0.84314,1.00000"
               }
             },
             {
-              "appearance" : "tinted",
-              "value" : "automatic"
+              "appearance": "tinted",
+              "value": "automatic"
             }
-          ],
-          "image-name" : "3 – Layer 2.svg",
-          "name" : "3 – Layer 2",
-          "opacity" : 0.8
-        },
-        {
-          "fill-specializations" : [
-            {
-              "value" : {
-                "automatic-gradient" : "display-p3:0.33131,0.18300,0.12426,1.00000"
-              }
-            },
-            {
-              "appearance" : "tinted",
-              "value" : "automatic"
-            }
-          ],
-          "image-name" : "2 – Layer 2.svg",
-          "name" : "2 – Layer 2",
-          "opacity" : 0.8
-        },
-        {
-          "fill-specializations" : [
-            {
-              "value" : {
-                "solid" : "display-p3:0.52707,0.34104,0.16485,1.00000"
-              }
-            },
-            {
-              "appearance" : "tinted",
-              "value" : "automatic"
-            }
-          ],
-          "image-name" : "1 – Layer 2.svg",
-          "name" : "1 – Layer 2",
-          "opacity" : 0.8
-        },
-        {
-          "blend-mode-specializations" : [
-            {
-              "value" : "hard-light"
-            },
-            {
-              "appearance" : "dark",
-              "value" : "normal"
-            }
-          ],
-          "fill-specializations" : [
-            {
-              "value" : {
-                "automatic-gradient" : "display-p3:0.36525,0.21225,0.07019,1.00000",
-                "orientation" : {
-                  "start" : {
-                    "x" : 0.5,
-                    "y" : 0
-                  },
-                  "stop" : {
-                    "x" : 0.5,
-                    "y" : 0.7
-                  }
-                }
-              }
-            },
-            {
-              "appearance" : "dark",
-              "value" : {
-                "automatic-gradient" : "display-p3:1.00000,0.99382,0.99478,1.00000",
-                "orientation" : {
-                  "start" : {
-                    "x" : 0.5,
-                    "y" : 0
-                  },
-                  "stop" : {
-                    "x" : 0.5,
-                    "y" : 0.7
-                  }
-                }
-              }
-            },
-            {
-              "appearance" : "tinted",
-              "value" : {
-                "solid" : "display-p3:0.98842,0.97666,1.00000,1.00000"
-              }
-            }
-          ],
-          "glass" : false,
-          "hidden" : true,
-          "image-name" : "Adobe Express - file.png",
-          "name" : "Adobe Express - file"
+          ]
         }
       ],
-      "shadow" : {
-        "kind" : "neutral",
-        "opacity" : 0.5
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0.16
       },
-      "translucency" : {
-        "enabled" : true,
-        "value" : 0.5
+      "translucency": {
+        "enabled": false,
+        "value": 0
       }
     }
   ],
-  "supported-platforms" : {
-    "circles" : [
+  "supported-platforms": {
+    "circles": [
       "watchOS"
     ],
-    "squares" : "shared"
+    "squares": "shared"
   }
 }

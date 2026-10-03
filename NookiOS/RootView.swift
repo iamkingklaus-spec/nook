@@ -111,20 +111,14 @@ struct RootView: View {
                         try? await Task.sleep(for: .seconds(6))
                         WebViewWarmer.warmUp()
                     }
-                    // Overlap the splash's brand beat with bootstrap instead of
-                    // serializing them: launch takes max(bootstrap, 1.85s), not the sum.
-                    let splashStart = ContinuousClock.now
                     await store.bootstrap()
                     // First run (iOS only): bring a local library online so the
                     // tour can subscribe starter picks — and reading works —
                     // before any folder is ever chosen. No-op for existing
                     // users and once a real sync folder is configured.
                     await store.configureLocalStorageIfNeeded()
-                    // Keep the splash up while the nest assembles and the wordmark
-                    // appears, then reveal the loaded UI.
-                    let remaining = .milliseconds(1850) - splashStart.duration(to: .now)
-                    if remaining > .zero { try? await Task.sleep(for: remaining) }
-                    withAnimation(.easeOut(duration: 0.35)) { isReady = true }
+                    // The brand surface has no minimum display time.
+                    isReady = true
                     // First launch: after the splash reveal (so it doesn't fight the
                     // splash transition), present the welcome tour. The app is fully
                     // loaded underneath, so skipping drops straight into it.
@@ -502,9 +496,8 @@ private struct RegularShell: View {
 private struct ImportProgressBanner: View {
     let store: ReaderStore
 
-    /// Nook's brown, shared with the tab bar via `PlusTheme.accent` so the tint
-    /// cannot drift from the rest of the app's glass.
-    private static let accent = PlusTheme.accent
+    /// Shared brand accent, matching all navigation and reading controls.
+    private static let accent = NookTheme.accentPrimary
 
     var body: some View {
         // Observe the store ONLY here, in the leaf.
@@ -582,18 +575,9 @@ private struct ImportRing: View {
 }
 
 private extension View {
-    /// A non-interactive, faintly Nook-tinted Liquid Glass capsule for a status
-    /// pill on iOS 26; before 26 the same regular-material + hairline-stroke
-    /// capsule that the app's `glassCapsule()` falls back to. Non-interactive on
-    /// purpose: this is a readout, not a control, so it omits `.interactive()`.
-    @ViewBuilder
+    /// Import feedback uses the same restrained material as reading controls.
     func importPillGlass() -> some View {
-        if #available(iOS 26, *) {
-            glassEffect(.regular.tint(PlusTheme.accent.opacity(0.14)), in: .capsule)
-        } else {
-            background(.regularMaterial, in: Capsule())
-                .overlay(Capsule().strokeBorder(Color.primary.opacity(0.08)))
-        }
+        nookGlass(radius: NookTheme.Radius.card)
     }
 }
 
@@ -1352,16 +1336,8 @@ private struct SortableSegmentedControl: View {
         .frame(height: visualHeight)
     }
 
-    @ViewBuilder
     private var pill: some View {
-        if #available(iOS 26, *) {
-            // Decorative (non-interactive) → .regular, not .interactive().
-            Color.clear.glassEffect(.regular, in: .capsule)
-        } else {
-            Capsule(style: .continuous)
-                .fill(Color(.systemBackground))
-                .shadow(color: .black.opacity(0.12), radius: 2, y: 1)
-        }
+        Color.clear.nookGlass(radius: NookTheme.Radius.control)
     }
 
     @ViewBuilder
@@ -1478,15 +1454,18 @@ struct ReadingHistoryPage: View {
                     pushed = article
                 } label: {
                     VStack(alignment: .leading, spacing: 5) {
-                        Text(entry.title).foregroundStyle(.primary)
+                        Text(entry.title).font(NookTypography.storyTitle).foregroundStyle(NookTheme.textPrimary)
                         Text(entry.source).font(.caption).foregroundStyle(.secondary)
                         Text(entry.lastOpenedAt, style: .relative).font(.caption).foregroundStyle(.secondary)
                     }
                 }
+                .padding(.vertical, NookTheme.Space.inline)
+                .nookRows()
                 .accessibilityHint("重新打开文章")
                 .swipeActions { Button("删除", role: .destructive) { history.delete(entry.id) } }
             }
         }
+        .nookScreen()
         .navigationTitle("阅读历史 / History")
         .searchable(text: $query, prompt: "搜索阅读历史")
         .overlay {
@@ -1552,7 +1531,7 @@ private struct FeedsTab: View {
                         Label(SmartSource.all.title, systemImage: SmartSource.all.systemImage)
                     }
                 }
-                .listRowBackground(Rectangle().fill(.ultraThinMaterial))
+                .nookRows()
                 .id("feedsTop")
 
                 Section {
@@ -1570,7 +1549,7 @@ private struct FeedsTab: View {
                     Section {
                         ownNookRow(publication: publication)
                     }
-                    .listRowBackground(Rectangle().fill(.ultraThinMaterial))
+                    .nookRows()
                 }
 
                 if store.hasCategories {
@@ -1592,7 +1571,7 @@ private struct FeedsTab: View {
                             }
                         }
                     }
-                    .listRowBackground(Rectangle().fill(.ultraThinMaterial))
+                    .nookRows()
                 }
 
                 if !store.feedFolders.isEmpty || !store.ungroupedFeeds.isEmpty {
@@ -1625,7 +1604,7 @@ private struct FeedsTab: View {
                             }
                         }
                     }
-                    .listRowBackground(Rectangle().fill(.ultraThinMaterial))
+                    .nookRows()
                 }
 
                 // Tucked at the bottom: saved-offline articles, then filtered.
@@ -1656,11 +1635,11 @@ private struct FeedsTab: View {
                             }
                         }
                     }
-                    .listRowBackground(Rectangle().fill(.ultraThinMaterial))
+                    .nookRows()
                 }
             }
             .scrollContentBackground(.hidden)
-            .background(Color("ListBackground").ignoresSafeArea())
+            .nookScreen()
             .navigationTitle("Feeds")
             .navigationDestination(for: FeedTarget.self) { target in
                 // Apply this target's scope as the screen appears, so the shown
@@ -2021,71 +2000,25 @@ private struct ReaderPushingList<Top: View>: View {
     }
 }
 
-/// The launch/loading screen. The OS launch screen is a static `LaunchBackground`
-/// (cream) — the same color used here — so the hand-off is seamless; then the
-/// icon's twig layers drop in from above under gravity and assemble into the
-/// nest, matching the app icon.
+/// Static brand surface matching LaunchScreen; no artificial launch delay.
 struct SplashView: View {
-    /// When set, a slow launch shows what the pipeline is doing under the
-    /// wordmark (large libraries / cold iCloud reads can hold the splash well
-    /// past the brand animation).
     var store: ReaderStore? = nil
-
-    @State private var assembled = false
-    @State private var showWordmark = false
-    @State private var showProgress = false
-
     var body: some View {
         ZStack {
-            Color("LaunchBackground")
-                .ignoresSafeArea()
-
-            NestAssemblyView(size: 150, assembled: assembled)
-
-            // The wordmark fades in just below the nest once the twigs land.
-            // A fixed dark-brown reads on the always-cream splash (don't use
-            // .primary, which would be white in dark mode).
-            Text(verbatim: "Nook")
-                .font(.system(size: 34, weight: .bold, design: .rounded))
-                .foregroundStyle(Color(.displayP3, red: 0.26, green: 0.19, blue: 0.10))
-                .offset(y: 78 + (showWordmark ? 0 : 6))
-                .opacity(showWordmark ? 1 : 0)
-                .animation(.easeOut(duration: 0.3), value: showWordmark)
-
-            // Progress readout for launches that outlast the brand beat: shown
-            // only once the animation has finished AND bootstrap is still busy,
-            // so fast launches never flash it. The bar fills by pipeline stage
-            // (true durations are unknowable — iCloud reads dominate).
-            if showProgress, let phase = store?.bootstrapPhase {
-                let brown = Color(.displayP3, red: 0.26, green: 0.19, blue: 0.10)
-                VStack(spacing: 12) {
-                    ProgressView(value: phase.fractionComplete)
-                        .progressViewStyle(.linear)
-                        .tint(brown)
+            NookTheme.backgroundPrimary.ignoresSafeArea()
+            Image("LaunchLogo").resizable().scaledToFit()
+                .frame(width: 104, height: 104)
+                .accessibilityLabel("Nook")
+            if let phase = store?.bootstrapPhase {
+                VStack(spacing: NookTheme.Space.item) {
+                    ProgressView(value: phase.fractionComplete).tint(NookTheme.accentPrimary)
                         .frame(width: 180)
-                        .animation(.easeInOut(duration: 0.4), value: phase.fractionComplete)
-                    Text(phase.label)
-                        .font(.footnote)
-                        .foregroundStyle(brown.opacity(0.7))
-                        .contentTransition(.opacity)
-                        .animation(.easeInOut(duration: 0.2), value: phase.label)
+                    Text(phase.label).font(NookTypography.caption)
+                        .foregroundStyle(NookTheme.textSecondary)
                 }
                 .frame(maxHeight: .infinity, alignment: .bottom)
                 .padding(.bottom, 64)
-                .transition(.opacity)
             }
-        }
-        .animation(.easeInOut(duration: 0.25), value: showProgress)
-        .task {
-            // Static launch background → drop the twigs → reveal the wordmark.
-            try? await Task.sleep(for: .milliseconds(120))
-            assembled = true
-            try? await Task.sleep(for: .seconds(NestAssemblyView.duration))
-            showWordmark = true
-            // The brand beat ends ~1.85s after launch; anything still loading
-            // beyond ~2.4s deserves an explanation.
-            try? await Task.sleep(for: .milliseconds(1200))
-            showProgress = true
         }
     }
 }
@@ -2163,7 +2096,7 @@ struct OwnNookLabel: View {
                     ProgressView().controlSize(.small)
                 } else {
                     Image(systemName: "square.and.pencil")
-                        .foregroundStyle(PlusTheme.accent)
+                        .foregroundStyle(NookTheme.accentPrimary)
                 }
             }
             Spacer()
@@ -2307,7 +2240,7 @@ private struct Sidebar: View {
                 Section {
                     ownNookRow(publication: publication)
                 }
-                .listRowBackground(Rectangle().fill(.ultraThinMaterial))
+                .nookRows()
             }
 
             Section("Library") {
@@ -2323,9 +2256,8 @@ private struct Sidebar: View {
                     .tag(SidebarItem.smart(source))
                 }
             }
-            // Frosted translucent cards (not the solid white/dark grouped fill)
-            // so the warm background shows through with a glassy feel.
-            .listRowBackground(Rectangle().fill(.ultraThinMaterial))
+            // Keep feed surfaces aligned with the shared page palette.
+            .nookRows()
 
             if store.hasCategories {
                 Section("Categories") {
@@ -2345,7 +2277,7 @@ private struct Sidebar: View {
                         .tag(SidebarItem.category(category.id))
                     }
                 }
-                .listRowBackground(Rectangle().fill(.ultraThinMaterial))
+                .nookRows()
             }
 
             if !store.feedFolders.isEmpty || !store.ungroupedFeeds.isEmpty {
@@ -2374,7 +2306,7 @@ private struct Sidebar: View {
                         }
                     }
                 }
-                .listRowBackground(Rectangle().fill(.ultraThinMaterial))
+                .nookRows()
             }
 
             // Tucked at the bottom: saved-offline articles, then filtered.
@@ -2403,11 +2335,11 @@ private struct Sidebar: View {
                         .tag(SidebarItem.smart(.filtered))
                     }
                 }
-                .listRowBackground(Rectangle().fill(.ultraThinMaterial))
+                .nookRows()
             }
         }
         .scrollContentBackground(.hidden)
-        .background(Color("ListBackground").ignoresSafeArea())
+        .nookScreen()
         .onChange(of: selection) { _, item in
             switch item {
             case .smart(let source):
@@ -2473,7 +2405,7 @@ private struct Sidebar: View {
                     Button(action: onCompose) {
                         Label("Write a post", systemImage: "square.and.pencil")
                     }
-                    .tint(PlusTheme.accent)
+                    .tint(NookTheme.accentPrimary)
                 }
             }
         }
@@ -2763,10 +2695,9 @@ private struct ArticleList: View {
             }
             .tag(article.id)
             // Paint the selection ourselves. A selected row's text is drawn
-            // in the white SwiftUI expects to sit on a filled highlight, but
-            // this plain list hides its own background for the warm one
-            // behind it — so the fill never appeared and the row read as an
-            // empty outlined box with white text on cream. Only the iPad
+            // in the white SwiftUI expects to sit on a filled highlight. Paint
+            // that highlight over the shared page background so selected text
+            // remains legible. Only the iPad
             // split view keeps a selection; the compact shell's binding is
             // nil whenever its list is on screen, so nothing changes there.
             .listRowBackground(article.id == selection ? Color.accentColor : Color.clear)
@@ -2836,7 +2767,7 @@ private struct ArticleList: View {
                     Label("Share", systemImage: "square.and.arrow.up")
                 }
             }
-            // Transparent rows so the warm list background shows through.
+            // Transparent rows keep the shared page background visible.
             .listRowBackground(Color.clear)
             // No divider above the first row or below the last — only between rows.
             .listRowSeparator(article.id == store.visibleArticles.first?.id ? .hidden : .automatic, edges: .top)
@@ -2857,7 +2788,7 @@ private struct ArticleList: View {
                             historyArticle = article
                         } label: {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text(entry.title).foregroundStyle(.primary)
+                                Text(entry.title).font(NookTypography.storyTitle).foregroundStyle(NookTheme.textPrimary)
                                 Text(entry.source).font(.caption).foregroundStyle(.secondary)
                                 Text(entry.lastOpenedAt, style: .relative).font(.caption).foregroundStyle(.secondary)
                             }
@@ -2872,7 +2803,7 @@ private struct ArticleList: View {
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
-        .background(Color("ListBackground").ignoresSafeArea())
+        .nookScreen()
         .navigationTitle(store.selectedSourceTitle)
         .modifier(DrawerSearch(text: $store.searchText, enabled: managesSearch))
         .toolbar {
@@ -3034,7 +2965,7 @@ private struct ArticleRowView: View {
                         Circle().fill(Color.accentColor).frame(width: 7, height: 7)
                     }
                     Text(article.title)
-                        .font(.headline)
+                        .font(NookTypography.storyTitle)
                         .lineLimit(2)
                         .foregroundStyle(article.isRead ? .secondary : .primary)
                     if article.isStarred {

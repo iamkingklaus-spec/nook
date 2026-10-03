@@ -34,7 +34,7 @@ struct FeedDiscoverySheet: View {
         NavigationStack {
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color("ListBackground").ignoresSafeArea())
+                .nookScreen()
                 .navigationTitle("Find the Feed")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
@@ -43,7 +43,7 @@ struct FeedDiscoverySheet: View {
                     }
                 }
         }
-        .tint(Color("AccentColor"))
+        .tint(NookTheme.accentPrimary)
         .presentationDetents([.medium, .large])
         .task {
             // Discovery only — nothing is added until the user says so.
@@ -96,7 +96,7 @@ struct FeedDiscoverySheet: View {
                 }
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)
-                .background(.ultraThinMaterial, in: Capsule())
+                .nookGlass()
                 .padding(.horizontal, 28)
 
                 if let followError {

@@ -557,7 +557,7 @@ private struct TwoDeviceSyncIllustration: View {
 private struct NestInboxIllustration: View {
     var body: some View {
         ZStack {
-            NestAssemblyView(size: 120, assembled: true)
+            Image("LaunchLogo").resizable().scaledToFit().frame(width: 120, height: 120)
                 .offset(y: 44)
             PhaseAnimator([0, 1, 2, 3]) { phase in
                 ZStack {

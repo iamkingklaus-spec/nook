@@ -1,4 +1,5 @@
 import SwiftUI
+import NookKit
 
 // MARK: - Spotlight scrim
 
@@ -317,32 +318,16 @@ struct FeedsAddButtonFrameKey: PreferenceKey {
     }
 }
 
-// MARK: - Liquid Glass helpers (native look, with pre-iOS-26 fallback)
+// MARK: - Shared reading chrome
 
-/// Groups glass capsules for consistent Liquid Glass sampling on iOS 26; a plain
-/// passthrough before that.
 struct GlassBarContainer<Content: View>: View {
     @ViewBuilder var content: Content
-    var body: some View {
-        if #available(iOS 26, *) {
-            GlassEffectContainer(spacing: 10) { content }
-        } else {
-            content
-        }
-    }
+    var body: some View { content }
 }
 
 extension View {
-    /// Wraps the view in an interactive Liquid Glass capsule (iOS 26), matching the
-    /// system bottom bar; falls back to a material capsule on earlier iOS.
-    @ViewBuilder
     func glassCapsule() -> some View {
-        if #available(iOS 26, *) {
-            glassEffect(.regular.interactive(), in: .capsule)
-        } else {
-            background(.regularMaterial, in: Capsule())
-                .overlay(Capsule().strokeBorder(Color.primary.opacity(0.08)))
-        }
+        nookGlass(radius: NookTheme.Radius.card)
     }
 }
 

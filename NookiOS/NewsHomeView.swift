@@ -44,7 +44,7 @@ struct NewsHomeView: View {
                     content
                 }
                 .frame(maxWidth: 820, alignment: .leading)
-                .padding(.horizontal, 22)
+                .padding(.horizontal, NookTheme.Space.page)
                 .padding(.top, 4)
                 .padding(.bottom, 24)
                 .frame(maxWidth: .infinity)
@@ -275,7 +275,7 @@ private struct HeroStoryCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 17) {
-            NewsStoryImage(article: story.article, use: .hero, ratio: 16 / 9, corner: 13)
+            NewsStoryImage(article: story.article, use: .hero, ratio: 16 / 9, corner: NookTheme.Radius.image)
             Text(story.article.title).newsFont(.hero).lineSpacing(1)
                 .fixedSize(horizontal: false, vertical: true)
             if let subtitle = story.article.subtitle, !subtitle.isEmpty {
@@ -306,7 +306,7 @@ private struct HorizontalStoryCard: View {
                 NewsStoryMetadata(story: story, includeCategory: false)
             }.frame(maxWidth: .infinity, alignment: .leading)
             if !typeSize.isAccessibilitySize {
-                NewsStoryImage(article: story.article, use: .card, ratio: 4 / 3, corner: 9,
+                NewsStoryImage(article: story.article, use: .card, ratio: 4 / 3, corner: NookTheme.Radius.thumbnail,
                                onAvailability: { hasImage = $0 })
                     .frame(maxWidth: hasImage ? 100 : 0)
             }

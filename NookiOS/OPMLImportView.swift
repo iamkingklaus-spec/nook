@@ -30,11 +30,12 @@ struct OPMLImportView: View {
                 ForEach(groupedFeeds, id: \.category) { group in
                     Section(group.category ?? String(localized: "Ungrouped")) {
                         ForEach(group.feeds) { feed in
-                            row(feed)
+                            row(feed).nookRows()
                         }
                     }
                 }
             }
+            .nookScreen()
             .navigationTitle("Import Feeds")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

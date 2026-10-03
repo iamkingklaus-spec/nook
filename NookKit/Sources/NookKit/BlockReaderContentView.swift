@@ -18,6 +18,7 @@ public struct BlockReaderControls: View {
                 ForEach(BlockReaderMode.allCases) { mode in Text(mode.label).tag(mode) }
             }
             .pickerStyle(.segmented)
+            .tint(NookTheme.accentPrimary)
             if controller.mode != .english {
                 if controller.isLoading {
                     ProgressView("正在准备正文…").font(.caption)
@@ -26,6 +27,7 @@ public struct BlockReaderControls: View {
                         Button(controller.translatedCount == 0 ? "翻译为简体中文" : "继续翻译") {
                             Task { await controller.translate() }
                         }
+                        .buttonStyle(NookActionStyle(.secondary))
                         .disabled(controller.isTranslating || !controller.isPrepared)
                         if controller.isTranslating { ProgressView().controlSize(.small) }
                         Spacer()
@@ -39,7 +41,7 @@ public struct BlockReaderControls: View {
                 }
                 if controller.cleanupPending {
                     Button("重试 AI 清洗") { Task { await controller.retryAICleanup() } }
-                        .font(.subheadline).disabled(controller.isTranslating || controller.isLoading)
+                        .buttonStyle(NookActionStyle(.quiet)).disabled(controller.isTranslating || controller.isLoading)
                 }
                 if let message = controller.cleanupMessage {
                     Text(message).font(.caption).foregroundStyle(.secondary)
@@ -49,6 +51,8 @@ public struct BlockReaderControls: View {
                 }
             }
         }
+        .padding(NookTheme.Space.item)
+        .nookCard()
     }
 }
 
@@ -116,7 +120,7 @@ private struct BlockReaderNodesView: View {
             }.id(group.id)
         case .quote(let nodes):
             HStack(alignment: .top, spacing: 12) {
-                Rectangle().fill(.tertiary).frame(width: 3)
+                Rectangle().fill(NookTheme.accentPrimary.opacity(0.28)).frame(width: 3)
                 AnyView(children(nodes))
             }.fixedSize(horizontal: false, vertical: true)
         case .list(let ordered, let items):
@@ -133,7 +137,7 @@ private struct BlockReaderNodesView: View {
         case .unchanged(let block):
             HTMLBlockList(blocks: [block], selectable: false, typography: typography)
         case .photoCredit(let credit):
-            Text(credit.text).font(.caption).foregroundStyle(.secondary)
+            Text(credit.text).font(NookTypography.caption).foregroundStyle(NookTheme.textSecondary)
         }
     }
 

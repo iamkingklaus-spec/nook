@@ -95,7 +95,7 @@ struct SettingsView: View {
                         Label("About", systemImage: "info.circle")
                     }
                 }
-                .warmRows()
+                .nookRows()
 
                 Section {
                     Button {
@@ -111,7 +111,7 @@ struct SettingsView: View {
                 } header: {
                     Text("Help")
                 }
-                .warmRows()
+                .nookRows()
 
                 if isTab {
                     Section("Data") {
@@ -144,10 +144,10 @@ struct SettingsView: View {
                         }
                         .disabled(store.feeds.isEmpty)
                     }
-                    .warmRows()
+                    .nookRows()
                 }
             }
-            .warmListBackground()
+            .settingsSurface()
             // Keep the last section above the floating tab bar (iPhone tab only).
             .modifier(TabBarInset(enabled: isTab))
             .navigationTitle("Settings")
@@ -298,14 +298,14 @@ private struct GeneralSettingsScreen: View {
                         .foregroundStyle(.secondary)
                 }
             }
-            .warmRows()
+            .nookRows()
 
             Section("App Icon") {
                 Toggle("Show unread count on app icon", isOn: $showUnreadBadge)
             }
-            .warmRows()
+            .nookRows()
         }
-        .warmListBackground()
+        .settingsSurface()
         .navigationTitle("General")
         .navigationBarTitleDisplayMode(.inline)
         .onChange(of: appLanguage) { _, newValue in
@@ -330,7 +330,7 @@ private struct ReadingSettingsScreen: View {
                 Stepper("Mark as read after \(markReadDelaySeconds) seconds", value: $markReadDelaySeconds, in: 0...30)
                     .disabled(!markReadOnOpen)
             }
-            .warmRows()
+            .nookRows()
 
             // Its own Section, not a row under In-App Browser: the parser decides
             // what the built-in reader shows as much as what the browser's reader
@@ -338,7 +338,7 @@ private struct ReadingSettingsScreen: View {
             Section("Article Parser") {
                 ReaderParserSettingsContent()
             }
-            .warmRows()
+            .nookRows()
 
             Section("In-App Browser") {
                 Picker("In-App Browser", selection: $readerViewMode) {
@@ -352,9 +352,9 @@ private struct ReadingSettingsScreen: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            .warmRows()
+            .nookRows()
         }
-        .warmListBackground()
+        .settingsSurface()
         .navigationTitle("Reading")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -445,7 +445,7 @@ private struct ReaderSettingsScreen: View {
                     }
                 }
             }
-            .warmRows()
+            .nookRows()
 
             Section {
                 ReaderTypographyPreview(previewTypography)
@@ -460,7 +460,7 @@ private struct ReaderSettingsScreen: View {
             } footer: {
                 Text("Typography applies to the built-in article reader and to reader mode in the browser.")
             }
-            .warmRows()
+            .nookRows()
 
             Section("Colors") {
                 Picker("Background", selection: $readerBackgroundOption) {
@@ -476,12 +476,12 @@ private struct ReaderSettingsScreen: View {
                     ColorPicker("Text Color", selection: textColor, supportsOpacity: false)
                 }
             }
-            .warmRows()
+            .nookRows()
 
             Section("AI Summary") {
                 ArticleSummarySettingsContent()
             }
-            .warmRows()
+            .nookRows()
 
             Section {
                 VStack(alignment: .leading, spacing: 10) {
@@ -516,9 +516,9 @@ private struct ReaderSettingsScreen: View {
             } footer: {
                 Text("Choose your default control position separately from your primary hand. Adaptive mode keeps that layout while you scroll with your primary hand, mirrors it after several scrolls with the other hand, and restores it when you switch back.")
             }
-            .warmRows()
+            .nookRows()
         }
-        .warmListBackground()
+        .settingsSurface()
         .navigationTitle("Reader")
         .navigationBarTitleDisplayMode(.inline)
         .fullScreenCover(isPresented: $showingCalibration, onDismiss: { calibrationRefresh += 1 }) {
@@ -658,7 +658,7 @@ private struct FeedsSettingsScreen: View {
             } footer: {
                 Text("Some feeds omit each article's date. When enabled, Nook reads the real date from the article's page (once per article).")
             }
-            .warmRows()
+            .nookRows()
 
             Section {
                 Toggle("Notify me about new articles", isOn: $newArticleNotifications)
@@ -724,7 +724,7 @@ private struct FeedsSettingsScreen: View {
                     }
                 }
             }
-            .warmRows()
+            .nookRows()
 
             Section {
                 NavigationLink {
@@ -733,7 +733,7 @@ private struct FeedsSettingsScreen: View {
                     Label("Feed Health / 订阅源诊断", systemImage: "stethoscope")
                 }
             }
-            .warmRows()
+            .nookRows()
 
             Section("Background Diagnostics") {
                 LabeledContent("Notification Authorization", value: notificationStatus)
@@ -745,7 +745,7 @@ private struct FeedsSettingsScreen: View {
                 diagnosticRow("Fetch Result", key: BackgroundRefresh.lastFetchResultKey)
                 diagnosticRow("Notification Result", key: BackgroundRefresh.lastNotificationResultKey)
             }
-            .warmRows()
+            .nookRows()
 
             Section {
                 if sortedFeeds.isEmpty {
@@ -767,7 +767,7 @@ private struct FeedsSettingsScreen: View {
             } footer: {
                 Text("Choose how each feed's articles open in the web view. “Default” follows the In-App Browser setting above.")
             }
-            .warmRows()
+            .nookRows()
 
             Section {
                 LabeledContent("Sync Folder", value: syncFolderDisplayPath.isEmpty ? String(localized: "Not selected") : syncFolderDisplayPath)
@@ -776,9 +776,9 @@ private struct FeedsSettingsScreen: View {
             } footer: {
                 Text("Nook keeps your feeds in a folder in the cloud so they stay in sync across your devices.")
             }
-            .warmRows()
+            .nookRows()
         }
-        .warmListBackground()
+        .settingsSurface()
         .navigationTitle("Feeds")
         .navigationBarTitleDisplayMode(.inline)
         .task(id: newArticleNotifications) { await checkAlerts() }
@@ -865,9 +865,9 @@ private struct ArticleRulesSettingsScreen: View {
             Section("Article Rules") {
                 ArticleRulesSettingsContent(store: store)
             }
-            .warmRows()
+            .nookRows()
         }
-        .warmListBackground()
+        .settingsSurface()
         .navigationTitle("Article Rules")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -881,9 +881,9 @@ private struct OfflineSettingsScreen: View {
             Section("Offline Reading") {
                 OfflineSettingsContent(store: store)
             }
-            .warmRows()
+            .nookRows()
         }
-        .warmListBackground()
+        .settingsSurface()
         .navigationTitle("Offline")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -899,9 +899,9 @@ private struct FiltersSettingsScreen: View {
             Section("Filters") {
                 FilterSettingsContent(store: store, onShowGuide: { showGuide = true })
             }
-            .warmRows()
+            .nookRows()
         }
-        .warmListBackground()
+        .settingsSurface()
         .navigationTitle("Filters")
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showGuide) {
@@ -933,7 +933,7 @@ private struct ExperimentalSettingsScreen: View {
             Section("Translation Engine") {
                 TranslationEngineSettingsContent()
             }
-            .warmRows()
+            .nookRows()
 
             Section("Reader View") {
                 Toggle("Show reader view content by default", isOn: $readerContentByDefault)
@@ -946,7 +946,7 @@ private struct ExperimentalSettingsScreen: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            .warmRows()
+            .nookRows()
 
             Section("Article List") {
                 Toggle("Translate titles in the list", isOn: $translateListTitles)
@@ -960,7 +960,7 @@ private struct ExperimentalSettingsScreen: View {
                     Text("Clear Translation Cache")
                 }
             }
-            .warmRows()
+            .nookRows()
 
             Section("Reset Nook") {
                 Toggle("Keep Gemini API key", isOn: $preservesGeminiCredential)
@@ -989,9 +989,9 @@ private struct ExperimentalSettingsScreen: View {
                         .foregroundStyle(.red)
                 }
             }
-            .warmRows()
+            .nookRows()
         }
-        .warmListBackground()
+        .settingsSurface()
         .navigationTitle("Experimental")
         .navigationBarTitleDisplayMode(.inline)
         .confirmationDialog(
@@ -1063,9 +1063,9 @@ private struct AboutSettingsScreen: View {
                     }
                 }
             }
-            .warmRows()
+            .nookRows()
         }
-        .warmListBackground()
+        .settingsSurface()
         .navigationTitle("About")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -1088,31 +1088,14 @@ private struct AboutSettingsScreen: View {
     }
 }
 
-/// Gives a `List`/`Form` the app's warm tone — hiding the default system grouped
-/// background and letting `ListBackground` show through transparent rows — so
-/// Settings matches the article list instead of the plain (or cool frosted)
-/// system background.
+/// Native grouped rows share the same cool canvas as Home and Reader.
 private extension View {
-    /// Warm background for a Settings list. Rows must additionally use
-    /// `.warmRows()` on each `Section` — a container-level row background does not
-    /// reach grouped-list rows, leaving cool `secondarySystemGroupedBackground`
-    /// cards, so the clear must be applied per-section.
-    func warmListBackground() -> some View {
-        scrollContentBackground(.hidden)
-            .background(Color("ListBackground").ignoresSafeArea())
-            // Tighten the grouped list's generous section spacing (and the large
-            // gap above the first section) so the top isn't mostly whitespace.
+    func settingsSurface() -> some View {
+        nookScreen()
             .listSectionSpacing(.compact)
-            .contentMargins(.top, 8, for: .scrollContent)
-    }
-
-    /// Clears a `Section`'s row cards so the warm background shows through. Applied
-    /// per section because that reliably reaches the rows.
-    func warmRows() -> some View {
-        listRowBackground(Color.clear)
+            .contentMargins(.top, NookTheme.Space.inline, for: .scrollContent)
     }
 }
-
 
 /// Nook Plus publishing. Opt-in, and entirely outside the reading path: a
 /// reader who never opens this screen gets the same app they always had.
@@ -1125,7 +1108,7 @@ private struct PlusSettingsScreen: View {
                 // Same chrome as every sibling screen. This was the one
                 // destination without it, so the whole Plus area rendered on the
                 // cool system background and looked like a different app.
-                .warmListBackground()
+                .settingsSurface()
         }
         .navigationTitle(Text("Publishing"))
         .navigationBarTitleDisplayMode(.inline)

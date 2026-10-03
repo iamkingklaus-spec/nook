@@ -103,6 +103,7 @@ struct AddFeedView: View {
                     }
                 }
             }
+            .nookScreen()
             .navigationTitle("Follow a Site")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

@@ -11,12 +11,13 @@ public struct FeedHealthListView: View {
                 FeedHealthView(feed: feed)
             } label: {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(feed.displayTitle)
+                    Text(feed.displayTitle).font(NookTypography.sectionTitle)
                     FeedHealthStatus(report: diagnostics.reports[feed.feedURL])
                         .font(.caption)
                 }
             }
         }
+        .nookScreen()
         .navigationTitle("Feed Health / 订阅源诊断")
         .overlay { if feeds.isEmpty { Text("没有可检测的订阅源").foregroundStyle(.secondary) } }
     }
@@ -111,13 +112,14 @@ public struct FeedHealthView: View {
             }
         }
         .formStyle(.grouped)
+        .nookScreen()
         .navigationTitle("Feed Health")
         .task { if testOnOpen { await diagnostics.testFeed(feed.feedURL) } }
     }
 
     private var extractionColor: Color {
         guard let samples = report?.extractionSamples, !samples.isEmpty else { return .secondary }
-        return samples.allSatisfy { $0.quality == .fullCandidate } ? .green : .yellow
+        return samples.allSatisfy { $0.quality == .fullCandidate } ? NookTheme.success : NookTheme.warning
     }
 }
 

@@ -1,27 +1,9 @@
 import SwiftUI
 
-/// Home and navigation colors. Hex values belong only in this semantic palette.
-enum NewsPalette {
-    static let backgroundPrimary = adaptive(0xF8F6F0, 0x12171D)
-    static let backgroundSecondary = adaptive(0xF1EEE7, 0x1A2027)
-    static let textPrimary = adaptive(0x101820, 0xF2F0EA)
-    static let textSecondary = adaptive(0x66707A, 0xAAB0B7)
-    static let textTertiary = adaptive(0x8A9097, 0x808892)
-    static let accentPrimary = adaptive(0x203A5F, 0x6689B7)
-    static let accentSecondary = adaptive(0x9E3B32, 0xC86A62)
-    static let divider = adaptive(0xE1DED5, 0x303943)
-    static let borderSubtle = adaptive(0xDDD9D0, 0x29323B)
-    static let tabInactive = adaptive(0x737A82, 0x808892)
+import NookKit
 
-    private static func adaptive(_ light: UInt32, _ dark: UInt32) -> Color {
-        Color(uiColor: UIColor { traits in
-            let value = traits.userInterfaceStyle == .dark ? dark : light
-            return UIColor(red: CGFloat((value >> 16) & 255) / 255,
-                           green: CGFloat((value >> 8) & 255) / 255,
-                           blue: CGFloat(value & 255) / 255, alpha: 1)
-        })
-    }
-}
+// Compatibility name for Home; all colors now come from the shared theme.
+typealias NewsPalette = NookTheme
 
 enum NewsTypography {
     case greeting, date, hero, horizontalTitle, compactTitle, heroSummary, summary, category, metadata, tabLabel, tabIcon

@@ -28,20 +28,22 @@ public struct VocabularyView: View {
             if let errorMessage { Text(errorMessage).foregroundStyle(.red) }
             ForEach(store.search(query)) { entry in
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(entry.word).font(.headline)
+                    Text(entry.word).font(NookTypography.storyTitle)
                     if entry.lemma.lowercased() != entry.word.lowercased() { Text(entry.lemma).font(.caption).foregroundStyle(.secondary) }
                     Text(entry.meaning)
                     Text(entry.originalSentence).font(.subheadline).foregroundStyle(.secondary)
                     Link("\(entry.publisher) · \(entry.articleTitle)", destination: entry.articleURL).font(.caption)
                     Button("删除", role: .destructive) { remove(entry.id) }
                         .font(.caption).buttonStyle(.borderless)
-                }.padding(.vertical, 4)
+                }.padding(.vertical, NookTheme.Space.inline)
+                .nookRows()
             }
             .onDelete { indices in
                 let visible = store.search(query)
                 for index in indices { remove(visible[index].id) }
             }
         }
+        .nookScreen()
         .navigationTitle("Vocabulary / 生词本")
         .searchable(text: $query, prompt: "搜索单词、释义、原句或来源")
         .overlay {
@@ -98,7 +100,7 @@ private struct LearningExplanationSheet: View {
                                 try ReaderLearningStore.shared.save(selection: request.selection, explanation: value)
                                 saved = true; saveError = nil
                             } catch { saveError = "生词保存失败，请重试。" }
-                        }.disabled(saved)
+                        }.buttonStyle(NookActionStyle(.primary)).disabled(saved)
                     }
                     if controller.cacheHit { Text("来自本地缓存").font(.caption).foregroundStyle(.secondary) }
                 }
@@ -113,6 +115,7 @@ private struct LearningExplanationSheet: View {
                     Text("Gemini 仅接收选中内容、所在句子、附近段落及文章标题。AI 解释可能有误，请结合原文判断。")
                 }
             }
+            .nookScreen()
             .navigationTitle(request.type == .word ? "Explain Word" : "Explain Sentence")
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("完成") { dismiss() } } }
         }

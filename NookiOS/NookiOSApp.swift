@@ -54,6 +54,8 @@ struct NookiOSApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
+                .tint(NookTheme.accentPrimary)
+                .foregroundStyle(NookTheme.textPrimary)
                 // Format dates/numbers with the chosen UI language, not the OS
                 // locale (`Text(_, format:)` otherwise follows the environment).
                 .environment(\.locale, AppLanguage.formattingLocale)

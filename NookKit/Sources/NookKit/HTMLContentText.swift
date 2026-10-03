@@ -1622,10 +1622,10 @@ private struct NativeArticleImage: View {
             // again, and round the corners of a full-width box around a narrow image.
             // Leading, so an image that is narrower than the text sits with the text
             // and its own caption rather than floating in the middle of the column.
-            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: NookTheme.Radius.image, style: .continuous))
 
             if let caption = media.caption {
-                Text(caption).font(.caption).foregroundStyle(.secondary)
+                Text(caption).font(NookTypography.caption).foregroundStyle(NookTheme.textSecondary)
             }
         }
     }
