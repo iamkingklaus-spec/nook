@@ -6,7 +6,7 @@ public struct EventCluster: Equatable, Sendable {
     public var fingerprint: String {
         ArticleDocument.digest(["event-cluster-v1"] + members.sorted { $0.id < $1.id }.map {
             ArticleDocument.digest([StableArticleIdentity.canonicalURL($0.url).absoluteString,
-                $0.id, $0.title, $0.summary, String($0.publishedAt.timeIntervalSince1970),
+                $0.id, $0.title, $0.summary, String($0.hasExplicitPublishDate), String($0.publishedAt.timeIntervalSince1970),
                 $0.document?.documentHash ?? ""])
         })
     }

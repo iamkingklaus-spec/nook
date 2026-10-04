@@ -6,6 +6,7 @@ public struct StoryContextView: View {
     private let candidates: [Article]
     private let onOpen: (Article) -> Void
     @State private var cluster: EventCluster?
+    @State private var showingTimeline = false
     public init(article: Article, articles: [Article], onOpen: @escaping (Article) -> Void) {
         self.article = article
         candidates = StoryClustering.candidates(for: article, in: articles)
@@ -17,7 +18,14 @@ public struct StoryContextView: View {
             if let cluster {
                 VStack(alignment: .leading, spacing: NookTheme.Space.card) {
                     Divider()
-                    Text("More coverage / 其他报道").font(NookTypography.sectionTitle)
+                    Text("Story Context").font(NookTypography.sectionTitle)
+                    Picker("文章上下文", selection: $showingTimeline) {
+                        Text("时间线").tag(true)
+                        Text("其他报道").tag(false)
+                    }.pickerStyle(.segmented)
+                    if showingTimeline {
+                        StoryTimelinePane(cluster: cluster, articleID: article.id, onOpen: onOpen)
+                    } else {
                     Text("另有 \(Set(cluster.related(to: article).map { $0.url.host ?? "" }).count) 家来源报道相近事件")
                         .font(NookTypography.caption).foregroundStyle(NookTheme.textSecondary)
                     ForEach(cluster.related(to: article)) { item in
@@ -28,6 +36,7 @@ public struct StoryContextView: View {
                             }.frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                         }.buttonStyle(NookContentButtonStyle())
                     }
+                    }
                 }
             }
         }
@@ -37,5 +46,58 @@ public struct StoryContextView: View {
             guard !Task.isCancelled else { return }
             cluster = result
         }
+    }
+}
+
+private struct StoryTimelinePane: View {
+    let cluster: EventCluster
+    let articleID: String
+    let onOpen: (Article) -> Void
+    @State private var controller = StoryTimelineController()
+    @State private var retry = 0
+    @State private var selectedID: String?
+    var body: some View {
+        VStack(alignment: .leading, spacing: NookTheme.Space.card) {
+            if controller.loading { ProgressView("正在整理有来源依据的时间线…") }
+            if let nodes = controller.nodes {
+                if nodes.isEmpty { Text("现有材料不足以形成可靠时间线。") }
+                ScrollView(.horizontal) {
+                    HStack(alignment: .top, spacing: 0) {
+                        ForEach(nodes) { node in
+                            Button { selectedID = node.id } label: {
+                                VStack(alignment: .leading, spacing: NookTheme.Space.inline) {
+                                    Text(node.date).font(NookTypography.caption).monospacedDigit()
+                                    HStack(spacing: 0) {
+                                        Circle().fill(node.sourceArticleIDs.contains(articleID) ? NookTheme.accentPrimary : NookTheme.textTertiary).frame(width: 8, height: 8)
+                                        Rectangle().fill(NookTheme.divider).frame(height: 0.5)
+                                    }
+                                    Text(node.title).font(NookTypography.storyTitle)
+                                    if node.sourceArticleIDs.contains(articleID) { Text("当前文章").font(NookTypography.caption) }
+                                }.foregroundStyle(NookTheme.textPrimary).frame(width: 190, alignment: .leading).padding(.trailing, 16)
+                            }.buttonStyle(NookContentButtonStyle()).accessibilityHint("展开节点及来源")
+                        }
+                    }.padding(.vertical, 8)
+                }
+                if let selected = nodes.first(where: { $0.id == selectedID }) ?? nodes.first(where: { $0.sourceArticleIDs.contains(articleID) }) ?? nodes.first {
+                    VStack(alignment: .leading, spacing: NookTheme.Space.inline) {
+                        Text(selected.date).font(NookTypography.caption).foregroundStyle(NookTheme.textSecondary)
+                        Text(selected.title).font(NookTypography.storyTitle)
+                        Text(selected.shortSummary)
+                        ForEach(selected.sourceArticleIDs, id: \.self) { id in
+                            if let source = cluster.members.first(where: { $0.id == id }) {
+                                Button { onOpen(source) } label: { Label(source.url.host ?? source.title, systemImage: "arrow.up.right") }
+                                    .buttonStyle(NookActionStyle(.quiet))
+                            }
+                        }
+                    }.padding(NookTheme.Space.card).nookCard()
+                }
+                Text("AI 归纳 · 按报道发布日期整理，不代表事件发生时间；请核对原文。")
+                    .font(NookTypography.caption).foregroundStyle(NookTheme.textSecondary)
+            }
+            if let message = controller.message { Text(message).font(NookTypography.caption) }
+            if !controller.loading && controller.nodes == nil { Button("重试时间线") { retry += 1 }.buttonStyle(NookActionStyle()) }
+        }
+        .task(id: TimelineProtocol.key(cluster, model: .flashLite) + String(retry)) { await controller.load(cluster) }
+        .onDisappear { controller.cancel() }
     }
 }
