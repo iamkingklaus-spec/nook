@@ -3192,10 +3192,10 @@ public struct HTMLContentText: View {
     }
 
     private func displayed(_ original: AttributedString) -> AttributedString {
-        guard secondaryText else { return original }
         var value = original
-        for run in original.runs where run.link == nil {
-            value[run.range].foregroundColor = .secondary
+        for run in original.runs {
+            if run.link != nil { value[run.range].foregroundColor = NookTheme.accentPrimary }
+            else if secondaryText { value[run.range].foregroundColor = NookTheme.textSecondary }
         }
         return value
     }
@@ -3430,7 +3430,7 @@ public struct HTMLContentText: View {
             }
             mutable.addAttribute(.font, value: font, range: range)
         }
-        styleLinks(mutable, fullRange: fullRange, linkColor: UIColor.tintColor, plainColor: UIColor.label)
+        styleLinks(mutable, fullRange: fullRange, linkColor: UIColor(NookTheme.accentPrimary), plainColor: UIColor(NookTheme.textPrimary))
         for range in monoRanges {
             mutable.addAttribute(.foregroundColor, value: UIColor.systemPink, range: range)
         }

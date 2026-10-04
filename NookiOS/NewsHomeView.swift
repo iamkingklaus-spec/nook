@@ -136,7 +136,7 @@ struct NewsHomeView: View {
                         .frame(minHeight: 44)
                         .contentShape(Rectangle())
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(NookContentButtonStyle())
                     .id(item)
                     .accessibilityIdentifier("news.section." + item.identifier)
                     .accessibilityAddTraits(section == item ? [.isSelected] : [])
@@ -246,7 +246,7 @@ struct NewsHomeView: View {
         return Button { onOpen(live) } label: {
             content().frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(NookContentButtonStyle())
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(story.article.title), \(story.publisher.name), \(story.classification.category.title), \(NewsMetadataFormat.age(story.article.publishedAt, now: .now))")
         .accessibilityValue(live.isRead ? Text("Read") : Text("Unread"))

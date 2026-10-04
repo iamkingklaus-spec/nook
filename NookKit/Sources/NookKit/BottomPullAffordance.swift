@@ -245,17 +245,7 @@ public struct BottomPullAffordance: View {
     private func clamp01(_ value: CGFloat) -> CGFloat { max(0, min(1, value)) }
 }
 
-/// A capsule background using the system Liquid Glass material where available,
-/// falling back to a regular material on earlier OSes.
+/// Reading affordances share the restrained material and accessibility fallback.
 struct GlassPill: ViewModifier {
-    @ViewBuilder
-    func body(content: Content) -> some View {
-        if #available(iOS 26.0, macOS 26.0, *) {
-            content.glassEffect(.regular, in: Capsule())
-        } else {
-            content
-                .background(.regularMaterial, in: Capsule())
-                .overlay(Capsule().strokeBorder(.white.opacity(0.12)))
-        }
-    }
+    func body(content: Content) -> some View { content.nookGlass() }
 }

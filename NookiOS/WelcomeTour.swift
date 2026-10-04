@@ -183,7 +183,7 @@ struct WelcomeSheet: View {
                     .font(.subheadline.weight(.semibold))
                     .padding(.horizontal, 14)
                     .padding(.vertical, 7)
-                    .background(.ultraThinMaterial, in: Capsule())
+                    .nookGlass()
             }
             .padding(.trailing, 20)
             .padding(.top, 12)
@@ -359,10 +359,10 @@ private struct StarterPickChip: View {
             .padding(.vertical, 12)
             .background(
                 selected ? Color.accentColor.opacity(0.18) : Color.primary.opacity(0.05),
-                in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+                in: RoundedRectangle(cornerRadius: NookTheme.Radius.card, style: .continuous)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                RoundedRectangle(cornerRadius: NookTheme.Radius.card, style: .continuous)
                     .strokeBorder(selected ? Color.accentColor.opacity(0.55) : .clear, lineWidth: 1.5)
             )
             .foregroundStyle(selected ? Color.accentColor : .primary)
@@ -463,7 +463,7 @@ struct MiniArticleCard: View {
         }
         .padding(10)
         .background(.background, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .shadow(color: .black.opacity(0.08), radius: 4, y: 2)
+
     }
 }
 
@@ -486,7 +486,7 @@ private struct FeedDiscoveryIllustration: View {
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)
                 .background(.background, in: Capsule())
-                .shadow(color: .black.opacity(0.08), radius: 4, y: 2)
+
                 .offset(y: phase == 2 ? -34 : -10)
 
                 // The magnifier sweeping across the address.

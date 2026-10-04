@@ -12,6 +12,7 @@ import UserNotifications
 /// macOS-only and intentionally omitted.
 struct SettingsView: View {
     @Bindable var store: ReaderStore
+    @AppStorage(AppAppearance.storageKey) private var appearanceRaw = AppAppearance.system.rawValue
     /// True when hosted as the iPhone Settings tab (no "Done" button, and the
     /// OPML import/export + sync-folder actions the sidebar owns on iPad move
     /// into a "Data" section here). Defaults to sheet presentation (iPad),
@@ -59,6 +60,18 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack(path: $navigationPath) {
             List {
+                Section {
+                    Picker(AppAppearance.settingsTitle, selection: Binding(
+                        get: { AppAppearance(storedValue: appearanceRaw).rawValue },
+                        set: { appearanceRaw = $0 })) {
+                        ForEach(AppAppearance.allCases) { appearance in
+                            Text(appearance.label).tag(appearance.rawValue)
+                        }
+                    }
+                    .accessibilityIdentifier("settings.appearance")
+                }
+                .nookRows()
+
                 Section {
                     NavigationLink(value: Destination.general) {
                         Label("General", systemImage: "gearshape")
@@ -543,7 +556,7 @@ private struct ReaderControlPositionChoice: View {
         Button(action: action) {
             VStack(spacing: 8) {
                 ZStack(alignment: .bottom) {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    RoundedRectangle(cornerRadius: NookTheme.Radius.control, style: .continuous)
                         .fill(Color.primary.opacity(0.045))
 
                     VStack(spacing: 4) {
@@ -580,17 +593,17 @@ private struct ReaderControlPositionChoice: View {
             .padding(8)
             .frame(maxWidth: .infinity)
             .background(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                RoundedRectangle(cornerRadius: NookTheme.Radius.card, style: .continuous)
                     .fill(isSelected ? Color.accentColor.opacity(0.1) : Color.clear)
             )
             .overlay {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                RoundedRectangle(cornerRadius: NookTheme.Radius.card, style: .continuous)
                     .stroke(
                         isSelected ? Color.accentColor : Color.secondary.opacity(0.22),
                         lineWidth: isSelected ? 2 : 1
                     )
             }
-            .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: NookTheme.Radius.card, style: .continuous))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(label))
@@ -606,9 +619,9 @@ private struct ReaderControlPositionChoice: View {
         .foregroundStyle(highlighted ? Color.accentColor : Color.secondary)
         .padding(.horizontal, 7)
         .frame(height: 22)
-        .background(.thinMaterial, in: Capsule())
+        .nookGlass(radius: NookTheme.Radius.control)
         .overlay {
-            Capsule()
+            RoundedRectangle(cornerRadius: NookTheme.Radius.control)
                 .stroke(
                     highlighted ? Color.accentColor.opacity(0.5) : Color.secondary.opacity(0.18),
                     lineWidth: 0.75

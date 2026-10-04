@@ -25,6 +25,7 @@ private struct ScrollSnapshot: Equatable {
 struct ReaderDetailView: View {
     @Bindable var store: ReaderStore
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// The article to show, as a binding the compact tab shell owns, so the pushed
     /// reader is driven by its own value — not the shared, scope-dependent
     /// `store.selectedArticle` (which another tab's scope change can null out) — and
@@ -308,7 +309,7 @@ struct ReaderDetailView: View {
                         size: proxy.size,
                         originalButtonRect: originalButtonFrame == .zero ? nil : originalButtonFrame,
                         onNext: { advanceCoach(from: $0) },
-                        onSkip: { withAnimation { coachStep = nil } }
+                        onSkip: { withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) { coachStep = nil } }
                     )
                 }
             }
@@ -331,7 +332,7 @@ struct ReaderDetailView: View {
     /// the "Next" button share one path and out-of-order changes are ignored.
     private func advanceCoach(from step: ReaderCoachStep) {
         guard coachStep == step else { return }
-        withAnimation(.easeInOut(duration: 0.28)) { coachStep = step.next }
+        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.28)) { coachStep = step.next }
     }
 
     private var learningControlLayout: AnyLayout {
@@ -377,7 +378,7 @@ struct ReaderDetailView: View {
                     .font(NookTypography.metadata)
                     .padding(.horizontal, NookTheme.Space.item)
                     .padding(.vertical, NookTheme.Space.tight)
-                    .nookCard()
+                    .overlay(alignment: .bottom) { Rectangle().fill(NookTheme.divider).frame(height: 0.5) }
 
                     readerBody(article)
 
@@ -416,10 +417,10 @@ struct ReaderDetailView: View {
                 .gesture(TapGesture().onEnded {
                     guard coachStep == nil else { return }
                     if chromeHidden {
-                        withAnimation(.easeInOut(duration: 0.25)) { chromeHidden = false }
+                        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) { chromeHidden = false }
                     } else if titleHidden {
                         scrollBook.accum = 0
-                        withAnimation(.easeInOut(duration: 0.25)) { chromeHidden = true }
+                        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) { chromeHidden = true }
                     }
                 }, including: readerLearningEnabled ? .subviews : .all)
                 .modifier(LongPressToOpenBrowser(
@@ -466,7 +467,7 @@ struct ReaderDetailView: View {
                     // The bottom bar is an overlay, so fading it cannot alter the
                     // active scroll view's layout or interrupt this pull.
                     if engaged != bottomPullEngaged {
-                        withAnimation(.easeInOut(duration: 0.2)) {
+                        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) {
                             bottomPullEngaged = engaged
                         }
                     }
@@ -493,7 +494,7 @@ struct ReaderDetailView: View {
                 // title's bottom passes the bar after scrolling ~padding + height.
                 let pastTitle = newY > titleHeight + 8
                 if pastTitle != titleHidden {
-                    withAnimation(.easeInOut(duration: 0.2)) { titleHidden = pastTitle }
+                    withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) { titleHidden = pastTitle }
                 }
 
                 let delta = newY - scrollBook.lastY
@@ -522,11 +523,11 @@ struct ReaderDetailView: View {
                 }
                 if target != chromeHidden {
                     scrollBook.accum = 0
-                    withAnimation(.easeInOut(duration: 0.25)) { chromeHidden = target }
+                    withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) { chromeHidden = target }
                 }
             }
                 .onChange(of: summaryScrollRequestID) { _, _ in
-                    withAnimation(.easeInOut(duration: 0.3)) {
+                    withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.3)) {
                         scrollProxy.scrollTo(summaryAnchorID(for: article), anchor: .top)
                     }
                 }
@@ -552,9 +553,8 @@ struct ReaderDetailView: View {
         .overlay {
             Image(systemName: starBurstOn ? "star.fill" : "star.slash.fill")
                 .font(.system(size: 104, weight: .bold))
-                .foregroundStyle(starBurstOn ? .yellow : .white)
-                .shadow(color: .black.opacity(0.25), radius: 12, y: 4)
-                .scaleEffect(starBurstScale)
+                .foregroundStyle(starBurstOn ? NookTheme.accentPrimary : NookTheme.textSecondary)
+                .scaleEffect(reduceMotion ? 1 : starBurstScale)
                 .opacity(starBurstOpacity)
                 .allowsHitTesting(false)
         }
@@ -568,7 +568,7 @@ struct ReaderDetailView: View {
         // so its buttons are ordinary SwiftUI views the coach mark can measure and
         // spotlight exactly — while never participating in layout (no shift/bounce).
         .overlay(alignment: .bottom) { readerBottomBar(article) }
-        .animation(.easeInOut(duration: 0.2), value: translationBusy)
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: translationBusy)
         .toolbar {
             // The button controls carry iOS 26 glass capsules, so remove them (not
             // just fade them) while immersed — a fade would leave the empty pills.
@@ -621,7 +621,7 @@ struct ReaderDetailView: View {
                             Label("Delete Article", systemImage: "trash")
                         }
                     } label: {
-                        Image(systemName: "ellipsis.circle")
+                        Image(systemName: "ellipsis").nookToolbarItem().accessibilityLabel("More")
                     }
                 }
             }
@@ -652,7 +652,7 @@ struct ReaderDetailView: View {
             // from restarting it.
             if !seenReaderGestureHint {
                 seenReaderGestureHint = true
-                withAnimation { coachStep = .star }
+                withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) { coachStep = .star }
             }
             // Detect the language off the main actor so the recognizer doesn't
             // run on the transition frame.
@@ -756,7 +756,7 @@ struct ReaderDetailView: View {
                     .padding(.top, 10)
             }
         }
-        .animation(.easeInOut(duration: 0.2), value: store.isReparsing(article))
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: store.isReparsing(article))
         .id(article.id)
         .transition(.push(from: readerNavForward ? .bottom : .top))
     }
@@ -826,7 +826,7 @@ struct ReaderDetailView: View {
         titleHidden = false
         scrollBook.lastY = 0
         scrollBook.accum = 0
-        withAnimation(.easeInOut(duration: 0.3)) {
+        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.3)) {
             store.selectedArticleID = next.id
             articleOverride?.wrappedValue = next
         }
@@ -987,8 +987,8 @@ struct ReaderDetailView: View {
                     .fixedSize()
                 Spacer(minLength: 0)
             }
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
+            .font(NookTypography.metadata)
+            .foregroundStyle(NookTheme.textSecondary)
 
             if translationActive(article) {
                 Group {
@@ -999,7 +999,7 @@ struct ReaderDetailView: View {
                     }
                 }
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(NookTheme.textSecondary)
             }
         }
     }
@@ -1010,13 +1010,13 @@ struct ReaderDetailView: View {
         starBurstOn = on
         starBurstScale = 0.4
         starBurstOpacity = 0
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
+        withAnimation(reduceMotion ? nil : .easeOut(duration: 0.18)) {
             starBurstScale = 1.0
             starBurstOpacity = 1.0
         }
         Task {
             try? await Task.sleep(for: .seconds(0.45))
-            withAnimation(.easeOut(duration: 0.35)) {
+            withAnimation(reduceMotion ? nil : .easeOut(duration: 0.35)) {
                 starBurstOpacity = 0
                 starBurstScale = 1.3
             }
@@ -1059,8 +1059,8 @@ struct ReaderDetailView: View {
         .padding(.bottom, 6)
         .opacity(isHidden ? 0 : 1)
         .allowsHitTesting(!isHidden)
-        .animation(.easeInOut(duration: 0.25), value: isHidden)
-        .animation(.snappy(duration: 0.3), value: effectiveSide)
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: isHidden)
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: effectiveSide)
     }
 
     /// Frequent reading actions. These favor the configured/effective side.
@@ -1081,7 +1081,7 @@ struct ReaderDetailView: View {
             }
         }
         .glassCapsule()
-        .animation(.easeInOut(duration: 0.2), value: canTranslate)
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: canTranslate)
     }
 
     @ViewBuilder
@@ -1114,11 +1114,11 @@ struct ReaderDetailView: View {
                         ProgressView().controlSize(.small)
                     } else {
                         Image(systemName: translationActive(article) ? "character.bubble.fill" : "character.bubble")
-                            .font(.system(size: 20))
+                            .font(NookTypography.toolbar)
                             .contentTransition(.symbolEffect(.replace))
                     }
                 }
-                .frame(width: 52, height: 48)
+                .nookToolbarItem()
             }
             .disabled(translationBusy)
             .help(translationActive(article) ? "Show Original" : "Translate")
@@ -1127,7 +1127,7 @@ struct ReaderDetailView: View {
 
     /// Opens the in-app browser on tap; long-press chooses the article parser.
     ///
-    /// A `Menu` with a `primaryAction` rather than a sixth button: five 52-point
+    /// A `Menu` with a `primaryAction` rather than a sixth button: five 48-point
     /// controls plus capsule padding already fill the bar on a 375-point phone, and
     /// the coach mark spotlights this button's frame, so it has to stay one control
     /// in one place.
@@ -1143,8 +1143,8 @@ struct ReaderDetailView: View {
             }
         } label: {
             Image(systemName: "doc.plaintext")
-                .font(.system(size: 20))
-                .frame(width: 52, height: 48)
+                .font(NookTypography.toolbar)
+                .nookToolbarItem()
         } primaryAction: {
             openBrowser(for: article)
         }
@@ -1169,15 +1169,15 @@ struct ReaderDetailView: View {
                         ProgressView().controlSize(.small)
                     } else if summaryController.issue != nil {
                         Image(systemName: "exclamationmark.triangle")
-                            .font(.system(size: 20))
+                            .font(NookTypography.toolbar)
                     } else {
                         Image(systemName: summaryController.summary == nil
                             ? "apple.intelligence"
                             : "checkmark.circle.fill")
-                            .font(.system(size: 20))
+                            .font(NookTypography.toolbar)
                     }
                 }
-                .frame(width: 52, height: 48)
+                .nookToolbarItem()
             }
             .disabled(summaryController.isLoading)
             .accessibilityLabel(summaryController.isLoading ? "Summarizing…" : "Summarize")
@@ -1199,8 +1199,8 @@ struct ReaderDetailView: View {
             }
         ) { copied in
             Image(systemName: copied ? "checkmark" : "square.and.arrow.up")
-                .font(.system(size: 20))
-                .frame(width: 52, height: 48)
+                .font(NookTypography.toolbar)
+                .nookToolbarItem()
         }
     }
 
@@ -1211,15 +1211,15 @@ struct ReaderDetailView: View {
             haptics.star(on: willStar)
         } label: {
             Image(systemName: article.isStarred ? "star.fill" : "star")
-                .font(.system(size: 20))
+                .font(NookTypography.toolbar)
                 .contentTransition(.symbolEffect(.replace))
-                .frame(width: 52, height: 48)
+                .nookToolbarItem()
         }
     }
 
     private func resetHandAdaptation() {
         handAdaptation.reset()
-        withAnimation(.snappy(duration: 0.3)) {
+        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) {
             controlsAreAdaptivelyMirrored = false
         }
     }
@@ -1234,7 +1234,7 @@ struct ReaderDetailView: View {
             primaryHand: readerHandedness
         )
         guard shouldMirror != controlsAreAdaptivelyMirrored else { return }
-        withAnimation(.snappy(duration: 0.3)) {
+        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) {
             controlsAreAdaptivelyMirrored = shouldMirror
         }
     }
@@ -1558,6 +1558,7 @@ struct ArticleInfoView: View {
                     Link("Open Article", destination: article.url)
                 }
             }
+            .nookScreen()
             .navigationTitle("Article Info")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -1572,6 +1573,7 @@ struct ArticleInfoView: View {
 /// The in-app browser sheet: the shared `ArticleWebView` with a toolbar to
 /// switch reader/original, open in the system browser, and share.
 struct InAppBrowserSheet: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Bindable var store: ReaderStore
     let article: Article
     let style: ReaderStyle
@@ -1628,7 +1630,7 @@ struct InAppBrowserSheet: View {
             store.selectNextArticle()
             bottomPull = 0
         } else {
-            withAnimation(.easeOut(duration: 0.2)) { bottomPull = 0 }
+            withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) { bottomPull = 0 }
         }
     }
 
@@ -1669,7 +1671,7 @@ struct InAppBrowserSheet: View {
                     TranslationProgressBanner()
                 }
             }
-            .animation(.easeInOut(duration: 0.2), value: translationInFlight)
+            .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: translationInFlight)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -1779,6 +1781,7 @@ private struct LongPressToOpenBrowser: ViewModifier {
 /// A small "translating" banner shown while the model works, so a slow
 /// translation reads as in-progress rather than stuck.
 struct TranslationProgressBanner: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var body: some View {
         HStack(spacing: 8) {
             ProgressView().controlSize(.small)
@@ -1792,6 +1795,6 @@ struct TranslationProgressBanner: View {
         .padding(.vertical, 10)
         .nookGlass(radius: NookTheme.Radius.card)
         .padding(.top, 10)
-        .transition(.move(edge: .top).combined(with: .opacity))
+        .transition(reduceMotion ? .opacity : .move(edge: .top).combined(with: .opacity))
     }
 }

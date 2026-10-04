@@ -1,78 +1,19 @@
 {
   "fill": {
-    "automatic-gradient": "srgb:0.90980,0.94902,1.00000,1.00000"
+    "solid": "srgb:0.12,0.32,0.68,1.0"
   },
   "groups": [
     {
       "layers": [
         {
-          "image-name": "BackPage.svg",
-          "name": "BackPage",
-          "glass": false,
-          "fill-specializations": [
-            {
-              "value": {
-                "solid": "srgb:0.62745,0.76471,1.00000,1.00000"
-              }
-            },
-            {
-              "appearance": "tinted",
-              "value": "automatic"
-            }
-          ]
-        },
-        {
-          "image-name": "BluePage.svg",
-          "name": "BluePage",
-          "glass": false,
-          "fill-specializations": [
-            {
-              "value": {
-                "solid": "srgb:0.23529,0.47059,0.91765,1.00000"
-              }
-            },
-            {
-              "appearance": "tinted",
-              "value": "automatic"
-            }
-          ]
-        },
-        {
-          "image-name": "FrontPage.svg",
-          "name": "FrontPage",
-          "glass": false,
-          "fill-specializations": [
-            {
-              "value": {
-                "solid": "srgb:1.00000,1.00000,1.00000,1.00000"
-              }
-            },
-            {
-              "appearance": "tinted",
-              "value": "automatic"
-            }
-          ]
-        },
-        {
-          "image-name": "ReadingMark.svg",
-          "name": "ReadingMark",
-          "glass": false,
-          "fill-specializations": [
-            {
-              "value": {
-                "solid": "srgb:0.14118,0.35686,0.84314,1.00000"
-              }
-            },
-            {
-              "appearance": "tinted",
-              "value": "automatic"
-            }
-          ]
+          "image-name": "EditorialReader.png",
+          "name": "Editorial Reader",
+          "glass": false
         }
       ],
       "shadow": {
         "kind": "neutral",
-        "opacity": 0.16
+        "opacity": 0
       },
       "translucency": {
         "enabled": false,

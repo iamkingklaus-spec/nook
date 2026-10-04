@@ -33,26 +33,26 @@ public struct BlockReaderControls: View {
                         Spacer()
                         Text("\(controller.translatedCount)/\(controller.totalCount)").monospacedDigit()
                     }
-                    .font(.subheadline)
+                    .font(NookTypography.label)
                     Text(controller.automaticPreparation
                          ? "Gemini · 打开文章时自动清洗并翻译；缓存优先，未完成段落保留原文。"
                          : "Gemini · 仅点击翻译时发送正文；未完成的段落显示原文。")
-                        .font(.caption).foregroundStyle(.secondary)
+                        .font(.caption).foregroundStyle(NookTheme.textSecondary)
                 }
                 if controller.cleanupPending {
                     Button("重试 AI 清洗") { Task { await controller.retryAICleanup() } }
                         .buttonStyle(NookActionStyle(.quiet)).disabled(controller.isTranslating || controller.isLoading)
                 }
                 if let message = controller.cleanupMessage {
-                    Text(message).font(.caption).foregroundStyle(.secondary)
+                    Text(message).font(.caption).foregroundStyle(NookTheme.textSecondary)
                 }
                 if let message = controller.message {
-                    Text(message).font(.caption).foregroundStyle(.secondary)
+                    Text(message).font(.caption).foregroundStyle(NookTheme.textSecondary)
                 }
             }
         }
         .padding(NookTheme.Space.item)
-        .nookCard()
+        .background(NookTheme.backgroundSecondary, in: RoundedRectangle(cornerRadius: NookTheme.Radius.control))
     }
 }
 
@@ -71,7 +71,7 @@ public struct BlockReaderContentView: View {
     public var body: some View {
         if controller.isCleaning && controller.mode != .english {
             ProgressView("Gemini 正在清洗正文…切换 EN 可先阅读原文。")
-                .font(.subheadline).padding(.vertical, 20)
+                .font(NookTypography.label).padding(.vertical, 20)
         } else if let document = controller.prepared {
             BlockReaderNodesView(nodes: BlockReaderPresentation.nodes(document.nodes,
                                  translations: controller.translatedHTML, templates: controller.presentationTranslations),
@@ -112,7 +112,7 @@ private struct BlockReaderNodesView: View {
                         HTMLContentText(html: text.html, selectable: false,
                                         baseSize: group.heading.map { max(10, typography.headingSize($0) - 2) },
                                         bold: group.heading != nil, typography: chineseTypography, secondaryText: true)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(NookTheme.textSecondary)
                     } else {
                         sourceText(id: group.blockID, html: text.html, heading: group.heading)
                     }

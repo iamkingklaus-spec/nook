@@ -119,10 +119,8 @@ public struct ReaderReparsingBanner: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 9)
-        .background(.regularMaterial, in: Capsule())
-        .overlay(Capsule().strokeBorder(Color.primary.opacity(0.08)))
-        .shadow(color: .black.opacity(0.12), radius: 8, y: 3)
-        .transition(.move(edge: .top).combined(with: .opacity))
+        .nookGlass()
+        .transition(.opacity)
     }
 }
 

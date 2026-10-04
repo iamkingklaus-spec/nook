@@ -44,6 +44,7 @@ final class NookiOSDelegate: NSObject, UIApplicationDelegate, UNUserNotification
 @main
 struct NookiOSApp: App {
     @UIApplicationDelegateAdaptor(NookiOSDelegate.self) private var appDelegate
+    @AppStorage(AppAppearance.storageKey) private var appearanceRaw = AppAppearance.system.rawValue
     init() {
         // Keep the AppleLanguages override in sync with the stored preference,
         // and capture the language Nook launched with.
@@ -54,6 +55,7 @@ struct NookiOSApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
+                .preferredColorScheme(AppAppearance(storedValue: appearanceRaw).colorScheme)
                 .tint(NookTheme.accentPrimary)
                 .foregroundStyle(NookTheme.textPrimary)
                 // Format dates/numbers with the chosen UI language, not the OS

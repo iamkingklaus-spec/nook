@@ -95,9 +95,7 @@ struct CoachCallout: View {
         }
         .padding(18)
         .frame(maxWidth: 320)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(Color.primary.opacity(0.08)))
-        .shadow(color: .black.opacity(0.22), radius: 18, y: 6)
+        .nookGlass()
         .padding(.horizontal, 24)
     }
 }

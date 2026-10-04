@@ -177,6 +177,9 @@ private struct LearningSelectableText: UIViewRepresentable {
     }
     func updateUIView(_ view: UITextView, context: Context) {
         context.coordinator.parent = self
+        // Dynamic colors update with Appearance without replacing the selection view.
+        view.tintColor = UIColor(NookTheme.accentPrimary)
+        view.linkTextAttributes = [.foregroundColor: UIColor(NookTheme.accentPrimary), .underlineStyle: NSUnderlineStyle.single.rawValue]
         let size = heading.map { typography.headingSize($0) } ?? typography.bodySize
         let key = HTMLTextFlow.cacheKey(html: html, baseSize: size, bold: heading != nil, typography: typography)
         guard context.coordinator.renderKey != key else { return }
@@ -188,7 +191,7 @@ private struct LearningSelectableText: UIViewRepresentable {
             view.attributedText = LearningTextLayout.applyingLineSpacing(NSAttributedString(attributed), spacing: typography.lineSpacing)
         } else {
             view.text = HTMLContentParser.decodeEntities(html.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression))
-            view.font = .systemFont(ofSize: size); view.textColor = .label
+            view.font = .systemFont(ofSize: size); view.textColor = UIColor(NookTheme.textPrimary)
         }
     }
     func sizeThatFits(_ proposal: ProposedViewSize, uiView: UITextView, context: Context) -> CGSize? {

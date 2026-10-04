@@ -8,16 +8,16 @@ import AppKit
 /// Shared by the app shell and package-owned screens. Asset catalog mirrors are
 /// reserved for UIKit/launch surfaces; SwiftUI reads this single semantic palette.
 public enum NookTheme {
-    public static let backgroundPrimary = adaptive(0xF6F8FC, 0x111824)
-    public static let backgroundSecondary = adaptive(0xEBF0F8, 0x182231)
-    public static let surface = adaptive(0xFFFFFF, 0x1D2939)
-    public static let textPrimary = adaptive(0x162235, 0xF2F6FC)
-    public static let textSecondary = adaptive(0x58677C, 0xABBAD0)
-    public static let textTertiary = adaptive(0x617187, 0x93A3BA)
-    public static let accentPrimary = adaptive(0x245BD7, 0x8CAEFF)
-    public static let accentSecondary = adaptive(0xA13D4E, 0xEEA0AD)
-    public static let divider = adaptive(0xDDE5F0, 0x33435A)
-    public static let borderSubtle = adaptive(0xE0E7F1, 0x2C3B50)
+    public static let backgroundPrimary = adaptive(0xF7F8FA, 0x171C24)
+    public static let backgroundSecondary = adaptive(0xEDF0F4, 0x202733)
+    public static let surface = adaptive(0xFCFDFE, 0x242D3A)
+    public static let textPrimary = adaptive(0x202A38, 0xEEEDE8)
+    public static let textSecondary = adaptive(0x566273, 0xB8C0CB)
+    public static let textTertiary = adaptive(0x606C7E, 0x9FAAB9)
+    public static let accentPrimary = adaptive(0x365A92, 0xA0BAE3)
+    public static let accentSecondary = adaptive(0x9B4350, 0xDBA1A9)
+    public static let divider = adaptive(0xDEE2E8, 0x3B4655)
+    public static let borderSubtle = adaptive(0xE0E4EA, 0x36404E)
     public static let tabInactive = textSecondary
     public static let success = Color.green
     public static let warning = Color.orange
@@ -33,11 +33,11 @@ public enum NookTheme {
         public static let section: CGFloat = 24
     }
     public enum Radius {
-        public static let thumbnail: CGFloat = 9
-        public static let image: CGFloat = 13
-        public static let control: CGFloat = 12
-        public static let card: CGFloat = 16
-        public static let sheet: CGFloat = 24
+        public static let thumbnail: CGFloat = 6
+        public static let image: CGFloat = 10
+        public static let control: CGFloat = 10
+        public static let card: CGFloat = 12
+        public static let sheet: CGFloat = 20
     }
 
     private static func rgb(_ value: UInt32) -> (CGFloat, CGFloat, CGFloat) {
@@ -59,10 +59,16 @@ public enum NookTheme {
 }
 
 public enum NookTypography {
-    public static let pageTitle = Font.system(.largeTitle, design: .serif, weight: .semibold)
-    public static let articleTitle = Font.system(.title, design: .serif, weight: .bold)
+    public static let display = Font.system(.largeTitle, design: .serif, weight: .semibold)
+    public static let title = Font.system(.title, design: .serif, weight: .bold)
+    public static let headline = Font.system(.headline, design: .serif, weight: .semibold)
+    public static let label = Font.system(.subheadline, weight: .medium)
+    public static let toolbar = Font.system(size: 20, weight: .regular)
+
+    public static let pageTitle = display
+    public static let articleTitle = title
     public static let sectionTitle = Font.system(.headline, weight: .semibold)
-    public static let storyTitle = Font.system(.headline, design: .serif, weight: .semibold)
+    public static let storyTitle = headline
     public static let body = Font.body
     public static let metadata = Font.subheadline
     public static let caption = Font.caption
@@ -70,12 +76,13 @@ public enum NookTypography {
 }
 
 private struct NookScreenStyle: ViewModifier {
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     func body(content: Content) -> some View {
         #if os(iOS)
         content.scrollContentBackground(.hidden)
             .background(NookTheme.backgroundPrimary.ignoresSafeArea())
             .foregroundStyle(NookTheme.textPrimary).tint(NookTheme.accentPrimary)
-            .toolbarBackground(NookTheme.backgroundPrimary.opacity(0.96), for: .navigationBar)
+            .toolbarBackground(reduceTransparency ? AnyShapeStyle(NookTheme.backgroundPrimary) : AnyShapeStyle(.regularMaterial), for: .navigationBar)
             .presentationBackground(NookTheme.backgroundPrimary)
             .presentationCornerRadius(NookTheme.Radius.sheet)
         #else
@@ -124,7 +131,38 @@ public struct NookActionStyle: ButtonStyle {
     }
 }
 
+/// Content rows retain their layout and only dim while pressed (no spring/scale).
+public struct NookContentButtonStyle: ButtonStyle {
+    public init() {}
+    public func makeBody(configuration: Configuration) -> some View {
+        configuration.label.opacity(configuration.isPressed ? 0.72 : 1)
+    }
+}
+
+private struct NookToolbarItemStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content.font(NookTypography.toolbar)
+            .frame(width: 48, height: 48)
+            .contentShape(Rectangle())
+    }
+}
+
+private struct NookChromeStyle: ViewModifier {
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    func body(content: Content) -> some View {
+        content.background {
+            Group {
+                if reduceTransparency { NookTheme.backgroundPrimary }
+                else { Rectangle().fill(.regularMaterial) }
+            }.ignoresSafeArea(edges: .bottom)
+        }
+    }
+}
+
 public extension View {
+    func nookToolbarItem() -> some View { modifier(NookToolbarItemStyle()) }
+    func nookChrome() -> some View { modifier(NookChromeStyle()) }
+
     func nookScreen() -> some View { modifier(NookScreenStyle()) }
     func nookCard() -> some View { modifier(NookSurfaceStyle(glass: false, radius: NookTheme.Radius.card)) }
     func nookGlass(radius: CGFloat = NookTheme.Radius.card) -> some View {

@@ -239,7 +239,7 @@ struct RootView: View {
         // Apply Nook's signature accent explicitly across both shells (iPhone tab
         // bar and iPad split view). The asset-catalog global accent alone didn't
         // take effect, so tint the whole app root here.
-        .tint(Color("AccentColor"))
+        .tint(NookTheme.accentPrimary)
         // Share the tutorial coordinator with both shells and the welcome cover.
         .environment(tour)
         .environment(tabChrome)
@@ -944,7 +944,7 @@ private struct CompactShell: View {
             // set again here. Without it the reader's bottom bar drew its controls in
             // the system blue: it tints itself, but then resolves
             // `Color.accentColor` from the ambient environment, which was the default.
-            .tint(Color("AccentColor"))
+            .tint(NookTheme.accentPrimary)
             .onChange(of: current == nil) { _, cleared in
                 if cleared { onDone() }
             }
@@ -963,21 +963,10 @@ private struct CompactShell: View {
             }
             .padding(.vertical, 10)
             .padding(.horizontal, 16)
-            .background(background)
+            .nookGlass()
             .padding(.top, 8)
         }
 
-        @ViewBuilder
-        private var background: some View {
-            if #available(iOS 26, *) {
-                // Decorative, so .regular rather than .interactive().
-                Capsule(style: .continuous).fill(.clear).glassEffect(.regular, in: .capsule)
-            } else {
-                Capsule(style: .continuous)
-                    .fill(.background)
-                    .shadow(color: .black.opacity(0.12), radius: 6, y: 2)
-            }
-        }
     }
 
     /// Opens the composer, building its store on first use.
@@ -1201,7 +1190,7 @@ private struct EditorialTabBar: View {
                             .newsFont(.tabIcon).foregroundStyle(NewsPalette.accentPrimary)
                             .frame(minWidth: 44, minHeight: 44)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(NookContentButtonStyle())
                     .accessibilityLabel("Write a post")
                 }
             }
@@ -1209,7 +1198,7 @@ private struct EditorialTabBar: View {
             .padding(.vertical, 4)
             .frame(minHeight: 52)
         }
-        .background(NewsPalette.backgroundPrimary.ignoresSafeArea(edges: .bottom))
+        .nookChrome()
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("news.tabBar")
     }
@@ -1235,7 +1224,7 @@ private struct EditorialTabBar: View {
             .frame(maxWidth: .infinity, minHeight: 44)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(NookContentButtonStyle())
         .accessibilityLabel(Text(title))
         .accessibilityIdentifier("news.tab.\(tab)")
         .accessibilityAddTraits(selection == tab ? [.isSelected] : [])
@@ -1386,7 +1375,7 @@ private struct SortableSegmentedControl: View {
             }
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(NookContentButtonStyle())
         .accessibilityLabel(Text(title(source)))
         .accessibilityAddTraits(selected ? .isSelected : [])
         .accessibilityValue(selected ? Text(sortValue(source)) : Text(""))
@@ -1806,7 +1795,7 @@ private struct FeedsTab: View {
             } label: {
                 ownNookLabel(unread: 0)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(NookContentButtonStyle())
             .disabled(isFollowingOwnFeed)
         }
     }
@@ -2394,7 +2383,7 @@ private struct Sidebar: View {
                         Label("Settings", systemImage: "gearshape")
                     }
                 } label: {
-                    Image(systemName: "ellipsis.circle")
+                    Image(systemName: "ellipsis").nookToolbarItem().accessibilityLabel("More")
                 }
             }
             // The phone puts this in the tab bar, which the iPad does not have — so
@@ -2477,7 +2466,7 @@ private struct Sidebar: View {
             } label: {
                 OwnNookLabel(unread: 0, isFollowing: isFollowingOwnFeed)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(NookContentButtonStyle())
             .disabled(isFollowingOwnFeed)
         }
     }
