@@ -33,6 +33,13 @@ struct LearningSelection: Equatable, Sendable {
             && selectedText.count <= 80
     }
 
+    /// A short source expression may be explained as a word, phrase or idiom.
+    /// Sentence punctuation and partial-word selections remain excluded.
+    var isLexicalExpression: Bool {
+        hasWordBoundaries && selectedText.count <= 120 && selectedText.split(whereSeparator: \.isWhitespace).count <= 6
+            && selectedText.range(of: #"^[A-Za-z]+(?:['’\-][A-Za-z]+)*(?:\s+[A-Za-z]+(?:['’\-][A-Za-z]+)*)*$"#, options: .regularExpression) != nil
+    }
+
     static func resolve(article: LearningArticleContext, document: ArticleDocument,
                         blockID: String, renderedSource: String, range: NSRange,
                         origin: LearningTextOrigin = .source) -> Self? {
@@ -76,6 +83,19 @@ struct LearningSelection: Equatable, Sendable {
     }
 }
 
+enum LearningExpressionKind: String, Codable, Sendable { case word, phrase, idiom }
+
+public struct LearningSynonym: Codable, Equatable, Sendable {
+    public let word: String
+    public let distinction: String
+}
+
+public struct LearningDerivative: Codable, Equatable, Sendable {
+    public let word: String
+    public let partOfSpeech: String
+    public let meaning: String
+}
+
 struct LearningExplanation: Codable, Equatable, Sendable {
     let type: LearningExplanationType
     let meaning: String
@@ -87,6 +107,15 @@ struct LearningExplanation: Codable, Equatable, Sendable {
     var grammar: [String]? = nil
     var phrases: [String]? = nil
     var pitfalls: [String]? = nil
+    // Optional additions preserve decoding of v1 responses and saved vocabulary.
+    var expression: String? = nil
+    var kind: LearningExpressionKind? = nil
+    var partOfSpeech: String? = nil
+    var pronunciation: String? = nil
+    var synonyms: [LearningSynonym]? = nil
+    var antonyms: [LearningSynonym]? = nil
+    var wordFamily: [LearningDerivative]? = nil
+    var collocations: [String]? = nil
 
     func validate(for type: LearningExplanationType) throws {
         func text(_ value: String?, required: Bool = false) -> Bool {
@@ -99,8 +128,24 @@ struct LearningExplanation: Codable, Equatable, Sendable {
             guard text(lemma, required: true), (lemma?.count ?? 0) <= 100,
                   text(englishDefinition, required: true), text(usage, required: true), text(example),
                   mainClause == nil, grammar == nil, phrases == nil, pitfalls == nil else { throw LearningError.malformed }
+            guard text(expression), (expression?.count ?? 0) <= 120,
+                  text(partOfSpeech), (partOfSpeech?.count ?? 0) <= 80,
+                  text(pronunciation), (pronunciation?.count ?? 0) <= 100 else { throw LearningError.malformed }
+            for alternatives in [synonyms, antonyms] {
+                guard (alternatives?.count ?? 0) <= 4,
+                      alternatives?.allSatisfy({ text($0.word, required: true) && $0.word.count <= 100 && text($0.distinction, required: true) && $0.distinction.count <= 200 }) ?? true else { throw LearningError.malformed }
+            }
+            guard (wordFamily?.count ?? 0) <= 6,
+                  wordFamily?.allSatisfy({ text($0.word, required: true) && $0.word.count <= 100 && text($0.partOfSpeech, required: true) && $0.partOfSpeech.count <= 80 && text($0.meaning, required: true) && $0.meaning.count <= 160 }) ?? true,
+                  (collocations?.count ?? 0) <= 4,
+                  collocations?.allSatisfy({ text($0, required: true) && $0.count <= 200 }) ?? true else { throw LearningError.malformed }
+            if kind == .phrase || kind == .idiom || (lemma?.split(whereSeparator: \.isWhitespace).count ?? 0) > 1 {
+                guard wordFamily?.isEmpty ?? true else { throw LearningError.malformed }
+            }
         case .sentence:
             guard text(mainClause, required: true), lemma == nil, englishDefinition == nil, usage == nil, example == nil else { throw LearningError.malformed }
+            guard expression == nil, kind == nil, partOfSpeech == nil, pronunciation == nil, synonyms == nil,
+                  antonyms == nil, wordFamily == nil, collocations == nil else { throw LearningError.malformed }
             for values in [grammar, phrases, pitfalls] {
                 guard let values, values.count <= 5, values.allSatisfy({ text($0, required: true) }) else { throw LearningError.malformed }
             }
@@ -111,7 +156,7 @@ struct LearningExplanation: Codable, Equatable, Sendable {
 enum LearningError: Error { case malformed, storage, unsupportedVersion }
 
 struct LearningCacheKey: Codable, Equatable, Sendable {
-    static let promptVersion = 1
+    static let promptVersion = 2
     let digest: String
     init(selection: LearningSelection, type: LearningExplanationType, model: String) {
         digest = ArticleDocument.digest(["learning", "gemini", "zh-Hans", String(Self.promptVersion),
@@ -135,6 +180,10 @@ public struct VocabularyEntry: Codable, Equatable, Identifiable, Sendable {
     public let documentHash: String
     public let blockID: String
     public let createdAt: Date
+    public var partOfSpeech: String? = nil
+    public var synonyms: [LearningSynonym]? = nil
+    public var wordFamily: [LearningDerivative]? = nil
+    public var collocations: [String]? = nil
 
     init(selection: LearningSelection, explanation: LearningExplanation, createdAt: Date = .now) {
         word = selection.selectedText; lemma = explanation.lemma ?? word
@@ -143,6 +192,8 @@ public struct VocabularyEntry: Codable, Equatable, Identifiable, Sendable {
         articleURL = selection.article.articleURL; articleID = selection.article.articleID
         documentHash = selection.documentHash; blockID = selection.blockID
         self.createdAt = createdAt
+        partOfSpeech = explanation.partOfSpeech; synonyms = explanation.synonyms
+        wordFamily = explanation.wordFamily; collocations = explanation.collocations
         // Same word in the same source sentence is one entry, even after a
         // document refresh. A distinct context intentionally remains distinct.
         id = ArticleDocument.digest([word.lowercased(), originalSentence, articleURL.absoluteString])

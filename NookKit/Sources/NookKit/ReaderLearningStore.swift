@@ -32,7 +32,8 @@ public final class ReaderLearningStore {
                 entries = file.entries
             } catch { loadError = "生词本读取失败，已保留原文件；请恢复文件后重新打开 App。" }
         }
-        if let data = try? Data(contentsOf: directory.appending(path: "explanations-v1.json")),
+        // Leave v1 on disk; a v1 card is never mistaken for a complete v2 result.
+        if let data = try? Data(contentsOf: directory.appending(path: "explanations-v2.json")),
            let saved = try? JSONDecoder().decode([String: CachedExplanation].self, from: data) {
             cache = saved
         }
@@ -52,13 +53,13 @@ public final class ReaderLearningStore {
             let oldest = next.sorted { $0.value.createdAt < $1.value.createdAt }.prefix(next.count - 250)
             for item in oldest { next[item.key] = nil }
         }
-        try write(next, to: "explanations-v1.json")
+        try write(next, to: "explanations-v2.json")
         cache = next
     }
 
     @discardableResult
     func save(selection: LearningSelection, explanation: LearningExplanation) throws -> VocabularyEntry {
-        guard selection.isWord else { throw LearningError.malformed }
+        guard selection.isLexicalExpression else { throw LearningError.malformed }
         try explanation.validate(for: .word)
         let entry = VocabularyEntry(selection: selection, explanation: explanation)
         if let existing = entries.first(where: { $0.id == entry.id }) { return existing }

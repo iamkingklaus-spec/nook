@@ -30,6 +30,7 @@ public struct VocabularyView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(entry.word).font(NookTypography.storyTitle)
                     if entry.lemma.lowercased() != entry.word.lowercased() { Text(entry.lemma).font(.caption).foregroundStyle(.secondary) }
+                    if let partOfSpeech = entry.partOfSpeech { Text(partOfSpeech).font(NookTypography.caption).foregroundStyle(NookTheme.textSecondary) }
                     Text(entry.meaning)
                     Text(entry.originalSentence).font(.subheadline).foregroundStyle(.secondary)
                     Link("\(entry.publisher) · \(entry.articleTitle)", destination: entry.articleURL).font(.caption)
@@ -84,11 +85,40 @@ private struct LearningExplanationSheet: View {
                 }
                 if let value = controller.result {
                     Section("当前语境") {
-                        if let lemma = value.lemma { Text(lemma).font(.headline) }
+                        if let lemma = value.lemma {
+                            Text(value.expression ?? lemma).font(NookTypography.storyTitle)
+                            if let expression = value.expression, expression.lowercased() != lemma.lowercased() {
+                                Text("原形 · \(lemma)").font(NookTypography.caption).foregroundStyle(NookTheme.textSecondary)
+                            }
+                            let detail = [value.kind == .phrase ? "phrase" : value.kind == .idiom ? "idiom" : nil,
+                                          value.partOfSpeech, value.pronunciation].compactMap { $0 }.joined(separator: " · ")
+                            if !detail.isEmpty { Text(detail).font(NookTypography.caption).foregroundStyle(NookTheme.textSecondary) }
+                        }
                         Text(value.meaning)
                         if let definition = value.englishDefinition { Text(definition).foregroundStyle(.secondary) }
                     }
                     if let usage = value.usage { Section("句中用法") { Text(usage) } }
+                    alternatives("近义词 / Synonyms", value.synonyms)
+                    alternatives("反义词 / Antonyms", value.antonyms)
+                    if let family = value.wordFamily, !family.isEmpty {
+                        Section {
+                            DisclosureGroup("Word family / 衍生词") {
+                                ForEach(Array(family.enumerated()), id: \.offset) { _, item in
+                                    VStack(alignment: .leading, spacing: NookTheme.Space.tight) {
+                                        Text(item.word).font(.headline) + Text(" · " + item.partOfSpeech).font(.caption)
+                                        Text(item.meaning).foregroundStyle(NookTheme.textSecondary)
+                                    }.padding(.vertical, NookTheme.Space.tight)
+                                }
+                            }
+                        }
+                    }
+                    if let collocations = value.collocations, !collocations.isEmpty {
+                        Section {
+                            DisclosureGroup("常用搭配 / Collocations") {
+                                ForEach(Array(collocations.enumerated()), id: \.offset) { _, item in Text(item) }
+                            }
+                        }
+                    }
                     if let example = value.example { Section("例句") { Text(example) } }
                     if let mainClause = value.mainClause { Section("句子主干") { Text(mainClause) } }
                     rows("语法结构", value.grammar)
@@ -112,7 +142,7 @@ private struct LearningExplanationSheet: View {
                 Section {
                     NavigationLink("Vocabulary / 生词本") { VocabularyView() }
                 } footer: {
-                    Text("Gemini 仅接收选中内容、所在句子、附近段落及文章标题。AI 解释可能有误，请结合原文判断。")
+                    Text("Gemini 仅接收选中内容、所在句子、当前段落片段及文章标题。近义词不能总是互换；AI 词源、发音及解释可能有误，请结合原文判断。")
                 }
             }
             .nookScreen()
@@ -124,6 +154,20 @@ private struct LearningExplanationSheet: View {
         .onDisappear { controller.cancel() }
     }
     private func explain() async { await controller.explain(request.selection, type: request.type) }
+    @ViewBuilder private func alternatives(_ title: String, _ values: [LearningSynonym]?) -> some View {
+        if let values, !values.isEmpty {
+            Section {
+                DisclosureGroup(title) {
+                    ForEach(Array(values.enumerated()), id: \.offset) { _, item in
+                        VStack(alignment: .leading, spacing: NookTheme.Space.tight) {
+                            Text(item.word).font(.headline)
+                            Text(item.distinction).font(.subheadline).foregroundStyle(NookTheme.textSecondary)
+                        }.padding(.vertical, NookTheme.Space.tight)
+                    }
+                }
+            }
+        }
+    }
     @ViewBuilder private func rows(_ title: String, _ values: [String]?) -> some View {
         if let values, !values.isEmpty {
             Section(title) { ForEach(Array(values.enumerated()), id: \.offset) { _, text in Text(text) } }
@@ -214,7 +258,7 @@ private struct LearningSelectableText: UIViewRepresentable {
                       suggestedActions: [UIMenuElement]) -> UIMenu? {
             guard let selected = parent.selection(textView.text ?? "", range) else { return nil }
             var actions: [UIMenuElement] = []
-            if selected.isWord {
+            if selected.isLexicalExpression {
                 actions.append(UIAction(title: "Explain Word") { [weak self] _ in self?.parent.explain(selected, .word) })
             }
             actions.append(UIAction(title: "Explain Sentence") { [weak self] _ in self?.parent.explain(selected, .sentence) })
