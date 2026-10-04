@@ -382,6 +382,12 @@ struct ReaderDetailView: View {
 
                     readerBody(article)
 
+                    StoryContextView(article: article, articles: store.libraryArticles) { related in
+                        if let articleOverride { articleOverride.wrappedValue = related }
+                        store.selectedArticleID = related.id
+                    }
+
+
                     // The page's own discussion, under the article it belongs to. Only
                     // legibility extracts it, so an article read with Readability and
                     // never re-read simply has no section here.
