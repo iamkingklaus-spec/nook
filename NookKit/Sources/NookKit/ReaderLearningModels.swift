@@ -5,9 +5,11 @@ public struct LearningArticleContext: Equatable, Sendable {
     public let articleURL: URL
     public let title: String
     public let publisher: String
-    public init(articleID: String, articleURL: URL, title: String, publisher: String) {
+    public let publishedAt: Date?
+    public init(articleID: String, articleURL: URL, title: String, publisher: String, publishedAt: Date? = nil) {
         self.articleID = articleID; self.articleURL = articleURL
         self.title = title; self.publisher = publisher
+        self.publishedAt = publishedAt
     }
 }
 

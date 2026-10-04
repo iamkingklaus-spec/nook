@@ -144,6 +144,7 @@ struct LearningSourceText: View {
     let typography: ReaderTypography
     let heading: Int?
     @State private var request: LearningRequest?
+    @State private var backgroundRequest: BackgroundRequest?
     @Environment(\.openURL) private var openURL
     var body: some View {
         LearningSelectableText(html: html, typography: typography, heading: heading,
@@ -152,8 +153,13 @@ struct LearningSourceText: View {
                                           renderedSource: text, range: range)
             }, explain: { selection, type in
                 request = LearningRequest(selection: selection, type: type)
+            }, background: { selection in
+                if let input = BackgroundInput(selection: selection, document: document) {
+                    backgroundRequest = BackgroundRequest(input: input)
+                }
             }, openLink: { openURL($0) })
             .sheet(item: $request) { LearningExplanationSheet(request: $0) }
+            .sheet(item: $backgroundRequest) { BackgroundAnnotationSheet(request: $0) }
     }
 }
 
@@ -163,6 +169,7 @@ private struct LearningSelectableText: UIViewRepresentable {
     let heading: Int?
     let selection: (String, NSRange) -> LearningSelection?
     let explain: (LearningSelection, LearningExplanationType) -> Void
+    let background: (LearningSelection) -> Void
     let openLink: (URL) -> Void
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
@@ -211,6 +218,9 @@ private struct LearningSelectableText: UIViewRepresentable {
                 actions.append(UIAction(title: "Explain Word") { [weak self] _ in self?.parent.explain(selected, .word) })
             }
             actions.append(UIAction(title: "Explain Sentence") { [weak self] _ in self?.parent.explain(selected, .sentence) })
+            if selected.selectedText.count <= 200 {
+                actions.append(UIAction(title: "背景") { [weak self] _ in self?.parent.background(selected) })
+            }
             return UIMenu(children: actions + suggestedActions)
         }
         func textView(_ textView: UITextView, shouldInteractWith URL: URL, in characterRange: NSRange,

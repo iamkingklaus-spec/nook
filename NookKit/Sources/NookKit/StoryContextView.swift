@@ -6,7 +6,8 @@ public struct StoryContextView: View {
     private let candidates: [Article]
     private let onOpen: (Article) -> Void
     @State private var cluster: EventCluster?
-    @State private var showingTimeline = false
+    private enum ContextTab { case background, timeline, coverage }
+    @State private var tab = ContextTab.coverage
     public init(article: Article, articles: [Article], onOpen: @escaping (Article) -> Void) {
         self.article = article
         candidates = StoryClustering.candidates(for: article, in: articles)
@@ -19,11 +20,17 @@ public struct StoryContextView: View {
                 VStack(alignment: .leading, spacing: NookTheme.Space.card) {
                     Divider()
                     Text("Story Context").font(NookTypography.sectionTitle)
-                    Picker("文章上下文", selection: $showingTimeline) {
-                        Text("时间线").tag(true)
-                        Text("其他报道").tag(false)
+                    Picker("文章上下文", selection: $tab) {
+                        Text("背景").tag(ContextTab.background)
+                        Text("时间线").tag(ContextTab.timeline)
+                        Text("其他报道").tag(ContextTab.coverage)
                     }.pickerStyle(.segmented)
-                    if showingTimeline {
+                    if tab == .background {
+                        Text("想了解人物、机构或政策？开启英语学习，在英文正文中选中名称，点击“背景”。")
+                            .foregroundStyle(NookTheme.textSecondary)
+                        Text("仅在你点选后生成；本文关系与一般背景分别展示。")
+                            .font(NookTypography.caption).foregroundStyle(NookTheme.textSecondary)
+                    } else if tab == .timeline {
                         StoryTimelinePane(cluster: cluster, articleID: article.id, onOpen: onOpen)
                     } else {
                     Text("另有 \(Set(cluster.related(to: article).map { $0.url.host ?? "" }).count) 家来源报道相近事件")

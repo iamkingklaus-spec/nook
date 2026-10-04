@@ -229,7 +229,8 @@ struct ReaderDetailView: View {
     private func learningContext(_ article: Article) -> LearningArticleContext? {
         guard readerLearningEnabled else { return nil }
         return LearningArticleContext(articleID: article.id, articleURL: article.url, title: article.title,
-                                      publisher: store.feed(for: article.feedID)?.displayTitle ?? article.url.host() ?? "")
+                                      publisher: store.feed(for: article.feedID)?.displayTitle ?? article.url.host() ?? "",
+                                      publishedAt: article.hasExplicitPublishDate ? article.publishedAt : nil)
     }
 
     /// Whether the currently-selected article is showing a translation. Rich
