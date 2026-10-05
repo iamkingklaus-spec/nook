@@ -144,7 +144,7 @@ struct FeedDiscoverySheet: View {
                 VStack(spacing: 6) {
                     Text("No feed found")
                         .font(.title3.bold())
-                    Text("This site doesn't seem to share its posts anywhere Nook can find. You can report it — feed rules for popular sites are added by hand.")
+                    Text("This site doesn't seem to share its posts anywhere Nookie can find. You can report it — feed rules for popular sites are added by hand.")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
@@ -216,7 +216,7 @@ struct FeedDiscoverySheet: View {
     /// A pre-filled report to the developer with the page that had no feed.
     private var reportMailURL: URL? {
         let allowed = CharacterSet.urlQueryAllowed.subtracting(CharacterSet(charactersIn: "&?=+/:"))
-        let subject = "Nook feed report".addingPercentEncoding(withAllowedCharacters: allowed) ?? ""
+        let subject = "Nookie feed report".addingPercentEncoding(withAllowedCharacters: allowed) ?? ""
         let body = "No feed was found for this site:\n\(pageURLString)\n\nIf you know its feed address, paste it here:\n"
             .addingPercentEncoding(withAllowedCharacters: allowed) ?? ""
         return URL(string: "mailto:rationlunas@gmail.com?subject=\(subject)&body=\(body)")

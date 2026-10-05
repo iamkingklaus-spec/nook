@@ -724,7 +724,7 @@
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = NookWidget/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = NookWidget;
+				INFOPLIST_KEY_CFBundleDisplayName = Nookie;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -764,7 +764,7 @@
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = NookWidget/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = NookWidget;
+				INFOPLIST_KEY_CFBundleDisplayName = Nookie;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -975,7 +975,7 @@
 				DEVELOPMENT_TEAM = "$(NOOK_SIGNING_TEAM)";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = NookiOS/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Nook;
+				INFOPLIST_KEY_CFBundleDisplayName = Nookie;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -1012,7 +1012,7 @@
 				DEVELOPMENT_TEAM = "$(NOOK_SIGNING_TEAM)";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = NookiOS/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Nook;
+				INFOPLIST_KEY_CFBundleDisplayName = Nookie;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";

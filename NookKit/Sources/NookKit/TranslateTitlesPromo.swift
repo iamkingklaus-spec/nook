@@ -27,7 +27,7 @@ public struct TranslateTitlesPromoView: View {
                     .font(.title2.weight(.bold))
                     .multilineTextAlignment(.center)
 
-                Text("Nook can translate the article titles on screen into your language with Apple Intelligence, shown beneath the original. It's on-device and only translates titles you actually look at.", bundle: .module)
+                Text("Nookie can translate the article titles on screen into your language with Apple Intelligence, shown beneath the original. It's on-device and only translates titles you actually look at.", bundle: .module)
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)

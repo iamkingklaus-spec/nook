@@ -547,7 +547,7 @@ public struct PlusComposeView: View {
                 PlusMarkdownEdit.insertBlock(
                     $0,
                     selection: $1,
-                    source: "| Name | Value |\n| --- | --- |\n| Nook | Plus |")
+                    source: "| Name | Value |\n| --- | --- |\n| Nookie | Plus |")
             }
         case .thematicBreak:
             editor.perform {

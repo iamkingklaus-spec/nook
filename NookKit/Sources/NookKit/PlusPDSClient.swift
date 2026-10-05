@@ -333,7 +333,7 @@ public enum PlusPDSError: Error, LocalizedError, Sendable {
             return String(localized: "Could not reach the server that stores your posts.", bundle: .module)
         case .foreignHandle:
             return String(
-                localized: "That handle belongs to a different server. Nook can only sign in to accounts on its own server.",
+                localized: "That handle belongs to a different server. Nookie can only sign in to accounts on its own server.",
                 bundle: .module
             )
         case .upstream(let status, let kind, let message):

@@ -96,7 +96,7 @@ public struct PlusSettingsContent: View {
                     Text("Publish your own writing", bundle: .module)
                         .font(.headline)
                     Text(
-                        "Nook can turn your writing into a small website with an RSS feed, so anyone can follow you in Nook or any other reader. Your posts are stored in a repository that belongs to you, not inside Nook's database."
+                        "Nookie can turn your writing into a small website with an RSS feed, so anyone can follow you in Nookie or any other reader. Your posts are stored in a repository that belongs to you, not inside Nookie's database."
                     , bundle: .module)
                     .font(.callout)
                     .foregroundStyle(.secondary)
@@ -197,7 +197,7 @@ public struct PlusSettingsContent: View {
                 } header: {
                     Text("Drafts", bundle: .module)
                 } footer: {
-                    Text("Kept on this device only, and never published until you say so. Nook holds no copy.", bundle: .module)
+                    Text("Kept on this device only, and never published until you say so. Nookie holds no copy.", bundle: .module)
                 }
             }
 
@@ -216,7 +216,7 @@ public struct PlusSettingsContent: View {
             } header: {
                 Text("Your posts", bundle: .module)
             } footer: {
-                Text("Read straight from your own repository, so this is what actually exists — not a copy Nook keeps.", bundle: .module)
+                Text("Read straight from your own repository, so this is what actually exists — not a copy Nookie keeps.", bundle: .module)
             }
 
             folderEditsSection
@@ -265,7 +265,7 @@ public struct PlusSettingsContent: View {
             } header: {
                 Text("Changes in your folder", bundle: .module)
             } footer: {
-                Text("You edited these files outside Nook. Nothing is published until you say so, and the files are exactly as you left them.", bundle: .module)
+                Text("You edited these files outside Nookie. Nothing is published until you say so, and the files are exactly as you left them.", bundle: .module)
             }
         }
     }
@@ -316,7 +316,7 @@ public struct PlusSettingsContent: View {
             } footer: {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Every published post is written here as a Markdown file, named after its address.", bundle: .module)
-                    Text("These are copies. Nook keeps them up to date from your repository, so editing one does not change the published post and deleting one does not unpublish it — use the post's own row for that.", bundle: .module)
+                    Text("These are copies. Nookie keeps them up to date from your repository, so editing one does not change the published post and deleting one does not unpublish it — use the post's own row for that.", bundle: .module)
                 }
             }
         }
@@ -371,7 +371,7 @@ public struct PlusSettingsContent: View {
                 onLeave()
             } label: {
                 Label {
-                    Text("Leave Nook Plus", bundle: .module)
+                    Text("Leave Nookie Plus", bundle: .module)
                 } icon: {
                     Image(systemName: "rectangle.portrait.and.arrow.right")
                 }
@@ -395,7 +395,7 @@ public struct PlusSettingsContent: View {
         } footer: {
             VStack(alignment: .leading, spacing: 6) {
                 Text("The copy is a file of your own records — every publication and article, exactly as your repository holds them.", bundle: .module)
-                Text("Leaving keeps everything you wrote. Your publications and articles stay in your repository, and your name and account are untouched. What goes is your membership and the pages Nook publishes for you, and coming back needs a new invitation.", bundle: .module)
+                Text("Leaving keeps everything you wrote. Your publications and articles stay in your repository, and your name and account are untouched. What goes is your membership and the pages Nookie publishes for you, and coming back needs a new invitation.", bundle: .module)
                 Text("Deleting your account is the other one. It ends the account on the server that stores your writing and takes your name, your publications, and every article with it. It cannot be undone.", bundle: .module)
             }
         }
@@ -442,7 +442,7 @@ public struct PlusSettingsContent: View {
         .accessibilityLabel(
             store.hasPublicationIcon
                 ? Text("Your site icon", bundle: .module)
-                : Text("No icon set; your site shows Nook's mark", bundle: .module))
+                : Text("No icon set; your site shows Nookie's mark", bundle: .module))
     }
 
     @ViewBuilder private var iconRow: some View {
@@ -627,7 +627,7 @@ public struct PlusSettingsContent: View {
                     Text("Developer", bundle: .module)
                 }
             } footer: {
-                Text("Only change this if you are testing Nook Plus itself. Accounts do not carry across servers, so switching signs you out.", bundle: .module)
+                Text("Only change this if you are testing Nookie Plus itself. Accounts do not carry across servers, so switching signs you out.", bundle: .module)
             }
             // Keeps the picker on whatever is actually in use, including after a
             // switch made somewhere else.

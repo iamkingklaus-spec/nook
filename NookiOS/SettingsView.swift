@@ -306,7 +306,7 @@ private struct GeneralSettingsScreen: View {
                     }
                 }
                 if appLanguage != AppLanguage.launchLanguage {
-                    Text("Restart Nook to apply the language change.")
+                    Text("Restart Nookie to apply the language change.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -669,7 +669,7 @@ private struct FeedsSettingsScreen: View {
             } header: {
                 Text("Feeds")
             } footer: {
-                Text("Some feeds omit each article's date. When enabled, Nook reads the real date from the article's page (once per article).")
+                Text("Some feeds omit each article's date. When enabled, Nookie reads the real date from the article's page (once per article).")
             }
             .nookRows()
 
@@ -709,7 +709,7 @@ private struct FeedsSettingsScreen: View {
                 Button("Send Test Notification") {
                     Task {
                         await NewArticleNotifier.post(
-                            title: String(localized: "New in Nook"),
+                            title: String(localized: "New in Nookie"),
                             body: String(localized: "Test notification"),
                             badge: 0
                         )
@@ -720,16 +720,16 @@ private struct FeedsSettingsScreen: View {
             } footer: {
                 VStack(alignment: .leading, spacing: 8) {
                     if newArticleNotifications && backgroundRefreshBlocked {
-                        Text("Background App Refresh is off, so Nook can't check for new articles in the background and no notifications will arrive. Tap above, then turn on Settings › General › Background App Refresh and enable it for Nook.")
+                        Text("Background App Refresh is off, so Nookie can't check for new articles in the background and no notifications will arrive. Tap above, then turn on Settings › General › Background App Refresh and enable it for Nookie.")
                             .foregroundStyle(.orange)
                     }
                     if newArticleNotifications && alertsBlocked {
-                        Text("Notification banners are turned off for Nook, so new-article alerts won't appear. Enable them in Settings › Nook › Notifications.")
+                        Text("Notification banners are turned off for Nookie, so new-article alerts won't appear. Enable them in Settings › Nookie › Notifications.")
                             .foregroundStyle(.orange)
                     }
-                    Text("Nook checks for new articles in the background and sends a notification when some arrive. iOS decides exactly when to run this, so timing is approximate.")
+                    Text("Nookie checks for new articles in the background and sends a notification when some arrive. iOS decides exactly when to run this, so timing is approximate.")
                     if newArticleNotifications && notificationScheduleEnabled {
-                        Text("Nook keeps collecting new articles around the clock, so nothing is missed when a feed drops an older item. Outside these hours it just stays silent and saves the alerts up, then tells you about them together once the window opens.")
+                        Text("Nookie keeps collecting new articles around the clock, so nothing is missed when a feed drops an older item. Outside these hours it just stays silent and saves the alerts up, then tells you about them together once the window opens.")
                         if notificationStartMinute == notificationEndMinute {
                             Text("“From” and “Until” are the same time, so notifications can arrive all day.")
                                 .foregroundStyle(.orange)
@@ -787,7 +787,7 @@ private struct FeedsSettingsScreen: View {
             } header: {
                 Text("Storage")
             } footer: {
-                Text("Nook keeps your feeds in a folder in the cloud so they stay in sync across your devices.")
+                Text("Nookie keeps your feeds in a folder in the cloud so they stay in sync across your devices.")
             }
             .nookRows()
         }
@@ -975,7 +975,7 @@ private struct ExperimentalSettingsScreen: View {
             }
             .nookRows()
 
-            Section("Reset Nook") {
+            Section("Reset Nookie") {
                 Toggle("Keep Gemini API key", isOn: $preservesGeminiCredential)
                 Toggle("Keep website login sessions", isOn: $preservesWebSessions)
 
@@ -983,7 +983,7 @@ private struct ExperimentalSettingsScreen: View {
                     confirmingAppReset = true
                 } label: {
                     HStack {
-                        Text("Reset Nook…")
+                        Text("Reset Nookie…")
                         Spacer()
                         if isResetting {
                             ProgressView()
@@ -1020,16 +1020,16 @@ private struct ExperimentalSettingsScreen: View {
             Text("Deletes all saved title translations on this device. Titles are translated again as you view them.")
         }
         .confirmationDialog(
-            "Reset Nook?",
+            "Reset Nookie?",
             isPresented: $confirmingAppReset,
             titleVisibility: .visible
         ) {
-            Button("Reset Nook", role: .destructive) {
+            Button("Reset Nookie", role: .destructive) {
                 performAppReset()
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Local settings and downloaded data can't be recovered. Your sync folder will not be changed. Nook will return to the welcome screen.")
+            Text("Local settings and downloaded data can't be recovered. Your sync folder will not be changed. Nookie will return to the welcome screen.")
         }
     }
 
@@ -1062,6 +1062,14 @@ private struct AboutSettingsScreen: View {
     var body: some View {
         List {
             Section("About") {
+                HStack(spacing: NookTheme.Space.card) {
+                    NookieBrandMark()
+                    VStack(alignment: .leading, spacing: NookTheme.Space.tight) {
+                        Text("Nookie").font(NookTypography.pageTitle)
+                        Text("News. Read. Learn.").font(NookTypography.caption)
+                            .foregroundStyle(NookTheme.textSecondary)
+                    }
+                }.padding(.vertical, NookTheme.Space.inline)
                 LabeledContent("Version", value: "\(version) (\(build))")
                 if let url = feedbackURL {
                     Link(destination: url) {
@@ -1086,11 +1094,11 @@ private struct AboutSettingsScreen: View {
     private var feedbackURL: URL? {
         let os = ProcessInfo.processInfo.operatingSystemVersion
         let osString = "\(os.majorVersion).\(os.minorVersion).\(os.patchVersion)"
-        let subject = String(localized: "Nook Feedback")
+        let subject = String(localized: "Nookie Feedback")
         let intro = String(localized: "Please describe your bug report, feature request, or idea below. Screenshots are welcome.")
         let prompts = String(localized: "• What were you trying to do?\n\n• What actually happened?\n\n• What did you expect instead?")
         let diagnosticsHeader = String(localized: "— Diagnostics (helps with troubleshooting; feel free to delete) —")
-        let diagnostics = String(localized: "Nook \(version) (\(build)) · iOS \(osString)")
+        let diagnostics = String(localized: "Nookie \(version) (\(build)) · iOS \(osString)")
         let body = "\(intro)\n\n\(prompts)\n\n\n\(diagnosticsHeader)\n\(diagnostics)"
 
         var allowed = CharacterSet.urlQueryAllowed

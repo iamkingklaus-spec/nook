@@ -1,7 +1,7 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "Nook" : {
+    "Nookie" : {
       "comment" : "The app's name, shown as the widget's title. A proper noun in every language.",
       "shouldTranslate" : false
     },

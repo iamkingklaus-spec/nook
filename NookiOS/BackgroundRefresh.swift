@@ -105,7 +105,7 @@ enum BackgroundRefresh {
             count: result.newArticleCount
         )
         await NewArticleNotifier.post(
-            title: String(localized: "New in Nook"),
+            title: String(localized: "New in Nookie"),
             body: body,
             badge: result.badgeCount
         )

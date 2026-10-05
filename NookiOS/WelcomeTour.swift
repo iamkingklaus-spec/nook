@@ -111,6 +111,7 @@ struct WelcomeSheet: View {
     var onFinish: () -> Void
 
     @Environment(TourCoordinator.self) private var tour
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private enum Page: Hashable { case welcome, discover, sync, starter }
 
@@ -138,7 +139,7 @@ struct WelcomeSheet: View {
                     title: "Your favorite sites, one quiet place",
                     message: "Follow the sites you love, and their new posts gather here automatically — no accounts, no algorithm, just your reading. Don't know where to start? We'll suggest some next.",
                     primaryTitle: "Continue",
-                    onPrimary: { withAnimation { page = .discover } }
+                    onPrimary: { withAnimation(reduceMotion ? nil : .easeOut(duration: 0.18)) { page = .discover } }
                 )
                 .tag(Page.welcome)
 
@@ -148,9 +149,9 @@ struct WelcomeSheet: View {
                 TourPage(
                     illustration: AnyView(FeedDiscoveryIllustration()),
                     title: "Have a site in mind already?",
-                    message: "Paste its address and Nook finds the posts for you — it automatically discovers the site's RSS or Atom feed, so you don't need to know what that is. If the site shares its posts, one tap and you're following.",
+                    message: "Paste its address and Nookie finds the posts for you — it automatically discovers the site's RSS or Atom feed, so you don't need to know what that is. If the site shares its posts, one tap and you're following.",
                     primaryTitle: "Continue",
-                    onPrimary: { withAnimation { page = includeSyncStep ? .sync : .starter } },
+                    onPrimary: { withAnimation(reduceMotion ? nil : .easeOut(duration: 0.18)) { page = includeSyncStep ? .sync : .starter } },
                     secondaryTitle: "Try It with Your Site",
                     onSecondary: { isTryingOwnSite = true }
                 )
@@ -165,7 +166,7 @@ struct WelcomeSheet: View {
                         title: "Keep reading on your Mac",
                         message: "Right now your library lives on this iPhone. Pick a folder in iCloud Drive and every device — Mac included — shares the same sites, articles, and read status. You can also do this anytime in Settings.",
                         primaryTitle: "Continue",
-                        onPrimary: { withAnimation { page = .starter } },
+                        onPrimary: { withAnimation(reduceMotion ? nil : .easeOut(duration: 0.18)) { page = .starter } },
                         secondaryTitle: "Choose iCloud Folder",
                         onSecondary: { isChoosingFolder = true }
                     )
@@ -205,7 +206,7 @@ struct WelcomeSheet: View {
             // Switching before the starter picks means everything added next
             // lands straight in the synced folder.
             store.configureSyncFolder(url)
-            withAnimation { page = .starter }
+            withAnimation(reduceMotion ? nil : .easeOut(duration: 0.18)) { page = .starter }
         }
     }
 
@@ -340,6 +341,7 @@ private struct StarterPicksPage: View {
 }
 
 private struct StarterPickChip: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let pick: StarterPick
     let selected: Bool
     var onTap: () -> Void
@@ -368,7 +370,7 @@ private struct StarterPickChip: View {
             .foregroundStyle(selected ? Color.accentColor : .primary)
         }
         .buttonStyle(.plain)
-        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: selected)
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: selected)
         .accessibilityAddTraits(selected ? [.isSelected] : [])
     }
 }
@@ -393,7 +395,7 @@ struct StarterPicksSheet: View {
     }
 }
 
-/// One tour page: a looping illustration, a title, a short message, and an
+/// One tour page: a static illustration, a title, a short message, and an
 /// optional primary button.
 private struct TourPage: View {
     let illustration: AnyView
@@ -467,114 +469,36 @@ struct MiniArticleCard: View {
     }
 }
 
-/// The discovery scene: a website address pill gets swept by a magnifier,
-/// which finds the site's posts — a card pops out with a checkmark. "Paste an
-/// address, Nook finds the posts" said without words.
+/// Static tutorial scenes: no perpetual movement or spring loops.
 private struct FeedDiscoveryIllustration: View {
     var body: some View {
-        PhaseAnimator([0, 1, 2]) { phase in
-            ZStack {
-                // The address pill being inspected.
-                HStack(spacing: 8) {
-                    Image(systemName: "globe")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                    Text(verbatim: "yoursite.com")
-                        .font(.footnote.monospaced())
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-                .background(.background, in: Capsule())
-
-                .offset(y: phase == 2 ? -34 : -10)
-
-                // The magnifier sweeping across the address.
-                Image(systemName: "magnifyingglass")
-                    .font(.system(size: 30, weight: .semibold))
-                    .foregroundStyle(Color.accentColor)
-                    .offset(x: phase == 0 ? -52 : (phase == 1 ? 48 : 0), y: phase == 2 ? -34 : -16)
-                    .opacity(phase == 2 ? 0 : 1)
-
-                // The found posts: a card pops in with a confirming check.
+        VStack(spacing: NookTheme.Space.section) {
+            Label("yoursite.com", systemImage: "globe")
+                .font(NookTypography.label).foregroundStyle(NookTheme.textSecondary)
+            HStack(spacing: NookTheme.Space.card) {
+                Image(systemName: "arrow.down").foregroundStyle(NookTheme.accentPrimary)
                 MiniArticleCard()
-                    .overlay(alignment: .topTrailing) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.title3)
-                            .foregroundStyle(Color.accentColor)
-                            .background(Circle().fill(.background))
-                            .offset(x: 8, y: -8)
-                    }
-                    .scaleEffect(phase == 2 ? 1 : 0.6)
-                    .opacity(phase == 2 ? 1 : 0)
-                    .offset(y: 34)
+                Image(systemName: "checkmark.circle.fill").foregroundStyle(NookTheme.accentPrimary)
             }
-            .animation(.spring(response: 0.5, dampingFraction: 0.75), value: phase)
-        } animation: { _ in
-            .easeInOut(duration: 0.9)
         }
     }
 }
 
-/// The sync scene: an iPhone and a Mac, each holding the same nest, with a
-/// post traveling between them — "one library, every device" without words.
 private struct TwoDeviceSyncIllustration: View {
     var body: some View {
-        PhaseAnimator([0, 1]) { phase in
-            HStack(spacing: 46) {
-                deviceFrame(width: 54, height: 96)   // iPhone
-                deviceFrame(width: 116, height: 78)  // Mac
-            }
-            .overlay {
-                // The traveling post: hops between the two nests, forever.
-                Image(systemName: "doc.text.fill")
-                    .font(.system(size: 15))
-                    .foregroundStyle(Color.accentColor)
-                    .background(Circle().fill(.background).padding(-6))
-                    .offset(x: phase == 0 ? -50 : 50, y: -6)
-                    .animation(.spring(response: 0.7, dampingFraction: 0.8), value: phase)
-            }
-        } animation: { _ in
-            .easeInOut(duration: 1.2)
-        }
-    }
-
-    private func deviceFrame(width: CGFloat, height: CGFloat) -> some View {
-        RoundedRectangle(cornerRadius: 12, style: .continuous)
-            .strokeBorder(Color.primary.opacity(0.25), lineWidth: 2)
-            .frame(width: width, height: height)
-            .overlay {
-                Image(uiImage: TabGlyph.nest)
-                    .renderingMode(.template)
-                    .foregroundStyle(Color.accentColor)
-            }
-            .background(.background.opacity(0.6), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        HStack(spacing: NookTheme.Space.section) {
+            Image(systemName: "iphone").font(.system(size: 54, weight: .ultraLight))
+            Image(systemName: "arrow.left.arrow.right").font(.title3)
+            Image(systemName: "desktopcomputer").font(.system(size: 68, weight: .ultraLight))
+        }.foregroundStyle(NookTheme.accentPrimary).accessibilityHidden(true)
     }
 }
 
-/// The value-proposition scene: article cards drift down into the nest, one
-/// after another, then settle — "new posts gather here" said without words.
 private struct NestInboxIllustration: View {
     var body: some View {
-        ZStack {
-            Image("LaunchLogo").resizable().scaledToFit().frame(width: 120, height: 120)
-                .offset(y: 44)
-            PhaseAnimator([0, 1, 2, 3]) { phase in
-                ZStack {
-                    ForEach(0..<3, id: \.self) { index in
-                        MiniArticleCard()
-                            .scaleEffect(0.9)
-                            .offset(
-                                x: CGFloat(index - 1) * 52,
-                                y: phase > index ? 26 : -104
-                            )
-                            .opacity(phase > index ? (phase == 3 ? 0 : 0.95) : 0)
-                    }
-                }
-                .animation(.spring(response: 0.55, dampingFraction: 0.7), value: phase)
-            } animation: { _ in
-                .easeInOut(duration: 0.85)
-            }
+        VStack(spacing: NookTheme.Space.item) {
+            NookieBrandMark(size: 120)
+            Text("Nookie").font(NookTypography.pageTitle)
         }
     }
 }

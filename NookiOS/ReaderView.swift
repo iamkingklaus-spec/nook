@@ -283,7 +283,7 @@ struct ReaderDetailView: View {
                 ContentUnavailableView {
                     Label("Set Up Sync", systemImage: "icloud.and.arrow.up")
                 } description: {
-                    Text("Choose a sync folder so Nook keeps your feeds in sync across your devices.")
+                    Text("Choose a sync folder so Nookie keeps your feeds in sync across your devices.")
                 }
             } else if let article = currentArticle {
                 reader(article)

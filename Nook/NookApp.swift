@@ -20,7 +20,7 @@ struct NookApp: App {
     var body: some Scene {
         // A single Window (not WindowGroup) so deep links reuse the one main
         // window instead of opening a new one each time.
-        Window("Nook", id: "main") {
+        Window("Nookie", id: "main") {
             MainWindowContent()
         }
         .defaultSize(width: 1280, height: 800)
@@ -50,7 +50,7 @@ private struct MainWindowContent: View {
             // Give the app-lifetime activity controller the exact reader window.
             // App activation alone is insufficient: Settings can be frontmost,
             // the reader can be closed/minimized, or the Mac can be unattended.
-            .background(ReaderWindowProbe(title: signedInToPlus ? "Nook+" : "Nook"))
+            .background(ReaderWindowProbe(title: signedInToPlus ? "Nookie+" : "Nookie"))
             // Format dates/numbers with the chosen UI language, not the OS
             // locale (`Text(_, format:)` otherwise follows the environment).
             .environment(\.locale, AppLanguage.formattingLocale)
@@ -222,7 +222,7 @@ final class BackgroundRefreshController: NSObject, NSApplicationDelegate, UNUser
                 count: result.newArticleCount
             )
             await NewArticleNotifier.post(
-                title: String(localized: "New in Nook"),
+                title: String(localized: "New in Nookie"),
                 body: body,
                 badge: result.badgeCount
             )

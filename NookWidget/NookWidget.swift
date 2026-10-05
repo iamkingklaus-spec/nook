@@ -33,7 +33,7 @@ struct NookWidget: Widget {
                 .containerBackground(.background, for: .widget)
                 .widgetURL(WidgetShared.openAppURL)
         }
-        .configurationDisplayName("Nook")
+        .configurationDisplayName("Nookie")
         .description("Quick access to your reader.")
         .supportedFamilies([.systemSmall, .systemMedium])
     }
@@ -50,7 +50,7 @@ private struct NookWidgetView: View {
                 Image(systemName: "books.vertical.fill")
                     .font(.caption)
                     .foregroundStyle(.tint)
-                Text("Nook")
+                Text("Nookie")
                     .font(.headline)
                 Spacer(minLength: 0)
             }

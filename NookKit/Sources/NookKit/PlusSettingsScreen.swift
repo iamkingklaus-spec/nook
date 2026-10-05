@@ -150,14 +150,14 @@ public struct PlusSettingsScreenContent<Container: View>: View {
             }
         } message: { edit in
             Text(
-                "The file will be replaced with the published version of \(edit.title.isEmpty ? edit.slug : edit.title). What you wrote outside Nook will be gone.",
+                "The file will be replaced with the published version of \(edit.title.isEmpty ? edit.slug : edit.title). What you wrote outside Nookie will be gone.",
                 bundle: .module)
         }
         // Two steps to leave, and the second one spells out what stays. A single
         // destructive tap on something that needs a new invitation to undo would be
         // the wrong shape for it.
         .confirmationDialog(
-            Text("Leave Nook Plus?", bundle: .module),
+            Text("Leave Nookie Plus?", bundle: .module),
             isPresented: $confirmingLeave,
             titleVisibility: .visible
         ) {
@@ -171,7 +171,7 @@ public struct PlusSettingsScreenContent<Container: View>: View {
                 Text("Cancel", bundle: .module)
             }
         } message: {
-            Text("Your posts stay in your repository and your account is untouched. Nook stops publishing your pages and forgets your membership, and coming back needs a new invitation.", bundle: .module)
+            Text("Your posts stay in your repository and your account is untouched. Nookie stops publishing your pages and forgets your membership, and coming back needs a new invitation.", bundle: .module)
         }
         .sheet(isPresented: $deletingAccount) {
             PlusAccountDeletionSheet(store: store) { deletingAccount = false }
@@ -201,7 +201,7 @@ public struct PlusSettingsScreenContent<Container: View>: View {
         // the difference between "this worked" and "something went wrong" is exactly
         // what somebody who just left needs to know.
         .alert(
-            Text("You have left Nook Plus", bundle: .module),
+            Text("You have left Nookie Plus", bundle: .module),
             isPresented: Binding(
                 get: { store.disconnected },
                 set: { if !$0 { store.acknowledgeDisconnection() } }

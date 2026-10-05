@@ -99,7 +99,7 @@ struct AddFeedView: View {
                     } else {
                         // The one place "RSS" may appear, as reassurance for
                         // people who arrived with a feed link in hand.
-                        Text("Paste a website address — Nook finds its posts automatically. Direct RSS links work too.")
+                        Text("Paste a website address — Nookie finds its posts automatically. Direct RSS links work too.")
                     }
                 }
             }

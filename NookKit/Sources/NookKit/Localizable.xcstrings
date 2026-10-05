@@ -380,24 +380,24 @@
         }
       }
     },
-    "A quick tour of what publishing with Nook means." : {
+    "A quick tour of what publishing with Nookie means." : {
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nook で発行するとはどういうことか、簡単にご案内します。"
+            "value" : "Nookie で発行するとはどういうことか、簡単にご案内します。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nook으로 발행한다는 것이 무엇인지 간단히 안내합니다."
+            "value" : "Nookie으로 발행한다는 것이 무엇인지 간단히 안내합니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "简单了解一下用 Nook 发布是怎么回事。"
+            "value" : "简单了解一下用 Nookie 发布是怎么回事。"
           }
         }
       }
@@ -5355,30 +5355,30 @@
         }
       }
     },
-    "Kept on this device only, and never published until you say so. Nook holds no copy." : {
+    "Kept on this device only, and never published until you say so. Nookie holds no copy." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kept on this device only, and never published until you say so. Nook holds no copy."
+            "value" : "Kept on this device only, and never published until you say so. Nookie holds no copy."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "この端末にのみ保存され、あなたが公開するまで公開されません。Nook は複製を保持しません。"
+            "value" : "この端末にのみ保存され、あなたが公開するまで公開されません。Nookie は複製を保持しません。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "이 기기에만 보관되며, 직접 발행할 때까지 공개되지 않습니다. Nook은 사본을 보관하지 않습니다."
+            "value" : "이 기기에만 보관되며, 직접 발행할 때까지 공개되지 않습니다. Nookie은 사본을 보관하지 않습니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "仅保存在此设备上，在你发布之前不会公开。Nook 不保留副本。"
+            "value" : "仅保存在此设备上，在你发布之前不会公开。Nookie 不保留副本。"
           }
         }
       }
@@ -5467,58 +5467,58 @@
         }
       }
     },
-    "Leave Nook Plus" : {
+    "Leave Nookie Plus" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Leave Nook Plus"
+            "value" : "Leave Nookie Plus"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nook Plus を退会"
+            "value" : "Nookie Plus を退会"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nook Plus 탈퇴"
+            "value" : "Nookie Plus 탈퇴"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "退出 Nook Plus"
+            "value" : "退出 Nookie Plus"
           }
         }
       }
     },
-    "Leave Nook Plus?" : {
+    "Leave Nookie Plus?" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Leave Nook Plus?"
+            "value" : "Leave Nookie Plus?"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nook Plus を退会しますか？"
+            "value" : "Nookie Plus を退会しますか？"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nook Plus를 탈퇴할까요?"
+            "value" : "Nookie Plus를 탈퇴할까요?"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "要退出 Nook Plus 吗？"
+            "value" : "要退出 Nookie Plus 吗？"
           }
         }
       }
@@ -5551,30 +5551,30 @@
         }
       }
     },
-    "Leaving keeps everything you wrote. Your publications and articles stay in your repository, and your name and account are untouched. What goes is your membership and the pages Nook publishes for you, and coming back needs a new invitation." : {
+    "Leaving keeps everything you wrote. Your publications and articles stay in your repository, and your name and account are untouched. What goes is your membership and the pages Nookie publishes for you, and coming back needs a new invitation." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Leaving keeps everything you wrote. Your publications and articles stay in your repository, and your name and account are untouched. What goes is your membership and the pages Nook publishes for you, and coming back needs a new invitation."
+            "value" : "Leaving keeps everything you wrote. Your publications and articles stay in your repository, and your name and account are untouched. What goes is your membership and the pages Nookie publishes for you, and coming back needs a new invitation."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "退会しても書いたものはすべて残ります。発行物と記事はリポジトリにそのまま残り、名前とアカウントにも触れません。なくなるのはメンバーシップと Nook が公開していたページで、再開には新しい招待が必要です。"
+            "value" : "退会しても書いたものはすべて残ります。発行物と記事はリポジトリにそのまま残り、名前とアカウントにも触れません。なくなるのはメンバーシップと Nookie が公開していたページで、再開には新しい招待が必要です。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "탈퇴해도 쓴 글은 모두 남습니다. 발행물과 글은 내 저장소에 그대로 있고, 이름과 계정도 건드리지 않습니다. 사라지는 것은 멤버십과 Nook이 발행해 주던 페이지이며, 다시 시작하려면 새 초대가 필요합니다."
+            "value" : "탈퇴해도 쓴 글은 모두 남습니다. 발행물과 글은 내 저장소에 그대로 있고, 이름과 계정도 건드리지 않습니다. 사라지는 것은 멤버십과 Nookie이 발행해 주던 페이지이며, 다시 시작하려면 새 초대가 필요합니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "退出会保留你写下的一切。出版物和文章仍留在你的仓库中，你的名称和账户不受影响。消失的是会员身份和 Nook 为你发布的页面，重新加入需要新的邀请。"
+            "value" : "退出会保留你写下的一切。出版物和文章仍留在你的仓库中，你的名称和账户不受影响。消失的是会员身份和 Nookie 为你发布的页面，重新加入需要新的邀请。"
           }
         }
       }
@@ -6411,30 +6411,30 @@
         }
       }
     },
-    "No icon set; your site shows Nook's mark" : {
+    "No icon set; your site shows Nookie's mark" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No icon set; your site shows Nook's mark"
+            "value" : "No icon set; your site shows Nookie's mark"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "アイコン未設定。サイトには Nook のマークが表示されます。"
+            "value" : "アイコン未設定。サイトには Nookie のマークが表示されます。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "아이콘 없음. 사이트에 Nook 마크가 표시됩니다."
+            "value" : "아이콘 없음. 사이트에 Nookie 마크가 표시됩니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "未设置图标，站点显示 Nook 的标志。"
+            "value" : "未设置图标，站点显示 Nookie 的标志。"
           }
         }
       }
@@ -6561,232 +6561,232 @@
         }
       }
     },
-    "Nook Plus (%@)" : {
+    "Nookie Plus (%@)" : {
       "extractionState" : "stale",
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nook Plus（%@）"
+            "value" : "Nookie Plus（%@）"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nook Plus (%@)"
+            "value" : "Nookie Plus (%@)"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nook Plus（%@）"
+            "value" : "Nookie Plus（%@）"
           }
         }
       }
     },
-    "Nook account" : {
+    "Nookie account" : {
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nook アカウント"
+            "value" : "Nookie アカウント"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nook 계정"
+            "value" : "Nookie 계정"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nook 账户"
+            "value" : "Nookie 账户"
           }
         }
       }
     },
-    "Nook can publish your own writing as a small website with an RSS feed, so anyone can read it in Nook or any other reader." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nook can publish your own writing as a small website with an RSS feed, so anyone can read it in Nook or any other reader."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nook はあなたの文章を RSS フィード付きの小さなウェブサイトとして公開できます。Nook でも他のリーダーでも読んでもらえます。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nook은 여러분의 글을 RSS 피드가 있는 작은 웹사이트로 발행할 수 있습니다. Nook에서든 다른 리더에서든 누구나 읽을 수 있습니다."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nook 可以把你的文章发布成一个带 RSS 订阅源的小网站，任何人都能在 Nook 或其他阅读器中阅读。"
-          }
-        }
-      }
-    },
-    "Nook can translate the article titles on screen into your language with Apple Intelligence, shown beneath the original. It's on-device and only translates titles you actually look at." : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nook は画面に表示されている記事のタイトルを Apple Intelligence でお使いの言語に翻訳し、原文の下に表示します。すべてオンデバイスで処理され、実際に見たタイトルだけを翻訳します。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nook은 화면에 보이는 글 제목을 Apple Intelligence로 사용자의 언어로 번역해 원문 아래에 표시합니다. 모두 기기에서 처리되며, 실제로 본 제목만 번역합니다."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nook 可使用 Apple Intelligence 将屏幕上的文章标题翻译成你的语言，显示在原文下方。全部在设备上处理，且仅翻译你实际查看的标题。"
-          }
-        }
-      }
-    },
-    "Nook can turn your writing into a small website with an RSS feed, so anyone can follow you in Nook or any other reader. Your posts are stored in a repository that belongs to you, not inside Nook's database." : {
+    "Nookie can publish your own writing as a small website with an RSS feed, so anyone can read it in Nookie or any other reader." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nook can turn your writing into a small website with an RSS feed, so anyone can follow you in Nook or any other reader. Your posts are stored in a repository that belongs to you, not inside Nook's database."
+            "value" : "Nookie can publish your own writing as a small website with an RSS feed, so anyone can read it in Nookie or any other reader."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nook はあなたの文章を RSS フィード付きの小さなウェブサイトにできます。Nook でも他のリーダーでも購読してもらえます。投稿は Nook のデータベースではなく、あなた自身のリポジトリに保存されます。"
+            "value" : "Nookie はあなたの文章を RSS フィード付きの小さなウェブサイトとして公開できます。Nookie でも他のリーダーでも読んでもらえます。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nook은 여러분의 글을 RSS 피드가 있는 작은 웹사이트로 만들어 줍니다. Nook에서든 다른 리더에서든 누구나 구독할 수 있습니다. 글은 Nook의 데이터베이스가 아니라 여러분 소유의 저장소에 보관됩니다."
+            "value" : "Nookie은 여러분의 글을 RSS 피드가 있는 작은 웹사이트로 발행할 수 있습니다. Nookie에서든 다른 리더에서든 누구나 읽을 수 있습니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nook 可以把你的文章变成一个带 RSS 订阅源的小网站，任何人都能在 Nook 或其他阅读器中关注你。你的文章保存在属于你自己的仓库里，而不是 Nook 的数据库中。"
+            "value" : "Nookie 可以把你的文章发布成一个带 RSS 订阅源的小网站，任何人都能在 Nookie 或其他阅读器中阅读。"
           }
         }
       }
     },
-    "Nook extension" : {
+    "Nookie can translate the article titles on screen into your language with Apple Intelligence, shown beneath the original. It's on-device and only translates titles you actually look at." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nookie は画面に表示されている記事のタイトルを Apple Intelligence でお使いの言語に翻訳し、原文の下に表示します。すべてオンデバイスで処理され、実際に見たタイトルだけを翻訳します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nookie은 화면에 보이는 글 제목을 Apple Intelligence로 사용자의 언어로 번역해 원문 아래에 표시합니다. 모두 기기에서 처리되며, 실제로 본 제목만 번역합니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nookie 可使用 Apple Intelligence 将屏幕上的文章标题翻译成你的语言，显示在原文下方。全部在设备上处理，且仅翻译你实际查看的标题。"
+          }
+        }
+      }
+    },
+    "Nookie can turn your writing into a small website with an RSS feed, so anyone can follow you in Nookie or any other reader. Your posts are stored in a repository that belongs to you, not inside Nookie's database." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nook extension"
+            "value" : "Nookie can turn your writing into a small website with an RSS feed, so anyone can follow you in Nookie or any other reader. Your posts are stored in a repository that belongs to you, not inside Nookie's database."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nook 独自の記法"
+            "value" : "Nookie はあなたの文章を RSS フィード付きの小さなウェブサイトにできます。Nookie でも他のリーダーでも購読してもらえます。投稿は Nookie のデータベースではなく、あなた自身のリポジトリに保存されます。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nook 확장 문법"
+            "value" : "Nookie은 여러분의 글을 RSS 피드가 있는 작은 웹사이트로 만들어 줍니다. Nookie에서든 다른 리더에서든 누구나 구독할 수 있습니다. 글은 Nookie의 데이터베이스가 아니라 여러분 소유의 저장소에 보관됩니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nook 扩展语法"
+            "value" : "Nookie 可以把你的文章变成一个带 RSS 订阅源的小网站，任何人都能在 Nookie 或其他阅读器中关注你。你的文章保存在属于你自己的仓库里，而不是 Nookie 的数据库中。"
           }
         }
       }
     },
-    "Nook stores your posts in a repository on its own server, and publishing needs an account there. Support for other servers is not decided yet." : {
-      "localizations" : {
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nook は投稿を自身のサーバー上のリポジトリに保存し、発行にはそこのアカウントが必要です。他のサーバーへの対応は未定です。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nook은 자체 서버의 저장소에 글을 보관하며, 발행에는 그곳의 계정이 필요합니다. 다른 서버 지원은 아직 결정되지 않았습니다."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nook 将你的文章存放在自有服务器上的仓库中，发布需要该服务器上的账户。是否支持其他服务器尚未决定。"
-          }
-        }
-      }
-    },
-    "Nook's own extractor. Reads short posts and link posts that Readability skips, pulls in the page's comment thread, and never invents a title or date." : {
+    "Nookie extension" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nook's own extractor. Reads short posts and link posts that Readability skips, pulls in the page's comment thread, and never invents a title or date."
+            "value" : "Nookie extension"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nook独自の抽出エンジンです。Readabilityが見落とす短い投稿やリンク投稿も読み取り、ページのコメントも取り込み、タイトルや日付を推測で補うことはありません。"
+            "value" : "Nookie 独自の記法"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nook이 직접 만든 추출 엔진입니다. Readability가 놓치는 짧은 글과 링크 글도 읽어내고 페이지의 댓글까지 가져오며, 제목이나 날짜를 임의로 만들어 넣지 않습니다."
+            "value" : "Nookie 확장 문법"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nook 自研的提取引擎。能读取 Readability 会跳过的短帖和链接帖，并一并取回页面的评论，而且从不臆造标题或日期。"
+            "value" : "Nookie 扩展语法"
           }
         }
       }
     },
-    "Nook's reading samples" : {
+    "Nookie stores your posts in a repository on its own server, and publishing needs an account there. Support for other servers is not decided yet." : {
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nookie は投稿を自身のサーバー上のリポジトリに保存し、発行にはそこのアカウントが必要です。他のサーバーへの対応は未定です。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nookie은 자체 서버의 저장소에 글을 보관하며, 발행에는 그곳의 계정이 필요합니다. 다른 서버 지원은 아직 결정되지 않았습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nookie 将你的文章存放在自有服务器上的仓库中，发布需要该服务器上的账户。是否支持其他服务器尚未决定。"
+          }
+        }
+      }
+    },
+    "Nookie's own extractor. Reads short posts and link posts that Readability skips, pulls in the page's comment thread, and never invents a title or date." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nookie's own extractor. Reads short posts and link posts that Readability skips, pulls in the page's comment thread, and never invents a title or date."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nookie独自の抽出エンジンです。Readabilityが見落とす短い投稿やリンク投稿も読み取り、ページのコメントも取り込み、タイトルや日付を推測で補うことはありません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nookie이 직접 만든 추출 엔진입니다. Readability가 놓치는 짧은 글과 링크 글도 읽어내고 페이지의 댓글까지 가져오며, 제목이나 날짜를 임의로 만들어 넣지 않습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nookie 自研的提取引擎。能读取 Readability 会跳过的短帖和链接帖，并一并取回页面的评论，而且从不臆造标题或日期。"
+          }
+        }
+      }
+    },
+    "Nookie's reading samples" : {
       "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nook's reading samples"
+            "value" : "Nookie's reading samples"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nook の読書サンプル"
+            "value" : "Nookie の読書サンプル"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nook의 읽기 샘플"
+            "value" : "Nookie의 읽기 샘플"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nook 的阅读样本"
+            "value" : "Nookie 的阅读样本"
           }
         }
       }
@@ -6813,46 +6813,46 @@
         }
       }
     },
-    "Not yet. Nook can only reach its own server at the moment." : {
+    "Not yet. Nookie can only reach its own server at the moment." : {
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "まだ対応していません。現時点で Nook は自身のサーバーにしか接続できません。"
+            "value" : "まだ対応していません。現時点で Nookie は自身のサーバーにしか接続できません。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "아직 지원하지 않습니다. 현재 Nook은 자체 서버에만 연결할 수 있습니다."
+            "value" : "아직 지원하지 않습니다. 현재 Nookie은 자체 서버에만 연결할 수 있습니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "暂不支持。目前 Nook 只能连接自有服务器。"
+            "value" : "暂不支持。目前 Nookie 只能连接自有服务器。"
           }
         }
       }
     },
-    "Not yet. Publishing through Nook needs an account on Nook's own server." : {
+    "Not yet. Publishing through Nookie needs an account on Nookie's own server." : {
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "まだ対応していません。Nook で発行するには Nook 自身のサーバーのアカウントが必要です。"
+            "value" : "まだ対応していません。Nookie で発行するには Nookie 自身のサーバーのアカウントが必要です。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "아직 지원하지 않습니다. Nook으로 발행하려면 Nook 자체 서버의 계정이 필요합니다."
+            "value" : "아직 지원하지 않습니다. Nookie으로 발행하려면 Nookie 자체 서버의 계정이 필요합니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "暂不支持。通过 Nook 发布需要 Nook 自有服务器上的账户。"
+            "value" : "暂不支持。通过 Nookie 发布需要 Nookie 自有服务器上的账户。"
           }
         }
       }
@@ -7047,53 +7047,53 @@
         }
       }
     },
-    "Only accounts on Nook's own server can sign in at the moment." : {
+    "Only accounts on Nookie's own server can sign in at the moment." : {
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "現時点でサインインできるのは Nook 自身のサーバーのアカウントだけです。"
+            "value" : "現時点でサインインできるのは Nookie 自身のサーバーのアカウントだけです。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "현재는 Nook 자체 서버의 계정만 로그인할 수 있습니다."
+            "value" : "현재는 Nookie 자체 서버의 계정만 로그인할 수 있습니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "目前只有 Nook 自有服务器上的账户可以登录。"
+            "value" : "目前只有 Nookie 自有服务器上的账户可以登录。"
           }
         }
       }
     },
-    "Only change this if you are testing Nook Plus itself. Accounts do not carry across servers, so switching signs you out." : {
+    "Only change this if you are testing Nookie Plus itself. Accounts do not carry across servers, so switching signs you out." : {
       "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Only change this if you are testing Nook Plus itself. Accounts do not carry across servers, so switching signs you out."
+            "value" : "Only change this if you are testing Nookie Plus itself. Accounts do not carry across servers, so switching signs you out."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nook Plus 自体をテストしている場合以外は変更しないでください。アカウントはサーバー間で共有されないため、切り替えるとサインアウトします。"
+            "value" : "Nookie Plus 自体をテストしている場合以外は変更しないでください。アカウントはサーバー間で共有されないため、切り替えるとサインアウトします。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nook Plus 자체를 테스트하는 경우가 아니라면 바꾸지 마세요. 계정은 서버 간에 공유되지 않으므로, 바꾸면 로그아웃됩니다."
+            "value" : "Nookie Plus 자체를 테스트하는 경우가 아니라면 바꾸지 마세요. 계정은 서버 간에 공유되지 않으므로, 바꾸면 로그아웃됩니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "除非你在测试 Nook Plus 本身，否则请不要更改。账号不会跨服务器共用，切换会让你退出登录。"
+            "value" : "除非你在测试 Nookie Plus 本身，否则请不要更改。账号不会跨服务器共用，切换会让你退出登录。"
           }
         }
       }
@@ -7232,30 +7232,30 @@
         }
       }
     },
-    "Open in Nook" : {
+    "Open in Nookie" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Open in Nook"
+            "value" : "Open in Nookie"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nook で開く"
+            "value" : "Nookie で開く"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nook에서 열기"
+            "value" : "Nookie에서 열기"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "在 Nook 中打开"
+            "value" : "在 Nookie 中打开"
           }
         }
       }
@@ -7562,30 +7562,30 @@
         }
       }
     },
-    "Protects your repository. Nook stores it nowhere: it goes straight to the host that keeps your posts." : {
+    "Protects your repository. Nookie stores it nowhere: it goes straight to the host that keeps your posts." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Protects your repository. Nook stores it nowhere: it goes straight to the host that keeps your posts."
+            "value" : "Protects your repository. Nookie stores it nowhere: it goes straight to the host that keeps your posts."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "あなたのリポジトリを保護します。Nook はパスワードを保存しません。投稿を保管するホストに直接渡されます。"
+            "value" : "あなたのリポジトリを保護します。Nookie はパスワードを保存しません。投稿を保管するホストに直接渡されます。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "저장소를 보호합니다. Nook은 비밀번호를 어디에도 저장하지 않고, 글을 보관하는 호스트로 곧바로 전달합니다."
+            "value" : "저장소를 보호합니다. Nookie은 비밀번호를 어디에도 저장하지 않고, 글을 보관하는 호스트로 곧바로 전달합니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "用于保护你的仓库。Nook 不会保存密码，它会直接发送给保管你文章的主机。"
+            "value" : "用于保护你的仓库。Nookie 不会保存密码，它会直接发送给保管你文章的主机。"
           }
         }
       }
@@ -7859,30 +7859,30 @@
         }
       }
     },
-    "Read straight from your own repository, so this is what actually exists — not a copy Nook keeps." : {
+    "Read straight from your own repository, so this is what actually exists — not a copy Nookie keeps." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Read straight from your own repository, so this is what actually exists — not a copy Nook keeps."
+            "value" : "Read straight from your own repository, so this is what actually exists — not a copy Nookie keeps."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "あなた自身のリポジトリから直接読み込んでいます。Nook が保持する複製ではなく、実際に存在するものです。"
+            "value" : "あなた自身のリポジトリから直接読み込んでいます。Nookie が保持する複製ではなく、実際に存在するものです。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "여러분의 저장소에서 직접 읽어 옵니다. Nook이 보관하는 사본이 아니라 실제로 존재하는 내용입니다."
+            "value" : "여러분의 저장소에서 직접 읽어 옵니다. Nookie이 보관하는 사본이 아니라 실제로 존재하는 내용입니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "直接从你自己的仓库读取，所以这就是真实存在的内容，不是 Nook 保存的副本。"
+            "value" : "直接从你自己的仓库读取，所以这就是真实存在的内容，不是 Nookie 保存的副本。"
           }
         }
       }
@@ -8429,47 +8429,47 @@
         }
       }
     },
-    "Save it somewhere safe — copy it into your password manager now. It is the only way back into your repository, and Nook cannot reset it for you." : {
+    "Save it somewhere safe — copy it into your password manager now. It is the only way back into your repository, and Nookie cannot reset it for you." : {
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "安全な場所に保管してください。いまパスワード管理アプリにコピーしておくことをおすすめします。リポジトリに入る唯一の手段で、Nook では再設定できません。"
+            "value" : "安全な場所に保管してください。いまパスワード管理アプリにコピーしておくことをおすすめします。リポジトリに入る唯一の手段で、Nookie では再設定できません。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "안전한 곳에 보관하세요 — 지금 비밀번호 관리 앱에 복사해 두시길 권합니다. 저장소에 들어갈 수 있는 유일한 방법이며, Nook이 재설정해 줄 수 없습니다."
+            "value" : "안전한 곳에 보관하세요 — 지금 비밀번호 관리 앱에 복사해 두시길 권합니다. 저장소에 들어갈 수 있는 유일한 방법이며, Nookie이 재설정해 줄 수 없습니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "请妥善保存 — 现在就复制到你的密码管理器中。这是进入你的仓库的唯一方式，Nook 无法为你重置。"
+            "value" : "请妥善保存 — 现在就复制到你的密码管理器中。这是进入你的仓库的唯一方式，Nookie 无法为你重置。"
           }
         }
       }
     },
-    "Save it somewhere safe. It is the only way back into your repository, and Nook cannot reset it for you." : {
+    "Save it somewhere safe. It is the only way back into your repository, and Nookie cannot reset it for you." : {
       "extractionState" : "stale",
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "安全な場所に保管してください。リポジトリに入る唯一の手段で、Nook では再設定できません。"
+            "value" : "安全な場所に保管してください。リポジトリに入る唯一の手段で、Nookie では再設定できません。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "안전한 곳에 보관하세요. 저장소에 들어갈 수 있는 유일한 방법이며, Nook이 재설정해 줄 수 없습니다."
+            "value" : "안전한 곳에 보관하세요. 저장소에 들어갈 수 있는 유일한 방법이며, Nookie이 재설정해 줄 수 없습니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "请妥善保存。这是进入你的仓库的唯一方式，Nook 无法为你重置。"
+            "value" : "请妥善保存。这是进入你的仓库的唯一方式，Nookie 无法为你重置。"
           }
         }
       }
@@ -10258,24 +10258,24 @@
         }
       }
     },
-    "That handle belongs to a different server. Nook can only sign in to accounts on its own server." : {
+    "That handle belongs to a different server. Nookie can only sign in to accounts on its own server." : {
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "そのハンドルは別のサーバーのものです。Nook は自身のサーバーのアカウントにしかサインインできません。"
+            "value" : "そのハンドルは別のサーバーのものです。Nookie は自身のサーバーのアカウントにしかサインインできません。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "그 핸들은 다른 서버의 것입니다. Nook은 자체 서버의 계정에만 로그인할 수 있습니다."
+            "value" : "그 핸들은 다른 서버의 것입니다. Nookie은 자체 서버의 계정에만 로그인할 수 있습니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "该 handle 属于另一台服务器。Nook 只能登录自有服务器上的账户。"
+            "value" : "该 handle 属于另一台服务器。Nookie 只能登录自有服务器上的账户。"
           }
         }
       }
@@ -10731,30 +10731,30 @@
         }
       }
     },
-    "The file will be replaced with the published version of %@. What you wrote outside Nook will be gone." : {
+    "The file will be replaced with the published version of %@. What you wrote outside Nookie will be gone." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The file will be replaced with the published version of %@. What you wrote outside Nook will be gone."
+            "value" : "The file will be replaced with the published version of %@. What you wrote outside Nookie will be gone."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ファイルは公開中の「%@」の内容に戻ります。Nook の外で書いた内容は失われます。"
+            "value" : "ファイルは公開中の「%@」の内容に戻ります。Nookie の外で書いた内容は失われます。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "파일이 발행된 ‘%@’의 내용으로 되돌아갑니다. Nook 밖에서 쓴 내용은 사라집니다."
+            "value" : "파일이 발행된 ‘%@’의 내용으로 되돌아갑니다. Nookie 밖에서 쓴 내용은 사라집니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "该文件将被替换为已发布的《%@》。你在 Nook 之外写的内容将会消失。"
+            "value" : "该文件将被替换为已发布的《%@》。你在 Nookie 之外写的内容将会消失。"
           }
         }
       }
@@ -11274,30 +11274,30 @@
         }
       }
     },
-    "These are copies. Nook keeps them up to date from your repository, so editing one does not change the published post and deleting one does not unpublish it — use the post's own row for that." : {
+    "These are copies. Nookie keeps them up to date from your repository, so editing one does not change the published post and deleting one does not unpublish it — use the post's own row for that." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "These are copies. Nook keeps them up to date from your repository, so editing one does not change the published post and deleting one does not unpublish it — use the post's own row for that."
+            "value" : "These are copies. Nookie keeps them up to date from your repository, so editing one does not change the published post and deleting one does not unpublish it — use the post's own row for that."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "これらはコピーです。Nook がリポジトリから最新の状態に保つため、ファイルを編集しても公開中の投稿は変わらず、削除しても非公開にはなりません。それは投稿の行から行ってください。"
+            "value" : "これらはコピーです。Nookie がリポジトリから最新の状態に保つため、ファイルを編集しても公開中の投稿は変わらず、削除しても非公開にはなりません。それは投稿の行から行ってください。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "이 파일들은 사본입니다. Nook이 내 저장소에서 계속 맞춰 두므로, 파일을 고쳐도 발행된 글이 바뀌지 않고 파일을 지워도 발행이 취소되지 않습니다. 그건 글 목록의 해당 항목에서 하세요."
+            "value" : "이 파일들은 사본입니다. Nookie이 내 저장소에서 계속 맞춰 두므로, 파일을 고쳐도 발행된 글이 바뀌지 않고 파일을 지워도 발행이 취소되지 않습니다. 그건 글 목록의 해당 항목에서 하세요."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "这些是副本。Nook 会依据你的仓库保持它们最新，所以编辑文件不会改动已发布的文章，删除文件也不会取消发布 — 请在文章自己的那一行进行。"
+            "value" : "这些是副本。Nookie 会依据你的仓库保持它们最新，所以编辑文件不会改动已发布的文章，删除文件也不会取消发布 — 请在文章自己的那一行进行。"
           }
         }
       }
@@ -11352,12 +11352,12 @@
         }
       }
     },
-    "This applies to articles Nook reads from now on. An article you have already opened — here or on another device — keeps the parser that read it; use the parser menu in the reader to re-read one." : {
+    "This applies to articles Nookie reads from now on. An article you have already opened — here or on another device — keeps the parser that read it; use the parser menu in the reader to re-read one." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "This applies to articles Nook reads from now on. An article you have already opened — here or on another device — keeps the parser that read it; use the parser menu in the reader to re-read one."
+            "value" : "This applies to articles Nookie reads from now on. An article you have already opened — here or on another device — keeps the parser that read it; use the parser menu in the reader to re-read one."
           }
         },
         "ja" : {
@@ -11514,30 +11514,30 @@
         }
       }
     },
-    "This is not the same as leaving Nook Plus. Leaving keeps your account and everything in it." : {
+    "This is not the same as leaving Nookie Plus. Leaving keeps your account and everything in it." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "This is not the same as leaving Nook Plus. Leaving keeps your account and everything in it."
+            "value" : "This is not the same as leaving Nookie Plus. Leaving keeps your account and everything in it."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nook Plus の退会とは異なります。退会ではアカウントとその中身はそのまま残ります。"
+            "value" : "Nookie Plus の退会とは異なります。退会ではアカウントとその中身はそのまま残ります。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nook Plus 탈퇴와는 다릅니다. 탈퇴는 계정과 그 안의 모든 것을 남겨 둡니다."
+            "value" : "Nookie Plus 탈퇴와는 다릅니다. 탈퇴는 계정과 그 안의 모든 것을 남겨 둡니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "这与退出 Nook Plus 不同。退出会保留你的账户及其中的一切。"
+            "value" : "这与退出 Nookie Plus 不同。退出会保留你的账户及其中的一切。"
           }
         }
       }
@@ -12903,58 +12903,58 @@
         }
       }
     },
-    "You edited these files outside Nook. Nothing is published until you say so, and the files are exactly as you left them." : {
+    "You edited these files outside Nookie. Nothing is published until you say so, and the files are exactly as you left them." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You edited these files outside Nook. Nothing is published until you say so, and the files are exactly as you left them."
+            "value" : "You edited these files outside Nookie. Nothing is published until you say so, and the files are exactly as you left them."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "これらのファイルは Nook の外で編集されました。あなたが指示するまで公開されず、ファイルは編集したままの状態です。"
+            "value" : "これらのファイルは Nookie の外で編集されました。あなたが指示するまで公開されず、ファイルは編集したままの状態です。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nook 밖에서 이 파일들을 수정했습니다. 직접 발행하기 전까지는 아무것도 발행되지 않고, 파일은 수정한 그대로 있습니다."
+            "value" : "Nookie 밖에서 이 파일들을 수정했습니다. 직접 발행하기 전까지는 아무것도 발행되지 않고, 파일은 수정한 그대로 있습니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "你在 Nook 之外编辑了这些文件。在你确认之前不会发布任何内容，文件也保持你留下的样子。"
+            "value" : "你在 Nookie 之外编辑了这些文件。在你确认之前不会发布任何内容，文件也保持你留下的样子。"
           }
         }
       }
     },
-    "You have left Nook Plus" : {
+    "You have left Nookie Plus" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You have left Nook Plus"
+            "value" : "You have left Nookie Plus"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nook Plus を退会しました"
+            "value" : "Nookie Plus を退会しました"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nook Plus를 탈퇴했습니다"
+            "value" : "Nookie Plus를 탈퇴했습니다"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "已退出 Nook Plus"
+            "value" : "已退出 Nookie Plus"
           }
         }
       }
@@ -13592,109 +13592,109 @@
         }
       }
     },
-    "Your posts are stored in a personal repository that belongs to you, not inside Nook's database. If Nook ever disappears, your writing does not." : {
+    "Your posts are stored in a personal repository that belongs to you, not inside Nookie's database. If Nookie ever disappears, your writing does not." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your posts are stored in a personal repository that belongs to you, not inside Nook's database. If Nook ever disappears, your writing does not."
+            "value" : "Your posts are stored in a personal repository that belongs to you, not inside Nookie's database. If Nookie ever disappears, your writing does not."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "投稿は Nook のデータベースではなく、あなた自身のリポジトリに保存されます。Nook がなくなっても、あなたの文章は残ります。"
+            "value" : "投稿は Nookie のデータベースではなく、あなた自身のリポジトリに保存されます。Nookie がなくなっても、あなたの文章は残ります。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "글은 Nook의 데이터베이스가 아니라 여러분 소유의 개인 저장소에 보관됩니다. Nook이 사라져도 여러분의 글은 사라지지 않습니다."
+            "value" : "글은 Nookie의 데이터베이스가 아니라 여러분 소유의 개인 저장소에 보관됩니다. Nookie이 사라져도 여러분의 글은 사라지지 않습니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "你的文章保存在属于你自己的个人仓库中，而不是 Nook 的数据库里。即使 Nook 消失，你的文章依然存在。"
+            "value" : "你的文章保存在属于你自己的个人仓库中，而不是 Nookie 的数据库里。即使 Nookie 消失，你的文章依然存在。"
           }
         }
       }
     },
-    "Your posts live on a server that holds your password, so the reset code comes from there by email. Nook never sees it." : {
+    "Your posts live on a server that holds your password, so the reset code comes from there by email. Nookie never sees it." : {
       "localizations" : {
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "投稿はパスワードを保持しているサーバー上にあるため、再設定コードはそこからメールで届きます。Nook はコードを見ません。"
+            "value" : "投稿はパスワードを保持しているサーバー上にあるため、再設定コードはそこからメールで届きます。Nookie はコードを見ません。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "글은 비밀번호를 보관하는 서버에 있으므로, 재설정 코드는 그 서버가 이메일로 보냅니다. Nook은 코드를 볼 수 없습니다."
+            "value" : "글은 비밀번호를 보관하는 서버에 있으므로, 재설정 코드는 그 서버가 이메일로 보냅니다. Nookie은 코드를 볼 수 없습니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "你的文章存放在保存密码的服务器上，重设码由该服务器通过邮件发送。Nook 看不到它。"
+            "value" : "你的文章存放在保存密码的服务器上，重设码由该服务器通过邮件发送。Nookie 看不到它。"
           }
         }
       }
     },
-    "Your posts stay in your repository and your account is untouched. Nook stops publishing your pages and forgets your membership, and coming back needs a new invitation." : {
+    "Your posts stay in your repository and your account is untouched. Nookie stops publishing your pages and forgets your membership, and coming back needs a new invitation." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your posts stay in your repository and your account is untouched. Nook stops publishing your pages and forgets your membership, and coming back needs a new invitation."
+            "value" : "Your posts stay in your repository and your account is untouched. Nookie stops publishing your pages and forgets your membership, and coming back needs a new invitation."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "投稿はリポジトリにそのまま残り、アカウントには触れません。Nook はページの公開を停止してメンバーシップを忘れ、再開には新しい招待が必要です。"
+            "value" : "投稿はリポジトリにそのまま残り、アカウントには触れません。Nookie はページの公開を停止してメンバーシップを忘れ、再開には新しい招待が必要です。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "글은 내 저장소에 그대로 남고 계정도 건드리지 않습니다. Nook은 공개 페이지 발행을 중단하고 멤버십을 잊으며, 다시 시작하려면 새 초대가 필요합니다."
+            "value" : "글은 내 저장소에 그대로 남고 계정도 건드리지 않습니다. Nookie은 공개 페이지 발행을 중단하고 멤버십을 잊으며, 다시 시작하려면 새 초대가 필요합니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "你的文章会留在你的仓库中，账户不受影响。Nook 会停止发布你的页面并忘记你的会员身份，重新加入需要新的邀请。"
+            "value" : "你的文章会留在你的仓库中，账户不受影响。Nookie 会停止发布你的页面并忘记你的会员身份，重新加入需要新的邀请。"
           }
         }
       }
     },
-    "Your publications and articles stay in your repository, and your name and account are untouched. What goes is your membership and the pages Nook publishes for you." : {
+    "Your publications and articles stay in your repository, and your name and account are untouched. What goes is your membership and the pages Nookie publishes for you." : {
       "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your publications and articles stay in your repository, and your name and account are untouched. What goes is your membership and the pages Nook publishes for you."
+            "value" : "Your publications and articles stay in your repository, and your name and account are untouched. What goes is your membership and the pages Nookie publishes for you."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "パブリケーションと投稿はリポジトリにそのまま残り、名前とアカウントにも触れません。なくなるのはメンバーシップと、Nook が公開しているページです。"
+            "value" : "パブリケーションと投稿はリポジトリにそのまま残り、名前とアカウントにも触れません。なくなるのはメンバーシップと、Nookie が公開しているページです。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "발행물과 글은 내 저장소에 그대로 남고, 이름과 계정도 건드리지 않습니다. 없어지는 것은 멤버십과 Nook이 발행해 주는 공개 페이지입니다."
+            "value" : "발행물과 글은 내 저장소에 그대로 남고, 이름과 계정도 건드리지 않습니다. 없어지는 것은 멤버십과 Nookie이 발행해 주는 공개 페이지입니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "你的发布页和文章会留在你的仓库中，名称和账户也不受影响。消失的是你的会员身份和 Nook 为你发布的页面。"
+            "value" : "你的发布页和文章会留在你的仓库中，名称和账户也不受影响。消失的是你的会员身份和 Nookie 为你发布的页面。"
           }
         }
       }

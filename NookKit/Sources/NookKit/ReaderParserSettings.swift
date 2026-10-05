@@ -54,7 +54,7 @@ public struct ReaderParserSettingsContent: View {
         // re-fetch every article you have already opened when you change this. It
         // cannot — the extracted bodies are synced between your devices, and a
         // device on each parser would spend its life invalidating the other's work.
-        Text("This applies to articles Nook reads from now on. An article you have already opened — here or on another device — keeps the parser that read it; use the parser menu in the reader to re-read one.", bundle: .module)
+        Text("This applies to articles Nookie reads from now on. An article you have already opened — here or on another device — keeps the parser that read it; use the parser menu in the reader to re-read one.", bundle: .module)
             .font(.caption)
             .foregroundStyle(.secondary)
 

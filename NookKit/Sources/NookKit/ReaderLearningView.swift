@@ -49,8 +49,12 @@ public struct VocabularyView: View {
         .searchable(text: $query, prompt: "搜索单词、释义、原句或来源")
         .overlay {
             if store.entries.isEmpty && store.loadError == nil {
-                ContentUnavailableView("还没有生词", systemImage: "character.book.closed",
-                    description: Text("在 Reader 英文正文中选词，点击 Explain Word 后保存。"))
+                ContentUnavailableView {
+                    NookieBrandMark(size: 76)
+                    Text("还没有生词").font(NookTypography.sectionTitle)
+                } description: {
+                    Text("和 Nookie 一起积累新词。在英文正文中选词，点击 Explain Word 后保存。")
+                }
             }
         }
     }

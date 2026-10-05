@@ -447,24 +447,24 @@
         }
       }
     },
-    "A new version of Nook is available": {
+    "A new version of Nookie is available": {
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nook の新しいバージョンがあります"
+            "value": "Nookie の新しいバージョンがあります"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nook 새 버전이 있습니다"
+            "value": "Nookie 새 버전이 있습니다"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nook 有新版本可用"
+            "value": "Nookie 有新版本可用"
           }
         }
       }
@@ -1195,18 +1195,18 @@
         }
       }
     },
-    "Choose a folder in iCloud Drive and Nook keeps your feeds in sync across your devices.": {
+    "Choose a folder in iCloud Drive and Nookie keeps your feeds in sync across your devices.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Choose a folder in iCloud Drive and Nook keeps your feeds in sync across your devices."
+            "value": "Choose a folder in iCloud Drive and Nookie keeps your feeds in sync across your devices."
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "iCloud Drive 内のフォルダを選ぶと、Nook がデバイス間でフィードを同期します。"
+            "value": "iCloud Drive 内のフォルダを選ぶと、Nookie がデバイス間でフィードを同期します。"
           }
         },
         "ko": {
@@ -1218,7 +1218,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "在 iCloud 云盘中选择一个文件夹，Nook 会在你的设备之间同步订阅源。"
+            "value": "在 iCloud 云盘中选择一个文件夹，Nookie 会在你的设备之间同步订阅源。"
           }
         }
       }
@@ -3359,30 +3359,30 @@
         }
       }
     },
-    "My Nook": {
+    "My Nookie": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "My Nook"
+            "value": "My Nookie"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "マイNook"
+            "value": "マイNookie"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "내 Nook"
+            "value": "내 Nookie"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "我的 Nook"
+            "value": "我的 Nookie"
           }
         }
       }
@@ -3509,24 +3509,24 @@
         }
       }
     },
-    "New in Nook": {
+    "New in Nookie": {
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nook の新着"
+            "value": "Nookie の新着"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nook 새 글"
+            "value": "Nookie 새 글"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nook 新文章"
+            "value": "Nookie 新文章"
           }
         }
       }
@@ -3801,169 +3801,169 @@
         }
       }
     },
-    "Nook": {
+    "Nookie": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nook"
+            "value": "Nookie"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nook"
+            "value": "Nookie"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nook"
+            "value": "Nookie"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nook"
+            "value": "Nookie"
           }
         }
       }
     },
-    "Nook %@ (%@) · macOS %@": {
+    "Nookie %@ (%@) · macOS %@": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nook %@ (%@) · macOS %@"
+            "value": "Nookie %@ (%@) · macOS %@"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nook %@（%@）· macOS %@"
+            "value": "Nookie %@（%@）· macOS %@"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nook %@ (%@) · macOS %@"
+            "value": "Nookie %@ (%@) · macOS %@"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nook %@（%@）· macOS %@"
+            "value": "Nookie %@（%@）· macOS %@"
           }
         }
       }
     },
-    "Nook Feedback": {
+    "Nookie Feedback": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nook Feedback"
+            "value": "Nookie Feedback"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nook へのフィードバック"
+            "value": "Nookie へのフィードバック"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nook 피드백"
+            "value": "Nookie 피드백"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nook 反馈"
+            "value": "Nookie 反馈"
           }
         }
       }
     },
-    "Nook checks quietly in the background and shows a notice in the sidebar when an update is ready.": {
+    "Nookie checks quietly in the background and shows a notice in the sidebar when an update is ready.": {
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nook はバックグラウンドで静かに確認し、アップデートの準備ができるとサイドバーでお知らせします。"
+            "value": "Nookie はバックグラウンドで静かに確認し、アップデートの準備ができるとサイドバーでお知らせします。"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nook은 백그라운드에서 조용히 확인하고, 업데이트가 준비되면 사이드바에 알려 줍니다."
+            "value": "Nookie은 백그라운드에서 조용히 확인하고, 업데이트가 준비되면 사이드바에 알려 줍니다."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nook 会在后台静默检查，有更新就绪时会在边栏提示你。"
+            "value": "Nookie 会在后台静默检查，有更新就绪时会在边栏提示你。"
           }
         }
       }
     },
-    "Nook keeps your feeds in a folder in iCloud Drive so they stay in sync across your devices.": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nook keeps your feeds in a folder in iCloud Drive so they stay in sync across your devices."
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nook は iCloud Drive 内のフォルダにフィードを保存し、デバイス間で同期します。"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nook은 피드를 iCloud Drive의 한 폴더에 보관해 여러 기기에서 동기화되도록 합니다."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nook 将订阅源保存在 iCloud 云盘的文件夹中，让它们在你的设备之间保持同步。"
-          }
-        }
-      }
-    },
-    "Nook stores its RSS library in a folder you choose, so iCloud Drive can sync it like a vault.": {
+    "Nookie keeps your feeds in a folder in iCloud Drive so they stay in sync across your devices.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nook stores its RSS library in a folder you choose, so iCloud Drive can sync it like a vault."
+            "value": "Nookie keeps your feeds in a folder in iCloud Drive so they stay in sync across your devices."
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nook は選んだフォルダに RSS ライブラリを保存するので、iCloud Drive が Vault のように同期できます。"
+            "value": "Nookie は iCloud Drive 内のフォルダにフィードを保存し、デバイス間で同期します。"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nook은 여러분이 선택한 폴더에 RSS 라이브러리를 저장합니다. 그러면 iCloud Drive가 이 폴더를 보관함처럼 동기화합니다."
+            "value": "Nookie은 피드를 iCloud Drive의 한 폴더에 보관해 여러 기기에서 동기화되도록 합니다."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nook 将 RSS 资料库保存在你选择的文件夹中，iCloud 云盘便能像保管库一样同步它。"
+            "value": "Nookie 将订阅源保存在 iCloud 云盘的文件夹中，让它们在你的设备之间保持同步。"
           }
         }
       }
     },
-    "Nook will only close after it finds a valid feed.": {
+    "Nookie stores its RSS library in a folder you choose, so iCloud Drive can sync it like a vault.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nookie stores its RSS library in a folder you choose, so iCloud Drive can sync it like a vault."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nookie は選んだフォルダに RSS ライブラリを保存するので、iCloud Drive が Vault のように同期できます。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nookie은 여러분이 선택한 폴더에 RSS 라이브러리를 저장합니다. 그러면 iCloud Drive가 이 폴더를 보관함처럼 동기화합니다."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nookie 将 RSS 资料库保存在你选择的文件夹中，iCloud 云盘便能像保管库一样同步它。"
+          }
+        }
+      }
+    },
+    "Nookie will only close after it finds a valid feed.": {
       "localizations": {
         "ja": {
           "stringUnit": {
@@ -4253,31 +4253,31 @@
         }
       }
     },
-    "Open in Nook": {
+    "Open in Nookie": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Open in Nook"
+            "value": "Open in Nookie"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nook で開く"
+            "value": "Nookie で開く"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nook에서 열기"
+            "value": "Nookie에서 열기"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "在 Nook 中打开"
+            "value": "在 Nookie 中打开"
           }
         }
       }
@@ -4394,52 +4394,52 @@
         }
       }
     },
-    "Paste an RSS or Atom feed URL, or a website address. Nook will check it before closing.": {
+    "Paste an RSS or Atom feed URL, or a website address. Nookie will check it before closing.": {
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "RSS または Atom フィードの URL、あるいはウェブサイトのアドレスを貼り付けてください。閉じる前に Nook が確認します。"
+            "value": "RSS または Atom フィードの URL、あるいはウェブサイトのアドレスを貼り付けてください。閉じる前に Nookie が確認します。"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "RSS 또는 Atom 피드 URL이나 웹사이트 주소를 붙여넣으세요. 닫기 전에 Nook이 확인합니다."
+            "value": "RSS 또는 Atom 피드 URL이나 웹사이트 주소를 붙여넣으세요. 닫기 전에 Nookie이 확인합니다."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "粘贴 RSS 或 Atom 订阅源网址，或网站地址。Nook 会在关闭前进行检查。"
+            "value": "粘贴 RSS 或 Atom 订阅源网址，或网站地址。Nookie 会在关闭前进行检查。"
           }
         }
       }
     },
-    "Pick a folder in iCloud Drive so Nook can keep your feeds in sync across your devices.": {
+    "Pick a folder in iCloud Drive so Nookie can keep your feeds in sync across your devices.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pick a folder in iCloud Drive so Nook can keep your feeds in sync across your devices."
+            "value": "Pick a folder in iCloud Drive so Nookie can keep your feeds in sync across your devices."
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "iCloud Drive 内のフォルダを選ぶと、Nook がデバイス間でフィードを同期できます。"
+            "value": "iCloud Drive 内のフォルダを選ぶと、Nookie がデバイス間でフィードを同期できます。"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nook이 여러 기기에서 피드를 동기화할 수 있도록 iCloud Drive에서 폴더를 선택하세요."
+            "value": "Nookie이 여러 기기에서 피드를 동기화할 수 있도록 iCloud Drive에서 폴더를 선택하세요."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "在 iCloud 云盘中选择一个文件夹，Nook 便能在你的设备之间同步订阅源。"
+            "value": "在 iCloud 云盘中选择一个文件夹，Nookie 便能在你的设备之间同步订阅源。"
           }
         }
       }
@@ -5515,68 +5515,68 @@
         }
       }
     },
-    "Reset Nook": {
+    "Reset Nookie": {
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nookをリセット"
+            "value": "Nookieをリセット"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nook 초기화"
+            "value": "Nookie 초기화"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "重置 Nook"
+            "value": "重置 Nookie"
           }
         }
       }
     },
-    "Reset Nook and Relaunch?": {
+    "Reset Nookie and Relaunch?": {
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nookをリセットして再起動しますか？"
+            "value": "Nookieをリセットして再起動しますか？"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nook을 초기화하고 재실행할까요?"
+            "value": "Nookie을 초기화하고 재실행할까요?"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "重置 Nook 并重新启动？"
+            "value": "重置 Nookie 并重新启动？"
           }
         }
       }
     },
-    "Reset Nook…": {
+    "Reset Nookie…": {
       "localizations": {
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nookをリセット…"
+            "value": "Nookieをリセット…"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nook 초기화…"
+            "value": "Nookie 초기화…"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "重置 Nook…"
+            "value": "重置 Nookie…"
           }
         }
       }
@@ -5603,30 +5603,30 @@
         }
       }
     },
-    "Restart Nook to apply the language change.": {
+    "Restart Nookie to apply the language change.": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Restart Nook to apply the language change."
+            "value": "Restart Nookie to apply the language change."
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "言語の変更を適用するには Nook を再起動してください。"
+            "value": "言語の変更を適用するには Nookie を再起動してください。"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "언어 변경 사항은 Nook을 다시 시작하면 적용됩니다."
+            "value": "언어 변경 사항은 Nookie을 다시 시작하면 적용됩니다."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "重新启动 Nook 以应用语言更改。"
+            "value": "重新启动 Nookie 以应用语言更改。"
           }
         }
       }
@@ -6028,30 +6028,30 @@
         }
       }
     },
-    "Some feeds omit each article's date. When enabled, Nook reads the real date from the article's page (once per article).": {
+    "Some feeds omit each article's date. When enabled, Nookie reads the real date from the article's page (once per article).": {
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Some feeds omit each article's date. When enabled, Nook reads the real date from the article's page (once per article)."
+            "value": "Some feeds omit each article's date. When enabled, Nookie reads the real date from the article's page (once per article)."
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "一部のフィードは記事ごとの日付を提供しません。オンにすると、Nook は記事ページから実際の日付を読み取ります（記事ごとに1回）。"
+            "value": "一部のフィードは記事ごとの日付を提供しません。オンにすると、Nookie は記事ページから実際の日付を読み取ります（記事ごとに1回）。"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "일부 피드는 글마다 날짜를 제공하지 않습니다. 켜면 Nook이 글 페이지에서 실제 날짜를 읽어옵니다(글당 한 번)."
+            "value": "일부 피드는 글마다 날짜를 제공하지 않습니다. 켜면 Nookie이 글 페이지에서 실제 날짜를 읽어옵니다(글당 한 번)."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "部分订阅源不提供每篇文章的日期。开启后，Nook 会从文章页面读取真实日期（每篇一次）。"
+            "value": "部分订阅源不提供每篇文章的日期。开启后，Nookie 会从文章页面读取真实日期（每篇一次）。"
           }
         }
       }

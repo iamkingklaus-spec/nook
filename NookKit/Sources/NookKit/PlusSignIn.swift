@@ -42,7 +42,7 @@ enum PlusAccountKind: String, CaseIterable, Identifiable, Sendable {
 
     var title: LocalizedStringKey {
         switch self {
-        case .nook: "Nook account"
+        case .nook: "Nookie account"
         case .bluesky: "Bluesky account"
         case .other: "Another server"
         }
@@ -51,8 +51,8 @@ enum PlusAccountKind: String, CaseIterable, Identifiable, Sendable {
     var detail: LocalizedStringKey {
         switch self {
         case .nook: "The name you chose when you set up publishing here."
-        case .bluesky: "Not yet. Publishing through Nook needs an account on Nook's own server."
-        case .other: "Not yet. Nook can only reach its own server at the moment."
+        case .bluesky: "Not yet. Publishing through Nookie needs an account on Nookie's own server."
+        case .other: "Not yet. Nookie can only reach its own server at the moment."
         }
     }
 
@@ -251,7 +251,7 @@ struct PlusSignInView: View {
             #endif
             .fieldChrome()
 
-            Text("Only accounts on Nook's own server can sign in at the moment.", bundle: .module)
+            Text("Only accounts on Nookie's own server can sign in at the moment.", bundle: .module)
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -275,7 +275,7 @@ struct PlusSignInView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Reset your password", bundle: .module)
                 .font(.subheadline.weight(.semibold))
-            Text("Your posts live on a server that holds your password, so the reset code comes from there by email. Nook never sees it.", bundle: .module)
+            Text("Your posts live on a server that holds your password, so the reset code comes from there by email. Nookie never sees it.", bundle: .module)
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -422,7 +422,7 @@ struct PlusSignInView: View {
         VStack(alignment: .leading, spacing: 6) {
             Text(kind.detail, bundle: .module)
                 .font(.callout)
-            Text("Nook stores your posts in a repository on its own server, and publishing needs an account there. Support for other servers is not decided yet.", bundle: .module)
+            Text("Nookie stores your posts in a repository on its own server, and publishing needs an account there. Support for other servers is not decided yet.", bundle: .module)
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

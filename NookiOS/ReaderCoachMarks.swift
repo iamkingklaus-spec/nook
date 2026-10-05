@@ -289,7 +289,7 @@ struct ReaderCoachMarks: View {
         case .back:
             CoachCallout(
                 title: "Back to your list",
-                message: "Swipe in from the left edge to return to the article list. That's everything — enjoy Nook!",
+                message: "Swipe in from the left edge to return to the article list. That's everything — enjoy Nookie!",
                 primaryTitle: "Done", onPrimary: { onNext(.back) }
             )
         }
@@ -375,7 +375,7 @@ struct FeedsAddHint: View {
                 CoachCallout(
                     systemImage: "plus.circle",
                     title: "Follow more sites here",
-                    message: "Tap the plus button anytime to follow another site — paste any website address and Nook finds its posts.",
+                    message: "Tap the plus button anytime to follow another site — paste any website address and Nookie finds its posts.",
                     primaryTitle: "Got it",
                     onPrimary: onDismiss
                 )

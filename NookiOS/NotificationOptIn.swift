@@ -44,7 +44,7 @@ struct NotificationOptInSheet: View {
                         choice(
                             icon: "bell.badge",
                             title: "New articles",
-                            detail: "Nook checks your feeds in the background and tells you when something arrives. Needs permission to show notifications.",
+                            detail: "Nookie checks your feeds in the background and tells you when something arrives. Needs permission to show notifications.",
                             isOn: $wantsAlerts)
                         Divider().padding(.leading, 60)
                         choice(
@@ -56,7 +56,7 @@ struct NotificationOptInSheet: View {
                         choice(
                             icon: "arrow.clockwise",
                             title: "Refresh on opening",
-                            detail: "Fetches your feeds when you come back to Nook, so the list is current. Needs no permission and uses no background time.",
+                            detail: "Fetches your feeds when you come back to Nookie, so the list is current. Needs no permission and uses no background time.",
                             isOn: $wantsAutoRefresh)
                     }
                     .background(.background.secondary, in: RoundedRectangle(cornerRadius: 16, style: .continuous))

@@ -25,7 +25,7 @@ final class ShareViewController: UIViewController {
 
     private func presentActions(for shared: URL) {
         let alert = UIAlertController(
-            title: "Nook",
+            title: "Nookie",
             message: shared.absoluteString,
             preferredStyle: .alert
         )

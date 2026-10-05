@@ -168,17 +168,17 @@ private struct IntroStage: View {
                 .foregroundStyle(Color.accentColor)
             Text("Reading Fit")
                 .font(.title.weight(.semibold))
-            Text("Read a few short pieces the way you always do, and Nook will find the type size and spacing that suit your eyes — based on how you actually read.\nAbout five minutes, and quitting early still keeps what it learned.")
+            Text("Read a few short pieces the way you always do, and Nookie will find the type size and spacing that suit your eyes — based on how you actually read.\nAbout five minutes, and quitting early still keeps what it learned.")
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
             if voiceOverEnabled {
-                Text("This measurement times visual reading, so with VoiceOver Nook offers direct choice instead.")
+                Text("This measurement times visual reading, so with VoiceOver Nookie offers direct choice instead.")
                     .font(.caption)
                     .foregroundStyle(.tertiary)
                     .multilineTextAlignment(.center)
             }
             Spacer()
-            Text("Nook measures quietly while you read. Results stay on this device.")
+            Text("Nookie measures quietly while you read. Results stay on this device.")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
             VStack(spacing: 10) {

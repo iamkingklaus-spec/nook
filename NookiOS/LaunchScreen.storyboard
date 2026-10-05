@@ -22,12 +22,19 @@
                                     <constraint firstAttribute="height" constant="104" id="brand-height"/>
                                 </constraints>
                             </imageView>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" text="Nookie" textAlignment="center" translatesAutoresizingMaskIntoConstraints="NO" id="brand-name">
+                                <rect key="frame" x="146.5" y="490" width="100" height="24"/>
+                                <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="20"/>
+                                <color key="textColor" systemColor="labelColor"/>
+                            </label>
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="6Tk-OE-BBY"/>
                         <color key="backgroundColor" name="LaunchBackground"/>
                         <constraints>
                             <constraint firstItem="brand-logo" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="brand-centerX"/>
                             <constraint firstItem="brand-logo" firstAttribute="centerY" secondItem="Ze5-6b-2t3" secondAttribute="centerY" id="brand-centerY"/>
+                            <constraint firstItem="brand-name" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="brand-nameX"/>
+                            <constraint firstItem="brand-name" firstAttribute="centerY" secondItem="Ze5-6b-2t3" secondAttribute="centerY" constant="76" id="brand-nameY"/>
                         </constraints>
                     </view>
                 </viewController>
@@ -38,6 +45,9 @@
     </scenes>
     <resources>
         <image name="LaunchLogo" width="104" height="104"/>
+        <systemColor name="labelColor">
+            <color white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+        </systemColor>
         <namedColor name="LaunchBackground">
             <color red="0.968627" green="0.972549" blue="0.980392" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </namedColor>

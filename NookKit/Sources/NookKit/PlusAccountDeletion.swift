@@ -81,7 +81,7 @@ public struct PlusAccountDeletionSheet: View {
                 Text("This deletes your account on the server that stores your writing.", bundle: .module)
                     .font(.headline)
                 Text("Your name, your address, every publication, every article, and every image go with it. Published pages come down. Nothing here can be undone, and nothing can bring the account back — a new one starts empty, with a new invitation.", bundle: .module)
-                Text("This is not the same as leaving Nook Plus. Leaving keeps your account and everything in it.", bundle: .module)
+                Text("This is not the same as leaving Nookie Plus. Leaving keeps your account and everything in it.", bundle: .module)
                     .foregroundStyle(.secondary)
             }
             .font(.callout)

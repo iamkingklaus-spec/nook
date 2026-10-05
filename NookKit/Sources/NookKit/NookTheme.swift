@@ -14,7 +14,7 @@ public enum NookTheme {
     public static let textPrimary = adaptive(0x202A38, 0xEEEDE8)
     public static let textSecondary = adaptive(0x566273, 0xB8C0CB)
     public static let textTertiary = adaptive(0x606C7E, 0x9FAAB9)
-    public static let accentPrimary = adaptive(0x365A92, 0xA0BAE3)
+    public static let accentPrimary = adaptive(0x315FA0, 0xA4C5F1)
     public static let accentSecondary = adaptive(0x9B4350, 0xDBA1A9)
     public static let divider = adaptive(0xDEE2E8, 0x3B4655)
     public static let borderSubtle = adaptive(0xE0E4EA, 0x36404E)
@@ -117,6 +117,7 @@ public struct NookActionStyle: ButtonStyle {
     public enum Emphasis: Equatable { case primary, secondary, quiet }
     private let emphasis: Emphasis
     @Environment(\.isEnabled) private var enabled
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     public init(_ emphasis: Emphasis = .secondary) { self.emphasis = emphasis }
     public func makeBody(configuration: Configuration) -> some View {
         configuration.label.font(NookTypography.button)
@@ -128,14 +129,17 @@ public struct NookActionStyle: ButtonStyle {
                             (emphasis == .secondary ? NookTheme.accentPrimary.opacity(0.09) : .clear))
             }
             .opacity(!enabled ? 0.45 : (configuration.isPressed ? 0.72 : 1))
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: configuration.isPressed)
     }
 }
 
 /// Content rows retain their layout and only dim while pressed (no spring/scale).
 public struct NookContentButtonStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     public init() {}
     public func makeBody(configuration: Configuration) -> some View {
         configuration.label.opacity(configuration.isPressed ? 0.72 : 1)
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: configuration.isPressed)
     }
 }
 

@@ -187,7 +187,7 @@ struct RootView: View {
                     FeedDiscoverySheet(store: store, pageURLString: request.pageURLString)
                 }
                 .alert(
-                    "Saved to Nook",
+                    "Saved to Nookie",
                     isPresented: Binding(
                         get: { savedLinkTitle != nil },
                         set: { if !$0 { savedLinkTitle = nil } }
@@ -872,7 +872,7 @@ private struct CompactShell: View {
             }
             Button("OK", role: .cancel) { reveal = nil }
         } message: { _ in
-            Text("Your feed hasn't picked it up yet. Feeds are cached for up to half a minute, so it will appear in My Nook shortly.")
+            Text("Your feed hasn't picked it up yet. Feeds are cached for up to half a minute, so it will appear in My Nookie shortly.")
         }
         // Following the feed failed, which is a real failure and says why.
         .alert(
@@ -885,7 +885,7 @@ private struct CompactShell: View {
         ) { _ in
             Button("OK") { reveal = nil }
         } message: { why in
-            Text("Your post is published. Nook couldn't reach your feed to show it: \(why)")
+            Text("Your post is published. Nookie couldn't reach your feed to show it: \(why)")
         }
         .onAppear { applySelection(selection) }
         .onChange(of: selection) { _, tab in
@@ -1253,7 +1253,7 @@ private struct HomeTab: View {
                     ContentUnavailableView {
                         Label("Set Up Sync", systemImage: "icloud.and.arrow.up")
                     } description: {
-                        Text("Choose a sync folder so Nook keeps your feeds in sync across your devices.")
+                        Text("Choose a sync folder so Nookie keeps your feeds in sync across your devices.")
                     } actions: {
                         Button("Choose Sync Folder", action: goToSettings)
                     }
@@ -1675,7 +1675,7 @@ private struct FeedsTab: View {
                     ContentUnavailableView {
                         Label("Follow your first site", systemImage: "plus.circle")
                     } description: {
-                        Text("Nook gathers new posts from the sites you follow — start with a few picks, or any website address.")
+                        Text("Nookie gathers new posts from the sites you follow — start with a few picks, or any website address.")
                     } actions: {
                         Button("Browse Starter Picks") { isShowingStarterPicks = true }
                             .buttonStyle(.borderedProminent)
@@ -1997,7 +1997,10 @@ struct SplashView: View {
             NookTheme.backgroundPrimary.ignoresSafeArea()
             Image("LaunchLogo").resizable().scaledToFit()
                 .frame(width: 104, height: 104)
-                .accessibilityLabel("Nook")
+                .accessibilityLabel("Nookie")
+            Text("Nookie").font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(NookTheme.textPrimary).offset(y: 76)
+                .accessibilityHidden(true)
             if let phase = store?.bootstrapPhase {
                 VStack(spacing: NookTheme.Space.item) {
                     ProgressView(value: phase.fractionComplete).tint(NookTheme.accentPrimary)
@@ -2077,7 +2080,7 @@ struct OwnNookLabel: View {
     var body: some View {
         HStack {
             Label {
-                Text("My Nook")
+                Text("My Nookie")
             } icon: {
                 // The compose button's symbol and signature tint, so the place the
                 // writing goes is recognisably the same thing as the place it is made.
@@ -2342,7 +2345,7 @@ private struct Sidebar: View {
                 break
             }
         }
-        .navigationTitle("Nook")
+        .navigationTitle("Nookie")
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 Menu {

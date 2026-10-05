@@ -16,7 +16,7 @@ public enum ReaderLinkBehavior: String, CaseIterable, Identifiable, Sendable {
     public var id: String { rawValue }
     public var label: String {
         switch self {
-        case .inApp: String(localized: "Open in Nook", bundle: Bundle.module)
+        case .inApp: String(localized: "Open in Nookie", bundle: Bundle.module)
         case .external: String(localized: "Open in Browser", bundle: Bundle.module)
         }
     }

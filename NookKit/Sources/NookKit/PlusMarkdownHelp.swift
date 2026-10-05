@@ -48,7 +48,7 @@ struct PlusMarkdownHelpView: View {
         .init(
             title: String(localized: "Link", bundle: .module),
             explanation: String(localized: "Paste a URL over selected text, or use the link button.", bundle: .module),
-            source: "[Nook](https://example.com)", kind: .link),
+            source: "[Nookie](https://example.com)", kind: .link),
         .init(
             title: String(localized: "List", bundle: .module),
             explanation: String(localized: "Start each item with a dash and a space.", bundle: .module),
@@ -68,7 +68,7 @@ struct PlusMarkdownHelpView: View {
         .init(
             title: String(localized: "Table", bundle: .module),
             explanation: String(localized: "Separate columns with pipes and add a delimiter row.", bundle: .module),
-            source: "| Name | Value |\n| --- | --- |\n| Nook | Plus |", kind: .table),
+            source: "| Name | Value |\n| --- | --- |\n| Nookie | Plus |", kind: .table),
         .init(
             title: String(localized: "Thematic break", bundle: .module),
             explanation: String(localized: "Put three dashes on a line of their own.", bundle: .module),
@@ -123,7 +123,7 @@ struct PlusMarkdownHelpView: View {
                 Text(verbatim: example.title)
                     .font(.headline)
                 if example.nookExtension {
-                    Text("Nook extension", bundle: .module)
+                    Text("Nookie extension", bundle: .module)
                         .font(.caption2.weight(.semibold))
                         .foregroundStyle(PlusTheme.accent)
                         .padding(.horizontal, 7)

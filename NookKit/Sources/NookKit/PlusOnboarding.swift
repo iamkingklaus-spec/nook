@@ -85,7 +85,7 @@ public struct PlusOnboardingView: View {
         /// One line saying what this step is for, read before the fields.
         var summary: LocalizedStringKey {
             switch self {
-            case .intro: "A quick tour of what publishing with Nook means."
+            case .intro: "A quick tour of what publishing with Nookie means."
             case .invitation: "Publishing is invitation-only for now."
             case .address: "Choose the name people will find you by."
             case .credentials: "Set the password that protects your writing."
@@ -308,11 +308,11 @@ public struct PlusOnboardingView: View {
         VStack(alignment: .leading, spacing: 14) {
             explain(
                 "What this is",
-                "Nook can publish your own writing as a small website with an RSS feed, so anyone can read it in Nook or any other reader."
+                "Nookie can publish your own writing as a small website with an RSS feed, so anyone can read it in Nookie or any other reader."
             )
             explain(
                 "Where your posts live",
-                "Your posts are stored in a personal repository that belongs to you, not inside Nook's database. If Nook ever disappears, your writing does not."
+                "Your posts are stored in a personal repository that belongs to you, not inside Nookie's database. If Nookie ever disappears, your writing does not."
             )
             explain(
                 "What you need",
@@ -459,7 +459,7 @@ public struct PlusOnboardingView: View {
 
             explain(
                 "Password",
-                "Protects your repository. Nook stores it nowhere: it goes straight to the host that keeps your posts."
+                "Protects your repository. Nookie stores it nowhere: it goes straight to the host that keeps your posts."
             )
             passwordField(text: $password, label: Text("Password", bundle: .module))
                 .onChange(of: password) { _, _ in copiedPassword = false }
@@ -475,7 +475,7 @@ public struct PlusOnboardingView: View {
                     .foregroundStyle(.orange)
             }
 
-            Text("Save it somewhere safe — copy it into your password manager now. It is the only way back into your repository, and Nook cannot reset it for you.", bundle: .module)
+            Text("Save it somewhere safe — copy it into your password manager now. It is the only way back into your repository, and Nookie cannot reset it for you.", bundle: .module)
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

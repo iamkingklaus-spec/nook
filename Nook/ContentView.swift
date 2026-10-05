@@ -441,7 +441,7 @@ private extension ContentView {
     func chooseSyncFolder() {
         let panel = NSOpenPanel()
         panel.title = String(localized: "Choose iCloud Sync Folder")
-        panel.message = String(localized: "Pick a folder in iCloud Drive so Nook can keep your feeds in sync across your devices.")
+        panel.message = String(localized: "Pick a folder in iCloud Drive so Nookie can keep your feeds in sync across your devices.")
         panel.prompt = String(localized: "Choose")
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
@@ -714,7 +714,7 @@ private struct FeedSidebar: View {
         if let feed = store.followedFeed(at: feedURL) {
             ownNookLabel(unread: store.unreadCount(feedID: feed.id))
                 .tag(feed.id)
-                .help("My Nook")
+                .help("My Nookie")
                 .accessibilityIdentifier("plus-own-feed")
         } else {
             Button {
@@ -726,7 +726,7 @@ private struct FeedSidebar: View {
             .disabled(isFollowingOwnFeed || !store.isStorageConfigured)
             .help(
                 store.isStorageConfigured
-                    ? "My Nook"
+                    ? "My Nookie"
                     : "Choose a sync folder first")
             .accessibilityIdentifier("plus-own-feed")
         }
@@ -735,7 +735,7 @@ private struct FeedSidebar: View {
     private func ownNookLabel(unread: Int) -> some View {
         HStack(spacing: 8) {
             Label {
-                Text("My Nook")
+                Text("My Nookie")
             } icon: {
                 if isFollowingOwnFeed {
                     ProgressView()
@@ -1316,7 +1316,7 @@ private struct UpdateBanner: View {
                     .contentShape(RoundedRectangle(cornerRadius: 7))
                 }
                 .buttonStyle(.plain)
-                .help("A new version of Nook is available")
+                .help("A new version of Nookie is available")
                 .padding(.horizontal, 8)
                 .padding(.vertical, 6)
                 .popover(isPresented: $showDetails, arrowEdge: .top) {
@@ -1521,7 +1521,7 @@ private struct ArticleListView: View {
                 ContentUnavailableView {
                     Label("Choose a Sync Folder", systemImage: "icloud")
                 } description: {
-                    Text("Nook stores its RSS library in a folder you choose, so iCloud Drive can sync it like a vault.")
+                    Text("Nookie stores its RSS library in a folder you choose, so iCloud Drive can sync it like a vault.")
                 }
             } else if store.visibleArticles.isEmpty {
                 if store.activeSearchQuery.isEmpty, store.feedSelection.isEmpty, store.smartSelection == .unread {
@@ -2454,7 +2454,7 @@ private struct ReaderDetailView: View {
             ContentUnavailableView {
                 Label("Set Up iCloud Sync", systemImage: "icloud.and.arrow.up")
             } description: {
-                Text("Choose a folder in iCloud Drive and Nook keeps your feeds in sync across your devices.")
+                Text("Choose a folder in iCloud Drive and Nookie keeps your feeds in sync across your devices.")
             }
         } else if let article = store.selectedArticle {
             articleReader(article)
@@ -3069,7 +3069,7 @@ private struct AddFeedSheet: View {
                 Text("Add Feed")
                     .font(.title2)
                     .fontWeight(.semibold)
-                Text("Paste an RSS or Atom feed URL, or a website address. Nook will check it before closing.")
+                Text("Paste an RSS or Atom feed URL, or a website address. Nookie will check it before closing.")
                     .foregroundStyle(.secondary)
             }
 
@@ -3115,7 +3115,7 @@ private struct AddFeedSheet: View {
                     .labelStyle(.titleAndIcon)
                     .foregroundStyle(.red)
                 } else {
-                    Text("Nook will only close after it finds a valid feed.")
+                    Text("Nookie will only close after it finds a valid feed.")
                         .foregroundStyle(.secondary)
                 }
             }
@@ -3655,9 +3655,9 @@ private struct ExperimentalSettingsSections: View {
             }
         }
 
-        Section("Reset Nook") {
+        Section("Reset Nookie") {
             LabeledContent("Local App Data") {
-                Button("Reset Nook…", role: .destructive) {
+                Button("Reset Nookie…", role: .destructive) {
                     showingAppReset = true
                 }
             }
@@ -3702,7 +3702,7 @@ private struct AppResetSheet: View {
                     .foregroundStyle(.secondary)
 
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("Reset Nook")
+                    Text("Reset Nookie")
                         .font(.title2.weight(.semibold))
                     Text("Start this app again with clean local data.")
                         .foregroundStyle(.secondary)
@@ -3768,7 +3768,7 @@ private struct AppResetSheet: View {
         .frame(width: 500)
         .interactiveDismissDisabled(isResetting)
         .confirmationDialog(
-            "Reset Nook and Relaunch?",
+            "Reset Nookie and Relaunch?",
             isPresented: $confirmingReset
         ) {
             Button("Reset and Relaunch", role: .destructive) {
@@ -3818,7 +3818,7 @@ private struct GeneralSettingsSections: View {
                 LabeledContent {
                     Button("Relaunch") { AppLanguage.relaunch() }
                 } label: {
-                    Text("Restart Nook to apply the language change.")
+                    Text("Restart Nookie to apply the language change.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -3834,7 +3834,7 @@ private struct GeneralSettingsSections: View {
             LabeledContent {
                 Button("Check Now") { updateController.checkForUpdates() }
             } label: {
-                Text("Nook checks quietly in the background and shows a notice in the sidebar when an update is ready.")
+                Text("Nookie checks quietly in the background and shows a notice in the sidebar when an update is ready.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -3966,7 +3966,7 @@ private struct FeedsSettingsSections: View {
         } header: {
             Text("Feeds")
         } footer: {
-            Text("Some feeds omit each article's date. When enabled, Nook reads the real date from the article's page (once per article).")
+            Text("Some feeds omit each article's date. When enabled, Nookie reads the real date from the article's page (once per article).")
         }
 
         Section {
@@ -3997,7 +3997,7 @@ private struct FeedsSettingsSections: View {
         } header: {
             Text("Storage")
         } footer: {
-            Text("Nook keeps your feeds in a folder in iCloud Drive so they stay in sync across your devices.")
+            Text("Nookie keeps your feeds in a folder in iCloud Drive so they stay in sync across your devices.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -4024,7 +4024,7 @@ private struct AboutSettingsPane: View {
                     .resizable()
                     .frame(width: 96, height: 96)
 
-                Text("Nook")
+                Text("Nookie")
                     .font(.title)
                     .fontWeight(.semibold)
 
@@ -4087,11 +4087,11 @@ enum FeedbackMailer {
         let os = ProcessInfo.processInfo.operatingSystemVersion
         let osString = "\(os.majorVersion).\(os.minorVersion).\(os.patchVersion)"
 
-        let subject = String(localized: "Nook Feedback")
+        let subject = String(localized: "Nookie Feedback")
         let intro = String(localized: "Please describe your bug report, feature request, or idea below. Screenshots are welcome.")
         let prompts = String(localized: "• What were you trying to do?\n\n• What actually happened?\n\n• What did you expect instead?")
         let diagnosticsHeader = String(localized: "— Diagnostics (helps with troubleshooting; feel free to delete) —")
-        let diagnostics = String(localized: "Nook \(version) (\(build)) · macOS \(osString)")
+        let diagnostics = String(localized: "Nookie \(version) (\(build)) · macOS \(osString)")
         let body = "\(intro)\n\n\(prompts)\n\n\n\(diagnosticsHeader)\n\(diagnostics)"
 
         // Encode everything except the mailto delimiters we add ourselves so
