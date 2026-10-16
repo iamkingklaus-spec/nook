@@ -17,12 +17,10 @@
 			</dict>
 		</dict>
 	</array>
-	<!-- Branded launch screen (logo centered at 96pt on LaunchBackground) so the
-	     first frame isn't an empty black screen and matches the SwiftUI splash
-	     exactly. A storyboard is used (not the UILaunchScreen dict) for
-	     deterministic logo sizing. -->
+	<!-- Background-only launch resource. App icons belong on the Home Screen,
+	     not in the launch-to-library loading handoff. -->
 	<key>UILaunchStoryboardName</key>
-	<string>LaunchScreen</string>
+	<string>NookieLaunch</string>
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
 	<array>
 		<string>com.tim.nook.ios.refresh</string>

@@ -37,25 +37,30 @@ Related Coverage has no dedicated view in this checkout; no new feature was adde
 
 ## Default icon
 
-`NookIconMaster.png` is the generated imagegen edit of the user's blue/white ribbon
-reference. Prompt: preserve the blue gradient, frosted overlapping ribbons and
-negative space; add only a minimal central reader head/shoulder silhouette; no
-text, border, neon or extra detail. Built-in imagegen was used, not the API CLI.
-`NookLaunchMark.png` was derived with imagegen's transparent-background extraction.
-Generated masters are preserved; the old N-shaped SVG mark is retired.
+The current character icon and generation brief are documented in
+`Nookie-brand.md`. Historical design masters are not launch resources.
 
 Run `python tools/build-brand-assets.py` with Pillow to package the masters into
 the opaque 1024px export, default Icon Composer PNG, three Share extension icons
-and launch scales. This performs only size/mode conversion. No alternate icon.
+and in-app character art. This performs only size/mode conversion. No alternate icon.
 The default icon name/project references are unchanged; macOS shares this asset.
 iOS supplies the outer mask; app icon PNGs have no alpha or pre-rounded corners.
+
+## Launch
+
+`NookieLaunch.storyboard` is a plain adaptive canvas with no artwork or wordmark.
+`StartupLoadingView` uses the same canvas and displays only actual library-loading
+progress. No decorative transition, minimum display duration, or extra launch
+delay is added. The retired startup image set is no longer packaged or generated.
+Run `python tools/check-launch-surface.py` for the offline resource regression
+check. Device startup snapshots and the installed package still need device review.
 
 ## Device review
 
 Check light/dark mode, accessibility text sizes and Reduce Transparency in Reader,
 Settings, Explore, Saved, History, Vocabulary, Feed Health and OPML preview. Check
 Reader custom colors, toolbars and safe areas on iPhone and iPad. Confirm the icon
-and LaunchScreen-to-bootstrap handoff after a fresh install. Windows resource and
+and launch-to-bootstrap handoff after updating the app. Windows resource and
 diff checks do not replace an Xcode build or device visual review. Also verify
 Appearance changes without leaving the current Settings route, system-mode changes,
 long bilingual paragraphs/titles, Search keyboard, empty/error states and popovers.

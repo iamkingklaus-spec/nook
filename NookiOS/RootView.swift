@@ -117,11 +117,10 @@ struct RootView: View {
                     // before any folder is ever chosen. No-op for existing
                     // users and once a real sync folder is configured.
                     await store.configureLocalStorageIfNeeded()
-                    // The brand surface has no minimum display time.
+                    // Uncover the library as soon as storage is ready; no brand delay.
                     isReady = true
-                    // First launch: after the splash reveal (so it doesn't fight the
-                    // splash transition), present the welcome tour. The app is fully
-                    // loaded underneath, so skipping drops straight into it.
+                    // On first launch, present the welcome tour over the loaded app.
+                    // Skipping drops straight into the library.
                     if !hasCompletedWelcome {
                         // New user: run the tutorial now; the translate promo waits
                         // until a later launch (once the tutorial is fully behind
@@ -231,8 +230,8 @@ struct RootView: View {
                 }
 
             if !isReady {
-                SplashView(store: store)
-                    .transition(.opacity)
+                StartupLoadingView(store: store)
+                    .transition(.identity)
                     .zIndex(1)
             }
         }
@@ -1989,27 +1988,23 @@ private struct ReaderPushingList<Top: View>: View {
     }
 }
 
-/// Static brand surface matching LaunchScreen; no artificial launch delay.
-struct SplashView: View {
+/// Plain loading surface matching NookieLaunch. Only real bootstrap progress is
+/// shown; there is no icon, wordmark, decorative animation or minimum duration.
+struct StartupLoadingView: View {
     var store: ReaderStore? = nil
     var body: some View {
         ZStack {
             NookTheme.backgroundPrimary.ignoresSafeArea()
-            Image("LaunchLogo").resizable().scaledToFit()
-                .frame(width: 104, height: 104)
-                .accessibilityLabel("Nookie")
-            Text("Nookie").font(.system(size: 20, weight: .semibold))
-                .foregroundStyle(NookTheme.textPrimary).offset(y: 76)
-                .accessibilityHidden(true)
             if let phase = store?.bootstrapPhase {
                 VStack(spacing: NookTheme.Space.item) {
                     ProgressView(value: phase.fractionComplete).tint(NookTheme.accentPrimary)
                         .frame(width: 180)
                     Text(phase.label).font(NookTypography.caption)
                         .foregroundStyle(NookTheme.textSecondary)
+                        .multilineTextAlignment(.center)
                 }
-                .frame(maxHeight: .infinity, alignment: .bottom)
-                .padding(.bottom, 64)
+                .padding(.horizontal, NookTheme.Space.page)
+                .accessibilityElement(children: .combine)
             }
         }
     }

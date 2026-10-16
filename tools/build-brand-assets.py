@@ -17,11 +17,8 @@ def generate():
     icon.save(ROOT / "Nook/AppIcon.icon/Assets/EditorialReader.png")
     for extension in ("NookShare", "NookShareSave", "NookShareDiscover"):
         icon.save(ROOT / extension / "Assets.xcassets/AppIcon.appiconset/AppIcon.png")
-    # Export the same opaque, square character art. iOS applies the App Icon
-    # mask; never bake a rounded rectangle or a transparent corner into it.
-    for scale in (2, 3):
-        icon.resize((104 * scale, 104 * scale), Image.Resampling.LANCZOS).save(
-            ROOT / f"NookiOS/Assets.xcassets/LaunchLogo.imageset/LaunchLogo@{scale}x.png")
+    # Package only app icons and optional in-app character art. Startup is
+    # background-only and must not regain an icon through this export script.
     brand = ROOT / "NookKit/Sources/NookKit/BrandAssets.xcassets"
     character = brand / "NookieCharacter.imageset"
     character.mkdir(parents=True, exist_ok=True)

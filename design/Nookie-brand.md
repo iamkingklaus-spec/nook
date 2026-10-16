@@ -22,7 +22,7 @@ watermarks or extra characters; cute, bright and clean, not neon.
 - `design/Nook-AppIcon-1024.png`: opaque 1024 px square export.
 - `Nook/AppIcon.icon/Assets/EditorialReader.png`: shared iOS/macOS default layer.
 - Three Share extensions retain their existing AppIcon asset paths.
-- `NookiOS/Assets.xcassets/LaunchLogo.imageset`: 104 pt static launch artwork.
+- `NookiOS/NookieLaunch.storyboard`: background-only system launch surface.
 - `NookKit/Sources/NookKit/BrandAssets.xcassets`: package-owned character for
   the About, welcome and Vocabulary empty surfaces.
 
@@ -31,7 +31,10 @@ The App Icon has no baked corner mask or transparent border. The operating
 system supplies its shape; in-app brand tiles use the existing card radius.
 
 The UI accent is #315FA0 (light) / #A4C5F1 (dark). Reading surfaces and typography
-remain editorial. Launch is static and introduces no delay. Brand tiles fade
+remain editorial. Launch and the SwiftUI loading cover have no icon or wordmark,
+no decorative animation and no minimum duration. Only actual library-loading
+progress is shown once the app runs. The old launch image set is removed and the
+asset exporter no longer creates startup artwork. Brand tiles elsewhere fade
 once in 180 ms; button feedback takes 120 ms. Reduce Motion disables these
 transitions; existing Reduce Transparency handling remains in the shared theme.
 
