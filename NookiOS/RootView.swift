@@ -36,6 +36,7 @@ struct RootView: View {
     @State private var discoveryRequest: FeedDiscoveryRequest?
     /// The just-saved link's title, driving the "Saved to Nook" confirmation.
     @State private var savedLinkTitle: String?
+    @State private var importingSharedInbox = false
 
     var body: some View {
         ZStack {
@@ -119,6 +120,7 @@ struct RootView: View {
                     await store.configureLocalStorageIfNeeded()
                     // Uncover the library as soon as storage is ready; no brand delay.
                     isReady = true
+                    Task { await importSharedArticles() }
                     // On first launch, present the welcome tour over the loaded app.
                     // Skipping drops straight into the library.
                     if !hasCompletedWelcome {
@@ -157,6 +159,7 @@ struct RootView: View {
                 .onChange(of: scenePhase) { _, phase in
                     switch phase {
                     case .active:
+                        Task { await importSharedArticles() }
                         // Returning to the foreground: pull another device's changes
                         // from the sync folder, then refresh feeds over the network.
                         // Foreground-active marks the on-screen list "seen" so its
@@ -295,6 +298,21 @@ struct RootView: View {
     ///   add / report),
     /// - `save-article?url=…` saves the page as a standalone article in the
     ///   managed Saved Links feed.
+    private func importSharedArticles() async {
+        guard isReady, store.isStorageConfigured, !importingSharedInbox else { return }
+        importingSharedInbox = true
+        defer { importingSharedInbox = false }
+        do {
+            let result = try await SharedArticleImport.drain(.configured()) { envelope in
+                _ = try await store.acceptSharedArticle(envelope)
+            }
+            if result.imported > 0 { savedLinkTitle = "已导入 \(result.imported) 篇分享文章，可在存档与搜索中打开。" }
+            if result.failed + result.invalid > 0 {
+                store.errorMessage = "有 \(result.failed + result.invalid) 条分享未能导入，原记录已保留。可以在打开网页链接页面重试。"
+            }
+        } catch { store.errorMessage = error.localizedDescription }
+    }
+
     private func handleIncomingURL(_ url: URL) {
         guard url.scheme == "nook" else { return }
         // An invitation link carries a code for Plus setup.
@@ -1409,6 +1427,11 @@ private struct StarredTab: View {
         NavigationStack {
             ReaderPushingList(store: store)
                 .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        NavigationLink { SharedArticleImportPage(store: store) } label: {
+                            Label("打开网页链接", systemImage: "link")
+                        }
+                    }
                     ToolbarItem(placement: .topBarLeading) {
                         NavigationLink { ReadingHistoryPage(store: store) } label: {
                             Label("History / 阅读历史", systemImage: "clock.arrow.circlepath")
@@ -3079,6 +3102,71 @@ struct ReadingProgressLabel: View {
             Text("继续阅读 · \(Int(state.readingProgress * 100))%")
                 .font(.caption).foregroundStyle(.secondary)
                 .accessibilityLabel("阅读进度 \(Int(state.readingProgress * 100))%")
+        }
+    }
+}
+
+struct SharedArticleImportPage: View {
+    let store: ReaderStore
+    @State private var text = ""
+    @State private var busy = false
+    @State private var message: String?
+    @State private var pushed: Article?
+    @State private var work: Task<Void, Never>?
+    @Environment(TabBarChrome.self) private var tabChrome
+
+    var body: some View {
+        Form {
+            Section("网页链接") {
+                TextField("https://…", text: $text).keyboardType(.URL)
+                    .textInputAutocapitalization(.never).autocorrectionDisabled()
+                PasteButton(payloadType: String.self) { values in text = values.first ?? "" }
+                Button("粘贴后打开文章") { openArticle() }.disabled(busy || text.isEmpty)
+                if busy { ProgressView("正在保存文章…") }
+                if let message { Text(message).foregroundStyle(.secondary) }
+            } footer: {
+                Text("无需订阅 RSS。正文提取和双语阅读沿用现有 Reader；无法提取时仍可打开原网页。")
+            }
+            Section {
+                Button("重新导入分享队列") { retryInbox() }.disabled(busy)
+            }
+        }
+        .nookScreen().navigationTitle("打开网页链接")
+        .modifier(TabBarInset())
+        .onChange(of: pushed == nil) { _, popped in tabChrome.setReaderOpen(!popped) }
+        .navigationDestination(item: $pushed) { _ in
+            ReaderDetailView(store: store, articleOverride: $pushed).toolbar(.hidden, for: .tabBar)
+        }
+        .onDisappear { work?.cancel() }
+    }
+
+    private func openArticle() {
+        busy = true; message = nil
+        work = Task {
+            defer { busy = false }
+            do {
+                let url = try SharedArticleURL.fromSharedText(text)
+                let envelope = try SharedArticleEnvelope(url: url)
+                let id = try await store.acceptSharedArticle(envelope)
+                guard !Task.isCancelled, let article = store.article(withID: id) else { return }
+                store.selectedArticleID = id; pushed = article
+            } catch is CancellationError { }
+            catch { message = error.localizedDescription }
+        }
+    }
+
+    private func retryInbox() {
+        busy = true; message = nil
+        work = Task {
+            defer { busy = false }
+            do {
+                let inbox = SharedArticleInbox.configured()
+                guard inbox.directory != nil else { throw SharedArticleError.unavailableContainer }
+                let result = try await SharedArticleImport.drain(inbox) { item in
+                    _ = try await store.acceptSharedArticle(item)
+                }
+                message = "已导入 \(result.imported) 条；未完成 \(result.failed + result.invalid) 条。可从存档与搜索中打开。"
+            } catch { message = error.localizedDescription }
         }
     }
 }

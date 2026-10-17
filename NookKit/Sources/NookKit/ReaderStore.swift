@@ -5,7 +5,7 @@ import SwiftUI
 @MainActor
 @Observable
 public final class ReaderStore {
-    public let articleArchive = ArticleArchiveStore()
+    public let articleArchive: ArticleArchiveStore
 
     public func maintainArchive() {
         articleArchive.synchronize(articles.filter { !deletedArticleIDs.contains($0.id) }, feeds: feeds)
@@ -551,7 +551,8 @@ public final class ReaderStore {
     public private(set) var isPreparingLocalReset = false
     private var didQuiesceForLocalReset = false
 
-    private init() {
+    private init(archive: ArticleArchiveStore = ArticleArchiveStore()) {
+        articleArchive = archive
         // These preferences are read out of `UserDefaults` by non-view code, and
         // nothing observes that. Mirroring them here — and refreshing on the defaults
         // notification the Settings controls trigger — is what makes an open reader
@@ -2480,20 +2481,25 @@ public final class ReaderStore {
     /// persists through the normal library pipeline. Re-saving a previously
     /// deleted link clears its tombstone.
     @discardableResult
-    public func saveLink(urlString: String) async throws -> Article.ID {
-        guard isStorageConfigured else { throw ReaderStorageError.noDirectorySelected }
-        let pageURL = try feedService.normalizedFeedURL(from: urlString)
+    public func saveLink(urlString: String, provisionalTitle: String? = nil) async throws -> Article.ID {
+        let pageURL = try SharedArticleURL.validate(urlString)
         let articleID = "\(Self.savedLinksFeedID)#\(pageURL.absoluteString)"
 
-        // Already saved: just resurface it (clearing a deletion if needed).
-        if let existing = articles.first(where: { $0.id == articleID }) {
-            clearArticleTombstoneIfNeeded(articleID)
+        // Reuse an RSS, archived or previously shared URL, not just Saved Links IDs.
+        if let existing = articles.first(where: { StableArticleIdentity.canonicalURL($0.url) == pageURL }) {
             return existing.id
         }
-
-        let title = await feedService.fetchPageTitle(url: pageURL)
-            ?? pageURL.host(percentEncoded: false)
-            ?? pageURL.absoluteString
+        guard isStorageConfigured else { throw ReaderStorageError.noDirectorySelected }
+        if let archived = articleArchive.entries["url:" + pageURL.absoluteString] {
+            return restoreArchivedArticle(archived.article()).id
+        }
+        let suppliedTitle = provisionalTitle?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let title: String
+        if let suppliedTitle, !suppliedTitle.isEmpty { title = String(suppliedTitle.prefix(500)) }
+        else { title = await feedService.fetchPageTitle(url: pageURL) ?? pageURL.host() ?? pageURL.absoluteString }
+        try Task.checkCancellation()
+        // Another incoming URL may have completed while title lookup suspended.
+        if let existing = articles.first(where: { StableArticleIdentity.canonicalURL($0.url) == pageURL }) { return existing.id }
 
         ensureSavedLinksFeed()
         clearArticleTombstoneIfNeeded(articleID)
@@ -2507,12 +2513,27 @@ public final class ReaderStore {
             url: pageURL,
             estimatedReadMinutes: 1,
             isRead: false,
-            isStarred: false
+            isStarred: false,
+            hasExplicitPublishDate: false
         )
         articles.append(article)
         articleArchive.synchronize([article], feeds: feeds)
         scheduleSave()
         return articleID
+    }
+
+    /// The inbox must not acknowledge a share on the strength of an in-memory
+    /// append or a scheduled save. Record the local replica before returning.
+    @discardableResult
+    public func acceptSharedArticle(_ envelope: SharedArticleEnvelope) async throws -> Article.ID {
+        let id = try await saveLink(urlString: envelope.url.absoluteString, provisionalTitle: envelope.title)
+        guard let replicaStore else { throw ReaderStorageError.noDirectorySelected }
+        let library = snapshotLibrary()
+        let snapshot = try await Task.detached(priority: .utility) {
+            try replicaStore.recordLocal(library, retainBodies: ReaderStore.recentArticleIDs(from: library.articles))
+        }.value
+        appliedReplicaRevision = max(appliedReplicaRevision, snapshot.revision)
+        return id
     }
 
     /// Creates the managed Saved Links feed on first use, CRDT-seeded so peers
@@ -4883,7 +4904,7 @@ public final class ReaderStore {
 
     /// Test-only factory (the app uses `shared`): lets regression tests drive
     /// store flows on an isolated instance without touching global state.
-    static func _makeForTesting() -> ReaderStore { ReaderStore() }
+    static func _makeForTesting() -> ReaderStore { ReaderStore(archive: ArticleArchiveStore(file: nil)) }
 
     /// Test-only entry into the refresh merge path (`merge` stays private so
     /// production callers can't bypass the batching buffer by accident).

@@ -79,6 +79,9 @@ struct SettingsView: View {
                     NavigationLink(value: Destination.reading) {
                         Label("Reading", systemImage: "book")
                     }
+                    NavigationLink { SharedArticleImportPage(store: store) } label: {
+                        Label("打开网页链接", systemImage: "link")
+                    }
                     NavigationLink { ArchiveSearchPage(store: store) } label: {
                         Label("存档与搜索 / Archive", systemImage: "archivebox")
                     }

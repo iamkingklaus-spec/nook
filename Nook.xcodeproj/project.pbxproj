@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+        A26300000000000000000001 /* SharedArticleHandoff.swift in Save */ = {isa = PBXBuildFile; fileRef = A26300000000000000000003; };
+        A26300000000000000000002 /* SharedArticleHandoff.swift in Share */ = {isa = PBXBuildFile; fileRef = A26300000000000000000003; };
 		A26100000000000000000001 = {isa = PBXBuildFile; fileRef = A26100000000000000000002; };
 		A26000000000000000000001 /* NewsDesign.swift in Sources */ = {isa = PBXBuildFile; fileRef = A26000000000000000000002; };
 		A22000000000000000000001 /* NewsHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22000000000000000000002 /* NewsHomeView.swift */; };
@@ -110,6 +112,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+        A26300000000000000000003 /* SharedArticleHandoff.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NookKit/Sources/NookKit/SharedArticleHandoff.swift; sourceTree = SOURCE_ROOT; };
 		A26100000000000000000002 = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NookiOSUITests/NewsHomeScreenshotTests.swift; sourceTree = SOURCE_ROOT; };
 		A26100000000000000000003 = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; path = NookiOSUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A26000000000000000000002 /* NewsDesign.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewsDesign.swift; sourceTree = "<group>"; };
@@ -636,6 +639,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+                A26300000000000000000002 /* SharedArticleHandoff.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -650,6 +654,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+                A26300000000000000000001 /* SharedArticleHandoff.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -791,6 +796,7 @@
 			buildSettings = {
 				NOOK_IOS_BUNDLE_ID = com.example.nook.ios;
 				NOOK_SIGNING_TEAM = "";
+                NOOK_APP_GROUP_ID = "";
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
@@ -853,6 +859,7 @@
 			buildSettings = {
 				NOOK_IOS_BUNDLE_ID = com.example.nook.ios;
 				NOOK_SIGNING_TEAM = "";
+                NOOK_APP_GROUP_ID = "";
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;

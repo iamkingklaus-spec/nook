@@ -2,9 +2,8 @@ import UIKit
 import UniformTypeIdentifiers
 
 /// Share-sheet extension: takes the URL of the page the user is viewing and
-/// offers three ways into Nook, each handed off via a `nook://` deep link so
-/// all storage-touching work happens in the app (no App Group needed — works
-/// with a free developer account):
+/// Feed discovery retains its legacy routes. Article sharing uses the durable
+/// inbox when provisioned, or explicit copy/paste when no group is available:
 /// - Follow the site immediately (auto-discovering its RSS/Atom feed),
 /// - Find the feed address first (result sheet with copy/add/report),
 /// - Save the page itself as an article (for sites with no feed at all).
@@ -36,9 +35,34 @@ final class ShareViewController: UIViewController {
             self?.forward(shared, host: "discover-feed")
         })
         alert.addAction(UIAlertAction(title: L.saveArticle, style: .default) { [weak self] _ in
-            self?.forward(shared, host: "save-article")
+            DispatchQueue.main.async { self?.handoffArticle(shared) }
         })
         alert.addAction(UIAlertAction(title: L.cancel, style: .cancel) { [weak self] _ in
+            self?.extensionContext?.completeRequest(returningItems: nil)
+        })
+        present(alert, animated: true)
+    }
+
+    private func handoffArticle(_ shared: URL) {
+        var queued = false
+        let url = try? SharedArticleURL.validate(shared.absoluteString)
+        if let url, SharedArticleInbox.configured().directory != nil {
+            queued = (try? SharedArticleInbox.configured().enqueue(SharedArticleEnvelope(url: url))) != nil
+        }
+        let alert = UIAlertController(title: "Nookie", message: queued
+            ? "已添加到待导入队列。打开 Nookie 后会保存文章。"
+            : "尚未导入。请复制链接，再到 Nookie → Saved / 收藏 → 打开网页链接，粘贴并打开。", preferredStyle: .alert)
+        if queued {
+            alert.addAction(UIAlertAction(title: "完成", style: .default) { [weak self] _ in
+                self?.extensionContext?.completeRequest(returningItems: nil)
+            })
+        } else if let url {
+            alert.addAction(UIAlertAction(title: "复制链接并返回", style: .default) { [weak self] _ in
+                UIPasteboard.general.setItems([[UTType.utf8PlainText.identifier: url.absoluteString]], options: [.localOnly: true])
+                self?.extensionContext?.completeRequest(returningItems: nil)
+            })
+        } else { alert.message = "请分享有效的 http / https 文章链接。" }
+        alert.addAction(UIAlertAction(title: "取消", style: .cancel) { [weak self] _ in
             self?.extensionContext?.completeRequest(returningItems: nil)
         })
         present(alert, animated: true)

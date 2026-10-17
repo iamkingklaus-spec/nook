@@ -1,89 +1,110 @@
 import UIKit
 import UniformTypeIdentifiers
 
-/// One-tap share action: forwards the shared page to Nook via
-/// `nook://save-article?url=…`. Each share action ships as its own extension target so
-/// it appears as its own row in the share sheet (and can be individually
-/// favorited there); all storage-touching work happens in the app.
+/// URL handoff only. No page fetching, parser or Gemini work in this process.
+@MainActor
 final class ShareViewController: UIViewController {
-    private let deepLinkHost = "save-article"
+    private let statusLabel = UILabel()
+    private let actionButton = UIButton(type: .system)
+    private let cancelButton = UIButton(type: .system)
+    private var sharedURL: URL?
+    private var providers: [NSItemProvider] = []
+    private var timeout: Task<Void, Never>?
+    private var resolved = false
+    private var didStart = false
+    private var wasEnqueued = false
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        Task {
-            guard let shared = await extractSharedURL(), let deepLink = deepLink(for: shared) else {
-                extensionContext?.completeRequest(returningItems: nil)
-                return
-            }
-            openAndFinish(deepLink)
-        }
+        view.backgroundColor = .systemBackground
+        let titleLabel = UILabel()
+        titleLabel.text = "Nookie"
+        titleLabel.font = .preferredFont(forTextStyle: .title1)
+        titleLabel.adjustsFontForContentSizeCategory = true
+        statusLabel.text = "正在读取文章链接…"
+        statusLabel.numberOfLines = 0
+        statusLabel.font = .preferredFont(forTextStyle: .body)
+        statusLabel.adjustsFontForContentSizeCategory = true
+        actionButton.setTitle("复制链接并返回", for: .normal)
+        actionButton.isEnabled = false
+        actionButton.addAction(UIAction { [weak self] _ in self?.finishAction() }, for: .touchUpInside)
+        cancelButton.setTitle("取消", for: .normal)
+        cancelButton.addAction(UIAction { [weak self] _ in self?.finish() }, for: .touchUpInside)
+        let stack = UIStackView(arrangedSubviews: [titleLabel, statusLabel, actionButton, cancelButton])
+        stack.axis = .vertical; stack.spacing = 20; stack.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(stack)
+        NSLayoutConstraint.activate([
+            stack.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 24),
+            stack.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -24),
+            stack.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 24),
+            actionButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 44),
+            cancelButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 44)
+        ])
     }
 
-    /// Finds the shared web URL among the extension's input attachments.
-    private func extractSharedURL() async -> URL? {
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        guard !didStart else { return }; didStart = true
         let items = (extensionContext?.inputItems as? [NSExtensionItem]) ?? []
-        let providers = items.flatMap { $0.attachments ?? [] }
-
-        if let urlProvider = providers.first(where: { $0.hasItemConformingToTypeIdentifier(UTType.url.identifier) }) {
-            return await withCheckedContinuation { continuation in
-                urlProvider.loadItem(forTypeIdentifier: UTType.url.identifier, options: nil) { item, _ in
-                    continuation.resume(returning: item as? URL)
-                }
-            }
+        providers = items.flatMap { $0.attachments ?? [] }
+        timeout = Task { [weak self] in
+            do { try await Task.sleep(for: .seconds(12)) } catch { return }
+            guard let self, !self.resolved else { return }
+            self.resolved = true
+            self.statusLabel.text = "读取分享内容超时。请取消后重试，或复制网页链接到 Nookie。"
         }
-        if let textProvider = providers.first(where: { $0.hasItemConformingToTypeIdentifier(UTType.plainText.identifier) }) {
-            return await withCheckedContinuation { continuation in
-                textProvider.loadItem(forTypeIdentifier: UTType.plainText.identifier, options: nil) { item, _ in
-                    let url = (item as? String).flatMap { URL(string: $0.trimmingCharacters(in: .whitespacesAndNewlines)) }
-                    continuation.resume(returning: url)
-                }
-            }
-        }
-        return nil
+        load(index: 0)
     }
 
-    private func deepLink(for shared: URL) -> URL? {
-        var allowed = CharacterSet.urlQueryAllowed
-        allowed.remove(charactersIn: "&?=+/:")
-        let encoded = shared.absoluteString.addingPercentEncoding(withAllowedCharacters: allowed) ?? ""
-        return URL(string: "nook://\(deepLinkHost)?url=\(encoded)")
+    private func load(index: Int) {
+        guard !resolved else { return }
+        guard index < providers.count else {
+            resolved = true; timeout?.cancel()
+            statusLabel.text = "未找到有效的 http / https 文章链接。此入口暂不支持图片、PDF 或视频文件。"
+            return
+        }
+        let provider = providers[index]
+        let type = provider.hasItemConformingToTypeIdentifier(UTType.url.identifier)
+            ? UTType.url.identifier : UTType.plainText.identifier
+        guard provider.hasItemConformingToTypeIdentifier(type) else { load(index: index + 1); return }
+        provider.loadItem(forTypeIdentifier: type, options: nil) { [weak self] item, _ in
+            // Only immutable text crosses back to the main actor.
+            let text = (item as? URL)?.absoluteString ?? (item as? String)
+            Task { @MainActor [weak self] in
+                guard let self, !self.resolved else { return }
+                if let text, let url = try? SharedArticleURL.fromSharedText(text) { self.received(url) }
+                else { self.load(index: index + 1) }
+            }
+        }
     }
 
-    /// Hands the deep link to the system and finishes the request WITHOUT
-    /// waiting on the open's completion handler: the moment the host app comes
-    /// to the foreground this process is suspended, and a completeRequest that
-    /// was still pending never runs — PlugInKit then treats the extension as
-    /// hung and drops it from the share sheet until the container app
-    /// relaunches and re-registers it.
-    private func openAndFinish(_ url: URL) {
-        var finished = false
-        let finish = { [weak self] in
-            guard !finished else { return }
-            finished = true
-            self?.extensionContext?.completeRequest(returningItems: nil)
-        }
-
-        if let context = extensionContext {
-            context.open(url) { [weak self] success in
-                if !success { self?.openViaResponderChain(url) }
-                finish()
+    private func received(_ url: URL) {
+        resolved = true; timeout?.cancel(); sharedURL = url
+        let inbox = SharedArticleInbox.configured()
+        if inbox.directory != nil {
+            do {
+                try inbox.enqueue(SharedArticleEnvelope(url: url))
+                wasEnqueued = true
+                statusLabel.text = "已添加到 Nookie 的待导入队列。打开 Nookie 后会保存文章；网络和正文处理在主 App 中完成。"
+                actionButton.setTitle("完成", for: .normal)
+            } catch {
+                statusLabel.text = "分享队列写入失败，尚未导入。可以复制链接，再到 Nookie → 打开网页链接中粘贴。"
             }
         } else {
-            openViaResponderChain(url)
+            statusLabel.text = "当前安装不支持直接共享保存，尚未导入。请点击下方复制，然后打开 Nookie → Saved / 收藏 → 打开网页链接，粘贴并打开。"
         }
-        // Safety net: finish even if the open callback is swallowed by the
-        // app-switch suspension (the exact race this ordering exists to beat).
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { finish() }
+        actionButton.isEnabled = true
     }
 
-    private func openViaResponderChain(_ url: URL) {
-        var responder: UIResponder? = self
-        while let current = responder {
-            if let application = current as? UIApplication {
-                application.open(url, options: [:], completionHandler: nil)
-                return
-            }
-            responder = current.next
+    private func finishAction() {
+        if !wasEnqueued, let sharedURL {
+            UIPasteboard.general.setItems([[UTType.utf8PlainText.identifier: sharedURL.absoluteString]],
+                options: [.localOnly: true])
         }
+        finish()
+    }
+    private func finish() {
+        resolved = true; timeout?.cancel()
+        extensionContext?.completeRequest(returningItems: nil)
     }
 }
