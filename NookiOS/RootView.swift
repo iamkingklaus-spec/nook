@@ -585,7 +585,7 @@ private extension View {
 /// The selected tab. The shared store has one selection scope, so switching tabs
 /// re-asserts the newly-active tab's scope (feeds/starred change
 /// `feedSelection`/`smartSelection`, so returning to Home must restore its filter).
-private enum AppTab: Hashable, CaseIterable { case home, feeds, starred, settings }
+private enum AppTab: String, Hashable, CaseIterable { case home, feeds, starred, settings }
 
 /// Drives the custom liquid-glass tab bar's collapse state from list scrolls,
 /// Instagram-style: sustained scrolling down collapses the bar to the active
@@ -706,7 +706,7 @@ private struct CompactShell: View {
     @Environment(TourCoordinator.self) private var tour
     @Environment(TabBarChrome.self) private var tabChrome
     @AppStorage(TourFlags.seenListHintKey) private var seenListHint = false
-    @State private var selection: AppTab = .home
+    @AppStorage("nookie.lastTab") private var selection: AppTab = .home
 
     /// The composer, present only while it is open.
     ///
@@ -1445,6 +1445,7 @@ struct ReadingHistoryPage: View {
                         Text(entry.title).font(NookTypography.storyTitle).foregroundStyle(NookTheme.textPrimary)
                         Text(entry.source).font(.caption).foregroundStyle(.secondary)
                         Text(entry.lastOpenedAt, style: .relative).font(.caption).foregroundStyle(.secondary)
+                        ReadingProgressLabel(article: history.article(for: entry, in: store.libraryArticles))
                     }
                 }
                 .padding(.vertical, NookTheme.Space.inline)
@@ -2898,11 +2899,10 @@ private struct ArticleList: View {
     }
 
     private func row(_ article: Article) -> some View {
-        ArticleRowView(
-            article: article,
-            store: store,
-            translationBox: titleTranslator.box(for: article.id)
-        )
+        VStack(alignment: .leading, spacing: 4) {
+            ArticleRowView(article: article, store: store, translationBox: titleTranslator.box(for: article.id))
+            if store.smartSelection == .starred { ReadingProgressLabel(article: article) }
+        }
     }
 }
 
@@ -3020,6 +3020,7 @@ struct ArchiveSearchResults: View {
                     VStack(alignment: .leading, spacing: NookTheme.Space.inline) {
                         Text(entry.content.title).font(NookTypography.storyTitle).foregroundStyle(NookTheme.textPrimary)
                         Text(entry.source).font(.caption).foregroundStyle(.secondary)
+                        ReadingProgressLabel(article: entry.article())
                         if !entry.content.summary.isEmpty {
                             Text(entry.content.summary).font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
                         }
@@ -3067,5 +3068,17 @@ struct ArchiveSearchPage: View {
             }
             .onAppear { store.maintainArchive() }
             .modifier(TabBarInset())
+    }
+}
+
+struct ReadingProgressLabel: View {
+    let article: Article
+    @State private var reading = ReadingStateStore.shared
+    var body: some View {
+        if let state = reading.state(for: article), state.readingProgress >= ReadingStatePolicy.resumeThreshold {
+            Text("继续阅读 · \(Int(state.readingProgress * 100))%")
+                .font(.caption).foregroundStyle(.secondary)
+                .accessibilityLabel("阅读进度 \(Int(state.readingProgress * 100))%")
+        }
     }
 }

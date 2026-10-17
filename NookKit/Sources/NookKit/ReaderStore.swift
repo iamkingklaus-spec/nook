@@ -4078,6 +4078,7 @@ public final class ReaderStore {
         articles[index].isRead = isRead
         suppressArticlesDidSet = false
         articleArchive.updateState(articles[index])
+        ReadingStateStore.shared.setRead(isRead, for: articles[index])
         // Counts by O(1) delta, mirroring recomputeCounts (filtered articles
         // never count).
         if !filteredArticleIDs.contains(articleID) {

@@ -117,7 +117,17 @@ private struct BlockReaderNodesView: View {
                         sourceText(id: group.blockID, html: text.html, heading: group.heading)
                     }
                 }
-            }.id(group.id)
+            }
+            .background {
+                GeometryReader { geometry in
+                    let frame = geometry.frame(in: .named("nookie-reader-viewport"))
+                    Color.clear.preference(key: ReaderAnchorFramesKey.self, value: [
+                        ReaderAnchorFrame(anchor: .init(blockID: group.blockID, presentationID: group.id),
+                                          minY: frame.minY, maxY: frame.maxY)
+                    ])
+                }
+            }
+            .id(group.id)
         case .quote(let nodes):
             HStack(alignment: .top, spacing: 12) {
                 Rectangle().fill(NookTheme.accentPrimary.opacity(0.28)).frame(width: 3)

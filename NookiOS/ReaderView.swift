@@ -152,6 +152,8 @@ struct ReaderDetailView: View {
     /// `translatedBody` path above still handles plain-paragraph-only articles.
     @State private var nativeTranslator = NativeArticleTranslator()
     @State private var blockTranslator = BlockReaderTranslationController()
+    @State private var readingSession = ReaderResumeSession()
+    @Environment(\.scenePhase) private var readingScenePhase
     @AppStorage("readerLearningEnabled") private var readerLearningEnabled = true
     @State private var summaryController = ArticleSummaryController()
     @State private var summaryRequestedArticleID: String?
@@ -222,7 +224,7 @@ struct ReaderDetailView: View {
     }
 
     private func showsBlockTranslation(_ article: Article) -> Bool {
-        (blockTranslator.mode != .english || (readerLearningEnabled && !translationActive(article))) && blockTranslator.isPrepared &&
+        (blockTranslator.mode != .english || !translationActive(article)) && blockTranslator.isPrepared &&
             blockTranslator.input == blockReaderInput(for: article)
     }
 
@@ -340,6 +342,15 @@ struct ReaderDetailView: View {
         dynamicTypeSize.isAccessibilitySize
             ? AnyLayout(VStackLayout(alignment: .leading, spacing: NookTheme.Space.inline))
             : AnyLayout(HStackLayout(spacing: NookTheme.Space.inline))
+    }
+
+    private func saveReadingPosition(_ article: Article) {
+        guard readingSession.articleID == article.id, readingSession.userScrolled else { return }
+        ReadingStateStore.shared.update(article, progress: readingSession.progress,
+            anchor: readingSession.visible, mode: blockTranslator.mode)
+        if readingSession.progress >= ReadingStatePolicy.completedThreshold && !readingSession.manuallyMarkedUnread {
+            store.setRead(articleID: article.id, isRead: true)
+        }
     }
 
     private func reader(_ article: Article) -> some View {
@@ -480,6 +491,31 @@ struct ReaderDetailView: View {
                     }
                 }
             )
+            .coordinateSpace(name: "nookie-reader-viewport")
+            .onPreferenceChange(ReaderAnchorFramesKey.self) { frames in
+                guard readingSession.articleID == article.id else { return }
+                let visible = frames.filter { $0.maxY > 1 }.min { $0.minY < $1.minY }
+                if let visible { readingSession.visible = visible.anchor }
+                saveReadingPosition(article)
+            }
+            .onScrollPhaseChange { _, phase in
+                if phase == .interacting { readingSession.userScrolled = true }
+                if phase == .idle { saveReadingPosition(article) }
+            }
+            .task(id: ReaderResumeTrigger(anchors: blockTranslator.readingAnchors,
+                ready: blockTranslator.isPrepared && !blockTranslator.isLoading && !blockTranslator.isCleaning,
+                mode: blockTranslator.mode)) {
+                guard readingSession.articleID == article.id, !readingSession.restored,
+                      !readingSession.userScrolled, showsBlockTranslation(article),
+                      !blockTranslator.isLoading, !blockTranslator.isCleaning,
+                      !blockTranslator.readingAnchors.isEmpty else { return }
+                await Task.yield()
+                guard !Task.isCancelled else { return }
+                if let anchor = ReaderResumePosition.anchor(for: readingSession.saved, in: blockTranslator.readingAnchors) {
+                    scrollProxy.scrollTo(anchor.presentationID, anchor: .top)
+                }
+                readingSession.restored = true
+            }
             .onPreferenceChange(TitleHeightKey.self) { titleHeight = $0 }
             // Reveal the navigation-bar title once the inline title has scrolled up
             // under the bar (its bottom = top padding + its height). The content top
@@ -493,6 +529,11 @@ struct ReaderDetailView: View {
                 let boundedY = min(max(0, geo.contentOffset.y), maxY)
                 return ScrollSnapshot(y: boundedY, distanceToBottom: maxY - boundedY)
             } action: { _, snap in
+                if readingSession.userScrolled {
+                    let total = snap.y + snap.distanceToBottom
+                    readingSession.progress = total > 0 ? Double(snap.y / total) : 0
+                    saveReadingPosition(article)
+                }
                 // Freeze the chrome while the coach marks are up, so the bottom bar
                 // (and its document button, spotlighted in one step) stays put.
                 guard coachStep == nil else { return }
@@ -589,6 +630,12 @@ struct ReaderDetailView: View {
                         // Translation lives on the bottom bar (right side) for quick
                         // access; the menu keeps the occasional actions.
                         Button {
+                            readingSession.manuallyMarkedUnread = article.isRead
+                            store.setRead(articleID: article.id, isRead: !article.isRead)
+                        } label: {
+                            Label(article.isRead ? "标为未读" : "标为已读", systemImage: article.isRead ? "circle" : "checkmark.circle")
+                        }
+                        Button {
                             isShowingInfo = true
                         } label: {
                             Label("Article Info", systemImage: "info.circle")
@@ -634,9 +681,26 @@ struct ReaderDetailView: View {
             }
         }
         .task(id: blockReaderInput(for: article)) {
-            await blockTranslator.open(blockReaderInput(for: article))
+            if readingSession.articleID != article.id {
+                ReadingStateStore.shared.flush()
+                let saved = ReadingStateStore.shared.opened(article)
+                readingSession.begin(articleID: article.id, saved: saved)
+            }
+            await blockTranslator.open(blockReaderInput(for: article),
+                preferredMode: ReadingStateStore.shared.state(for: article)?.mode)
         }
-        .onDisappear { blockTranslator.reset() }
+        .onChange(of: blockTranslator.mode) { _, mode in
+            guard readingSession.articleID == article.id else { return }
+            ReadingStateStore.shared.setMode(mode, for: article)
+        }
+        .onChange(of: readingScenePhase) { _, phase in
+            if phase != .active { saveReadingPosition(article); ReadingStateStore.shared.flush() }
+        }
+        .onDisappear {
+            saveReadingPosition(article)
+            ReadingStateStore.shared.flush()
+            blockTranslator.reset()
+        }
         .task(id: article.id) {
             ReadingHistoryStore.shared.recordOpened(article, feed: store.feed(for: article.feedID))
         }
@@ -1804,4 +1868,10 @@ struct TranslationProgressBanner: View {
         .padding(.top, 10)
         .transition(reduceMotion ? .opacity : .move(edge: .top).combined(with: .opacity))
     }
+}
+
+private struct ReaderResumeTrigger: Equatable {
+    let anchors: [ReaderReadingAnchor]
+    let ready: Bool
+    let mode: BlockReaderMode
 }

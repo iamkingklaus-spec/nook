@@ -67,11 +67,12 @@ public final class BlockReaderTranslationController {
     }
 
     /// Called only by the visible Reader task, never feed refresh/preloading.
-    public func open(_ input: BlockReaderInput?, model: GeminiTranslator.Model = .flashLite) async {
+    public func open(_ input: BlockReaderInput?, model: GeminiTranslator.Model = .flashLite,
+                     preferredMode: BlockReaderMode? = nil) async {
         let changed = self.input != input || self.model != model || prepared == nil
         let firstAutomaticOpen = !automaticPreparation
         automaticPreparation = true
-        if changed || firstAutomaticOpen { mode = .bilingual }
+        if changed || firstAutomaticOpen { mode = preferredMode ?? .bilingual }
         await load(input, model: model)
         guard !Task.isCancelled, self.input == input, self.model == model else { return }
         if changed || firstAutomaticOpen { cleanupPending = cleanupTransport != nil && prepared != nil }
