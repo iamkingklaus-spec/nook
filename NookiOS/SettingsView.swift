@@ -79,6 +79,9 @@ struct SettingsView: View {
                     NavigationLink(value: Destination.reading) {
                         Label("Reading", systemImage: "book")
                     }
+                    NavigationLink { ArchiveSearchPage(store: store) } label: {
+                        Label("存档与搜索 / Archive", systemImage: "archivebox")
+                    }
                     NavigationLink(value: Destination.history) {
                         Label("阅读历史 / History", systemImage: "clock.arrow.circlepath")
                     }

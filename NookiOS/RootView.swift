@@ -1437,7 +1437,7 @@ struct ReadingHistoryPage: View {
             if let error = history.errorMessage { Text(error).foregroundStyle(.secondary) }
             ForEach(history.search(query)) { entry in
                 Button {
-                    let article = history.article(for: entry, in: store.libraryArticles)
+                    let article = store.restoreArchivedArticle(history.article(for: entry, in: store.libraryArticles))
                     store.selectedArticleID = article.id
                     pushed = article
                 } label: {
@@ -2634,13 +2634,6 @@ private struct ArticleList: View {
     /// Shared, on-device title translator for the opt-in "translate list titles"
     /// experiment. Reading its `state(for:)` in `row` observes streaming updates.
     private let titleTranslator = ListTitleTranslator.shared
-    @State private var history = ReadingHistoryStore.shared
-    @State private var historyArticle: Article?
-    private var historyMatches: [ReadingHistoryEntry] {
-        guard !store.searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return [] }
-        return history.search(store.searchText, excluding: store.libraryArticles)
-    }
-
     var body: some View {
         ScrollViewReader { proxy in
             list
@@ -2763,30 +2756,11 @@ private struct ArticleList: View {
 
     private var list: some View {
         List(selection: $selection) {
-            ForEach(store.visibleArticles) { article in
-                libraryRow(article)
+            if store.activeSearchQuery.isEmpty {
+                ForEach(store.visibleArticles) { article in libraryRow(article) }
+            } else {
+                ArchiveSearchResults(store: store, query: store.activeSearchQuery)
             }
-            if !historyMatches.isEmpty {
-                Section("阅读历史 / History") {
-                    ForEach(historyMatches) { entry in
-                        Button {
-                            let article = history.article(for: entry, in: store.libraryArticles)
-                            store.selectedArticleID = article.id
-                            historyArticle = article
-                        } label: {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(entry.title).font(NookTypography.storyTitle).foregroundStyle(NookTheme.textPrimary)
-                                Text(entry.source).font(.caption).foregroundStyle(.secondary)
-                                Text(entry.lastOpenedAt, style: .relative).font(.caption).foregroundStyle(.secondary)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        .onChange(of: historyArticle == nil) { _, popped in tabChrome.setReaderOpen(!popped) }
-        .navigationDestination(item: $historyArticle) { _ in
-            ReaderDetailView(store: store, articleOverride: $historyArticle).toolbar(.hidden, for: .tabBar)
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
@@ -2827,9 +2801,9 @@ private struct ArticleList: View {
         }
         .refreshable { await refreshCurrent() }
         .overlay {
-            if store.visibleArticles.isEmpty && historyMatches.isEmpty { emptyState }
+            if store.visibleArticles.isEmpty && store.activeSearchQuery.isEmpty { emptyState }
         }
-        .onAppear { configureTitleTranslator() }
+        .onAppear { configureTitleTranslator(); store.maintainArchive() }
         .onChange(of: translateListTitles) { _, _ in configureTitleTranslator() }
         .onChange(of: appLanguage) { _, _ in configureTitleTranslator() }
         .onChange(of: titleProvider) { _, _ in configureTitleTranslator() }
@@ -2993,5 +2967,105 @@ private struct ArticleRowView: View {
                 )
             }
         }
+    }
+}
+
+
+/// Same global results are used by the existing search field and the explicit
+/// Archive destination. Opening a row, not searching, enters reading history.
+struct ArchiveSearchResults: View {
+    let store: ReaderStore
+    let query: String
+    @State private var state: ArchiveSearchFilter.State = .all
+    @State private var source = ""
+    @State private var recentDays = 0
+    @State private var history = ReadingHistoryStore.shared
+    @State private var pushed: Article?
+    @Environment(TabBarChrome.self) private var tabChrome
+
+    private var matches: [ArticleArchiveEntry] {
+        var filter = ArchiveSearchFilter()
+        filter.state = state; filter.source = source.isEmpty ? nil : source
+        if recentDays > 0 { filter.publishedAfter = Calendar.current.date(byAdding: .day, value: -recentDays, to: .now) }
+        return store.articleArchive.search(query, filter: filter, history: history.entries)
+    }
+
+    var body: some View {
+        Section {
+            HStack {
+                Picker("状态", selection: $state) {
+                    Text("全部").tag(ArchiveSearchFilter.State.all)
+                    Text("未读").tag(ArchiveSearchFilter.State.unread)
+                    Text("已读").tag(ArchiveSearchFilter.State.read)
+                    Text("收藏").tag(ArchiveSearchFilter.State.saved)
+                }
+                Picker("来源", selection: $source) {
+                    Text("所有来源").tag("")
+                    ForEach(Array(Set(store.articleArchive.entries.values.map(\.source))).sorted(), id: \.self) { Text($0).tag($0) }
+                }
+                Picker("日期", selection: $recentDays) {
+                    Text("所有日期").tag(0)
+                    Text("近 7 天").tag(7)
+                    Text("近 30 天").tag(30)
+                    Text("近 90 天").tag(90)
+                }
+            }.font(.caption).pickerStyle(.menu)
+            if let error = store.articleArchive.errorMessage { Text(error).foregroundStyle(.secondary) }
+            ForEach(matches) { entry in
+                Button {
+                    let article = store.restoreArchivedArticle(entry.article())
+                    store.selectedArticleID = article.id
+                    pushed = article
+                } label: {
+                    VStack(alignment: .leading, spacing: NookTheme.Space.inline) {
+                        Text(entry.content.title).font(NookTypography.storyTitle).foregroundStyle(NookTheme.textPrimary)
+                        Text(entry.source).font(.caption).foregroundStyle(.secondary)
+                        if !entry.content.summary.isEmpty {
+                            Text(entry.content.summary).font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
+                        }
+                        HStack {
+                            if entry.hasExplicitPublishDate { Text(entry.content.publishedAt, style: .date) }
+                            if entry.isSaved { Image(systemName: "star.fill") }
+                            Text(store.articleArchive.isCurrent(entry.article()) ? "当前 / Current" : "存档 / Archive")
+                        }.font(.caption).foregroundStyle(.secondary)
+                    }.padding(.vertical, NookTheme.Space.inline)
+                }
+                .buttonStyle(.plain)
+                .contextMenu {
+                    Button(entry.isRead ? "标为未读" : "标为已读") {
+                        let value = store.restoreArchivedArticle(entry.article())
+                        store.setRead(articleID: value.id, isRead: !entry.isRead)
+                    }
+                    Button(entry.isSaved ? "取消收藏" : "收藏") {
+                        let value = store.restoreArchivedArticle(entry.article())
+                        store.setStarred(articleID: value.id, isStarred: !entry.isSaved)
+                    }
+                }
+            }
+            if matches.isEmpty { Text("没有匹配的文章").foregroundStyle(.secondary) }
+        } header: { Text("全局搜索 · Current / Archive / History / Saved") }
+        .onChange(of: pushed == nil) { _, popped in tabChrome.setReaderOpen(!popped) }
+        .navigationDestination(item: $pushed) { _ in
+            ReaderDetailView(store: store, articleOverride: $pushed).toolbar(.hidden, for: .tabBar)
+        }
+    }
+}
+
+struct ArchiveSearchPage: View {
+    let store: ReaderStore
+    @State private var query = ""
+    @State private var debounced = ""
+    var body: some View {
+        List { ArchiveSearchResults(store: store, query: debounced) }
+            .nookScreen()
+            .navigationTitle("存档与搜索 / Archive")
+            .searchable(text: $query, prompt: "标题、来源或摘要")
+            .task(id: query) {
+                do { try await Task.sleep(for: ArticleArchivePolicy.searchDebounce) }
+                catch { return }
+                debounced = query
+            }
+            .onAppear { store.maintainArchive() }
+            .modifier(TabBarInset())
     }
 }

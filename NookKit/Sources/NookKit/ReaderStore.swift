@@ -5,6 +5,27 @@ import SwiftUI
 @MainActor
 @Observable
 public final class ReaderStore {
+    public let articleArchive = ArticleArchiveStore()
+
+    public func maintainArchive() {
+        articleArchive.synchronize(articles.filter { !deletedArticleIDs.contains($0.id) }, feeds: feeds)
+        let protected = Set(ReadingHistoryStore.shared.entries.map(\.canonicalURL))
+            .union(ReaderLearningStore.shared.entries.map(\.articleURL))
+        articleArchive.prune(protectedURLs: protected)
+    }
+
+    /// Reattach archived metadata to the existing library/state/cache identity
+    /// before opening it. The managed feed is only a compatibility sentinel.
+    @discardableResult
+    public func restoreArchivedArticle(_ fallback: Article) -> Article {
+        if let live = articles.first(where: { StableArticleIdentity.key($0) == StableArticleIdentity.key(fallback) }) {
+            return live
+        }
+        guard !deletedArticleIDs.contains(fallback.id) else { return fallback }
+        articles.append(fallback)
+        scheduleSave()
+        return fallback
+    }
     public var feeds: [Feed] = [] {
         didSet {
             // O(1) row lookups: every visible row resolves its feed title, and a
@@ -838,7 +859,13 @@ public final class ReaderStore {
         let categorySelection = self.categorySelection
         let retained = retainedArticleIDs
         let filteredIDs = filteredArticleIDs
+        #if os(iOS)
+        // iOS renders global indexed metadata results instead of this source-
+        // scoped projection. Do not redundantly scan every cached body here.
+        let query = ""
+        #else
         let query = activeSearchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        #endif
         let order = currentSortOrder
 
         // The Downloaded source is driven by the offline store itself, not the
@@ -2483,6 +2510,7 @@ public final class ReaderStore {
             isStarred: false
         )
         articles.append(article)
+        articleArchive.synchronize([article], feeds: feeds)
         scheduleSave()
         return articleID
     }
@@ -3975,6 +4003,7 @@ public final class ReaderStore {
     /// carries the article) can't resurrect it at the next merge.
     public func deleteArticle(articleID: Article.ID) {
         guard articles.contains(where: { $0.id == articleID }) else { return }
+        if let article = articles.first(where: { $0.id == articleID }) { articleArchive.forget(article) }
         if selectedArticleID == articleID { selectedArticleID = nil }
         articles.removeAll { $0.id == articleID }
         readerContentStates[articleID] = nil
@@ -4048,6 +4077,7 @@ public final class ReaderStore {
         suppressArticlesDidSet = true
         articles[index].isRead = isRead
         suppressArticlesDidSet = false
+        articleArchive.updateState(articles[index])
         // Counts by O(1) delta, mirroring recomputeCounts (filtered articles
         // never count).
         if !filteredArticleIDs.contains(articleID) {
@@ -4166,6 +4196,7 @@ public final class ReaderStore {
         suppressArticlesDidSet = true
         articles[index].isStarred = isStarred
         suppressArticlesDidSet = false
+        articleArchive.updateState(articles[index])
         if !filteredArticleIDs.contains(articleID) {
             starredCount = max(0, starredCount + (isStarred ? 1 : -1))
         }
@@ -5019,6 +5050,12 @@ public final class ReaderStore {
         // Persist the keyword categories just assigned to new articles (so they
         // sync), and queue those articles for background AI categorization (a
         // no-op unless AI is enabled).
+        for parsed in batch {
+            articleArchive.sawFeed(parsed.feed, articles: parsed.articles.compactMap {
+                deletedArticleIDs.contains($0.id) ? nil : existingArticlesByID[$0.id]
+            })
+        }
+        maintainArchive()
         if !newlyArrivedIDs.isEmpty {
             var wroteCategories = false
             for id in newlyArrivedIDs {
@@ -5216,6 +5253,7 @@ public final class ReaderStore {
             articles = library.articles
         }
         lastRefreshedAt = library.lastRefreshedAt
+        maintainArchive()
         // Merge explicit folders with any folders implied by feed categories.
         let feedFolderNames = feeds.map(\.folderName).filter { !$0.isEmpty }
         folders = Array(Set(library.folders + feedFolderNames))

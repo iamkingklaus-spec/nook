@@ -30,7 +30,7 @@ struct NewsHomeView: View {
     }
 
     private var input: Input {
-        Input(articles: store.visibleArticles.map(ArticleContent.init), feeds: store.feeds,
+        Input(articles: store.visibleArticles.filter { store.articleArchive.isCurrent($0) }.map(ArticleContent.init), feeds: store.feeds,
               section: section, editionDate: editionDate, limit: limit, isReading: isReading)
     }
 
