@@ -334,7 +334,8 @@ struct RootView: View {
         case "save-article":
             Task {
                 do {
-                    let id = try await store.saveLink(urlString: shared)
+                    let url = try SharedArticleURL.validate(shared)
+                    let id = try await store.acceptSharedArticle(SharedArticleEnvelope(url: url))
                     savedLinkTitle = store.article(withID: id)?.title ?? shared
                 } catch {
                     store.errorMessage = error.localizedDescription
@@ -3117,13 +3118,15 @@ struct SharedArticleImportPage: View {
 
     var body: some View {
         Form {
-            Section("网页链接") {
+            Section {
                 TextField("https://…", text: $text).keyboardType(.URL)
                     .textInputAutocapitalization(.never).autocorrectionDisabled()
                 PasteButton(payloadType: String.self) { values in text = values.first ?? "" }
                 Button("粘贴后打开文章") { openArticle() }.disabled(busy || text.isEmpty)
                 if busy { ProgressView("正在保存文章…") }
                 if let message { Text(message).foregroundStyle(.secondary) }
+            } header: {
+                Text("网页链接")
             } footer: {
                 Text("无需订阅 RSS。正文提取和双语阅读沿用现有 Reader；无法提取时仍可打开原网页。")
             }

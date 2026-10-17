@@ -114,6 +114,10 @@ public final class ReadingStateStore {
             dirty = false; lastWrite = now; writeCount += 1; errorMessage = nil
         } catch { errorMessage = "阅读位置保存失败，请检查本机存储空间。" }
     }
+
+    public func didResetLocalData() {
+        entries = [:]; dirty = false; readable = true; errorMessage = nil; lastWrite = .distantPast
+    }
 }
 
 /// Presentation-only access. No translation request, cache or schema changes.

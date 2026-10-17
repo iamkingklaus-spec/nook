@@ -114,4 +114,39 @@ struct ArticleArchiveTests {
         #expect(store.search("").first?.sourceFeedID == nil)
         #expect(store.search("").first?.contentCacheReference == a.id)
     }
+    @Test func savedAliasWinsAcrossFeedOrder() {
+        let store = ArticleArchiveStore(file: nil)
+        var saved = article; saved.id = "saved-copy"; saved.isStarred = true
+        store.synchronize([saved, article], feeds: [feed], at: start)
+        #expect(store.search("").count == 1)
+        #expect(store.search("").first?.isSaved == true)
+        store.synchronize([article, saved], feeds: [feed], at: start)
+        #expect(store.search("").first?.isSaved == true)
+    }
+    @Test func removedFeedNoLongerPinsArchiveForever() {
+        let store = ArticleArchiveStore(file: nil)
+        store.sawFeed(feed, articles: [article], at: start)
+        store.synchronize([], feeds: [], at: expiry)
+        #expect(!store.isCurrent(article))
+        store.prune(at: expiry)
+        #expect(store.entries.isEmpty)
+    }
+    @Test func readAndSaveActionsApplyToCanonicalAliases() {
+        let store = ReaderStore._makeForTesting()
+        var alias = article; alias.id = "other-feed"; alias.isRead = true; alias.isStarred = true
+        store.articles = [article, alias]; store.feeds = [feed]
+        store.maintainArchive()
+        store.setRead(articleID: article.id, isRead: false)
+        store.setStarred(articleID: article.id, isStarred: false)
+        #expect(store.libraryArticles.allSatisfy { !$0.isRead && !$0.isStarred })
+        #expect(store.articleArchive.search("").first?.isSaved == false)
+    }
+    @Test func resettingLocalDataDoesNotResurrectInMemoryArchive() {
+        let store = ArticleArchiveStore(file: nil)
+        store.sawFeed(feed, articles: [article], at: start)
+        store.didResetLocalData()
+        #expect(store.search("").isEmpty)
+        #expect(store.currentByFeed.isEmpty)
+    }
+
 }

@@ -74,8 +74,15 @@ public final class ArticleArchiveStore {
         guard readable else { return }
         let sources = Dictionary(feeds.map { ($0.id, $0.displayTitle) }, uniquingKeysWith: { a, _ in a })
         var changed = false
-        for article in articles {
-            let key = StableArticleIdentity.key(article)
+        for id in Array(currentByFeed.keys) where sources[id] == nil && currentByFeed[id]?.isEmpty == false {
+            currentByFeed[id] = []; changed = true
+        }
+        for (key, aliases) in Dictionary(grouping: articles, by: StableArticleIdentity.key) {
+            let ordered = aliases.sorted { $0.id < $1.id }
+            guard var article = ordered.first(where: { $0.id == entries[key]?.content.id }) ?? ordered.first else { continue }
+            article.isRead = aliases.contains(where: \.isRead)
+            article.isStarred = aliases.contains(where: \.isStarred)
+            article.categories = Array(Set(aliases.flatMap(\.categories))).sorted()
             guard !retired.contains(key) || article.isStarred else { continue }
             let old = entries[key]
             let value = entry(article, source: sources[article.feedID], at: old?.lastSeenAt ?? now)
@@ -134,6 +141,12 @@ public final class ArticleArchiveStore {
         persist()
     }
 
+    /// Called only after LocalAppResetService removed the device directory.
+    public func didResetLocalData() {
+        entries = [:]; currentByFeed = [:]; retired = []; index = [:]
+        readable = true; errorMessage = nil
+    }
+
     public func search(_ query: String, filter: ArchiveSearchFilter = .init(),
                        history: [ReadingHistoryEntry] = []) -> [ArticleArchiveEntry] {
         // Persisted archive metadata supplies summary/source; old history files
@@ -169,7 +182,8 @@ public final class ArticleArchiveStore {
         // RSS feed carries the same URL. No title-based deduplication.
         var content = ArticleContent(article)
         content.id = old?.content.id ?? article.id
-        return ArticleArchiveEntry(id: key, content: content, source: source ?? old?.source ?? article.url.host() ?? "",
+        return ArticleArchiveEntry(id: key, content: content,
+            source: (ReaderStore.isManagedFeed(article.feedID) ? article.url.host() : source) ?? old?.source ?? article.url.host() ?? "",
             sourceFeedID: ReaderStore.isManagedFeed(article.feedID) ? nil : article.feedID,
             categories: article.categories, hasExplicitPublishDate: article.hasExplicitPublishDate,
             firstSeenAt: old?.firstSeenAt ?? date, lastSeenAt: max(old?.lastSeenAt ?? date, date),

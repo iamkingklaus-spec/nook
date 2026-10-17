@@ -35,7 +35,10 @@ final class ShareViewController: UIViewController {
             self?.forward(shared, host: "discover-feed")
         })
         alert.addAction(UIAlertAction(title: L.saveArticle, style: .default) { [weak self] _ in
-            DispatchQueue.main.async { self?.handoffArticle(shared) }
+            guard let self else { return }
+            if let presented = self.presentedViewController {
+                presented.dismiss(animated: true) { [weak self] in self?.handoffArticle(shared) }
+            } else { self.handoffArticle(shared) }
         })
         alert.addAction(UIAlertAction(title: L.cancel, style: .cancel) { [weak self] _ in
             self?.extensionContext?.completeRequest(returningItems: nil)

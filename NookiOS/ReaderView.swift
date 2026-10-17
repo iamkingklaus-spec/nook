@@ -153,6 +153,7 @@ struct ReaderDetailView: View {
     @State private var nativeTranslator = NativeArticleTranslator()
     @State private var blockTranslator = BlockReaderTranslationController()
     @State private var readingSession = ReaderResumeSession()
+    @State private var laidOutReadingAnchors: Set<String> = []
     @Environment(\.scenePhase) private var readingScenePhase
     @AppStorage("readerLearningEnabled") private var readerLearningEnabled = true
     @State private var summaryController = ArticleSummaryController()
@@ -493,6 +494,8 @@ struct ReaderDetailView: View {
             )
             .coordinateSpace(name: "nookie-reader-viewport")
             .onPreferenceChange(ReaderAnchorFramesKey.self) { frames in
+                let ids = Set(frames.map { $0.anchor.presentationID })
+                if laidOutReadingAnchors != ids { laidOutReadingAnchors = ids }
                 guard readingSession.articleID == article.id else { return }
                 let visible = frames.filter { $0.maxY > 1 }.min { $0.minY < $1.minY }
                 if let visible { readingSession.visible = visible.anchor }
@@ -503,7 +506,7 @@ struct ReaderDetailView: View {
                 if phase == .idle { saveReadingPosition(article) }
             }
             .task(id: ReaderResumeTrigger(anchors: blockTranslator.readingAnchors,
-                ready: blockTranslator.isPrepared && !blockTranslator.isLoading && !blockTranslator.isCleaning,
+                ready: blockTranslator.isPrepared && !blockTranslator.isLoading && !blockTranslator.isCleaning && !laidOutReadingAnchors.isEmpty,
                 mode: blockTranslator.mode)) {
                 guard readingSession.articleID == article.id, !readingSession.restored,
                       !readingSession.userScrolled, showsBlockTranslation(article),
@@ -512,6 +515,7 @@ struct ReaderDetailView: View {
                 await Task.yield()
                 guard !Task.isCancelled else { return }
                 if let anchor = ReaderResumePosition.anchor(for: readingSession.saved, in: blockTranslator.readingAnchors) {
+                    guard laidOutReadingAnchors.contains(anchor.presentationID) else { return }
                     scrollProxy.scrollTo(anchor.presentationID, anchor: .top)
                 }
                 readingSession.restored = true

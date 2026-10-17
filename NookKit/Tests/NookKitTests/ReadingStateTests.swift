@@ -96,4 +96,12 @@ struct ReadingStateTests {
         #expect(try Data(contentsOf: file) == bytes)
         #expect(store.errorMessage != nil)
     }
+    @Test func localResetDiscardsPendingPositionWrite() {
+        let store = populated()
+        let before = store.writeCount
+        store.didResetLocalData(); store.flush()
+        #expect(store.entries.isEmpty)
+        #expect(store.writeCount == before)
+    }
+
 }

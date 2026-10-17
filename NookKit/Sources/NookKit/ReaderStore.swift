@@ -703,6 +703,8 @@ public final class ReaderStore {
     /// then runs the normal first-launch bootstrap again.
     public func restartAfterLocalReset() async {
         guard didQuiesceForLocalReset else { return }
+        articleArchive.didResetLocalData()
+        ReadingStateStore.shared.didResetLocalData()
 
         feeds = []
         articles = []
@@ -853,7 +855,17 @@ public final class ReaderStore {
     private func performArticleFilter(animated: Bool = true) {
         filterTask?.cancel()
 
+        #if os(iOS)
+        // Current feed browsing is distinct from the Archive search index.
+        // Saved/Downloaded and an actively open article keep their own scope.
+        let snapshot = articles.filter {
+            self.smartSelection == .starred || self.smartSelection == .offline ||
+            retainedArticleIDs.contains($0.id) || articleArchive.isCurrent($0) ||
+            (Self.isManagedFeed($0.feedID) && self.feedSelection.contains($0.feedID))
+        }
+        #else
         let snapshot = articles
+        #endif
         let feedTitles = Dictionary(feeds.map { ($0.id, $0.title) }, uniquingKeysWith: { first, _ in first })
         let feedSelection = self.feedSelection
         let smartSelection = self.smartSelection
@@ -4089,6 +4101,13 @@ public final class ReaderStore {
     }
 
     public func setRead(articleID: Article.ID, isRead: Bool) {
+        guard let article = articles.first(where: { $0.id == articleID }) else { return }
+        let identity = StableArticleIdentity.key(article)
+        let ids = articles.filter { StableArticleIdentity.key($0) == identity && $0.isRead != isRead }.map(\.id)
+        for id in ids { setReadInstance(articleID: id, isRead: isRead) }
+    }
+
+    private func setReadInstance(articleID: Article.ID, isRead: Bool) {
         guard let index = articles.firstIndex(where: { $0.id == articleID }),
               articles[index].isRead != isRead else { return }
 
@@ -4210,6 +4229,13 @@ public final class ReaderStore {
     }
 
     public func setStarred(articleID: Article.ID, isStarred: Bool) {
+        guard let article = articles.first(where: { $0.id == articleID }) else { return }
+        let identity = StableArticleIdentity.key(article)
+        let ids = articles.filter { StableArticleIdentity.key($0) == identity && $0.isStarred != isStarred }.map(\.id)
+        for id in ids { setStarredInstance(articleID: id, isStarred: isStarred) }
+    }
+
+    private func setStarredInstance(articleID: Article.ID, isStarred: Bool) {
         guard let index = articles.firstIndex(where: { $0.id == articleID }),
               articles[index].isStarred != isStarred else { return }
 
@@ -5078,6 +5104,7 @@ public final class ReaderStore {
             })
         }
         maintainArchive()
+        scheduleArticleFilter(debounced: true)
         if !newlyArrivedIDs.isEmpty {
             var wroteCategories = false
             for id in newlyArrivedIDs {
