@@ -1,8 +1,16 @@
 # Share to Nookie
 
-The personal entitlements remain unchanged. No App Group ID is assumed.
+The personal entitlements remain unchanged. Debug and Release now default
+`NOOK_APP_GROUP_ID` to `group.e0b2da7e38d4c653.1`. This identifier was verified
+in the signed entitlements and embedded profiles of the main app and all three
+extensions in the user's `Nookie_0.1.2_1792236059.ipa`. No certificate, profile,
+private key or signed application is copied into this repository.
 
-With the current personal build, Share → **Nookie** offers **复制链接并返回**.
+If re-signing preserves this App Group, Share → **Nookie** can enqueue URLs for
+the main app to import. Container access and end-to-end delivery still require
+device validation; inspecting entitlements does not prove runtime access.
+
+Without accessible group storage, Share → **Nookie** offers **复制链接并返回**.
 Then open Nookie → Saved or Settings → **打开网页链接**, explicitly paste, and open.
 The extension never claims this has already saved an article. The app never
 reads the clipboard automatically.
@@ -12,8 +20,9 @@ for the main app and NookShareSaveExtension (and NookShareExtension if using its
 legacy Save Article action). Both bundles must specify that exact identifier in
 `NOOK_APP_GROUP_ID` build setting (expanded into `NookieAppGroupIdentifier`
 in each Info.plist) and their valid signed App Group
-entitlement. An Info key alone does not grant access. Ask the signing provider
-whether this is supported before enabling it; do not invent a group identifier.
+entitlement. An Info key alone does not grant access. If the signing provider
+changes its groups, override the build setting with the new shared identifier;
+do not invent one. Unsigned builds do not gain this entitlement automatically.
 
 Once configured, the extension writes immutable URL envelopes to the shared
 container. Foreground launch drains that queue into the existing article replica,

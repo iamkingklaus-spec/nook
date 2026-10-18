@@ -796,7 +796,7 @@
 			buildSettings = {
 				NOOK_IOS_BUNDLE_ID = com.example.nook.ios;
 				NOOK_SIGNING_TEAM = "";
-                NOOK_APP_GROUP_ID = "";
+                NOOK_APP_GROUP_ID = "group.e0b2da7e38d4c653.1";
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
@@ -859,7 +859,7 @@
 			buildSettings = {
 				NOOK_IOS_BUNDLE_ID = com.example.nook.ios;
 				NOOK_SIGNING_TEAM = "";
-                NOOK_APP_GROUP_ID = "";
+                NOOK_APP_GROUP_ID = "group.e0b2da7e38d4c653.1";
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
