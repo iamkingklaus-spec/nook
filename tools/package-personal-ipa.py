@@ -17,6 +17,11 @@ EXTENSIONS = {
     "NookShareSaveExtension.appex": ".share-save",
     "NookShareDiscoverExtension.appex": ".share-discover",
 }
+EXTENSION_POINTS = {
+    "NookShareExtension.appex": "com.apple.share-services",
+    "NookShareSaveExtension.appex": "com.apple.share-services",
+    "NookShareDiscoverExtension.appex": "com.apple.ui-services",
+}
 
 
 def require(condition, message):
@@ -59,9 +64,10 @@ def verify_bundle(bundle, expected_id=None):
     identifier = info["CFBundleIdentifier"]
     if expected_id:
         require(identifier == expected_id, f"Unexpected Bundle ID: {bundle.name}: {identifier}")
-        point = "com.apple.share-services" if bundle.name == "NookShareExtension.appex" else "com.apple.ui-services"
-        require(info.get("NSExtension", {}).get("NSExtensionPointIdentifier") == point,
-                f"Missing share extension declaration: {bundle.name}")
+        point = EXTENSION_POINTS[bundle.name]
+        actual = info.get("NSExtension", {}).get("NSExtensionPointIdentifier")
+        require(actual == point,
+                f"Invalid extension point declaration: {bundle.name}: expected {point}, got {actual!r}")
     name = info["CFBundleExecutable"]
     require(Path(name).name == name, f"Invalid executable path: {bundle.name}")
     executable = bundle / name
