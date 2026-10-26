@@ -62,7 +62,18 @@ public final class ReaderLearningStore {
         guard selection.isLexicalExpression else { throw LearningError.malformed }
         try explanation.validate(for: .word)
         let entry = VocabularyEntry(selection: selection, explanation: explanation)
-        if let existing = entries.first(where: { $0.id == entry.id }) { return existing }
+        if let index = entries.firstIndex(where: { $0.id == entry.id }) {
+            let existing = entries[index]
+            guard existing.explanationSnapshot == nil else { return existing }
+            // An explicit save from Explain Word can fill a legacy entry's
+            // missing snapshot without duplicating it or changing its save date.
+            let upgraded = VocabularyEntry(selection: selection, explanation: explanation, createdAt: existing.createdAt)
+            var next = entries
+            next[index] = upgraded
+            try persistVocabulary(next)
+            entries = next
+            return upgraded
+        }
         let next = [entry] + entries
         try persistVocabulary(next)
         entries = next

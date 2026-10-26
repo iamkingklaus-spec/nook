@@ -185,6 +185,19 @@ public struct VocabularyEntry: Codable, Equatable, Identifiable, Sendable {
     public var wordFamily: [LearningDerivative]? = nil
     public var collocations: [String]? = nil
 
+    // Durable save-time result, independent of the bounded explanation cache.
+    // Optional so vocabulary written before detail snapshots still decodes.
+    var explanationSnapshot: LearningExplanation? = nil
+
+    var savedExplanation: LearningExplanation {
+        if let explanationSnapshot { return explanationSnapshot }
+        // Older entries did not retain definition/usage/example/pronunciation.
+        // Show only what was saved; never match another context by lemma alone.
+        return LearningExplanation(type: .word, meaning: meaning, lemma: lemma,
+            partOfSpeech: partOfSpeech, synonyms: synonyms,
+            wordFamily: wordFamily, collocations: collocations)
+    }
+
     init(selection: LearningSelection, explanation: LearningExplanation, createdAt: Date = .now) {
         word = selection.selectedText; lemma = explanation.lemma ?? word
         meaning = explanation.meaning; originalSentence = selection.sentence
@@ -194,6 +207,7 @@ public struct VocabularyEntry: Codable, Equatable, Identifiable, Sendable {
         self.createdAt = createdAt
         partOfSpeech = explanation.partOfSpeech; synonyms = explanation.synonyms
         wordFamily = explanation.wordFamily; collocations = explanation.collocations
+        explanationSnapshot = explanation
         // Same word in the same source sentence is one entry, even after a
         // document refresh. A distinct context intentionally remains distinct.
         id = ArticleDocument.digest([word.lowercased(), originalSentence, articleURL.absoluteString])

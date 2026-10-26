@@ -27,16 +27,21 @@ public struct VocabularyView: View {
             if let error = store.loadError { Text(error).foregroundStyle(.red) }
             if let errorMessage { Text(errorMessage).foregroundStyle(.red) }
             ForEach(store.search(query)) { entry in
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(entry.word).font(NookTypography.storyTitle)
-                    if entry.lemma.lowercased() != entry.word.lowercased() { Text(entry.lemma).font(.caption).foregroundStyle(.secondary) }
-                    if let partOfSpeech = entry.partOfSpeech { Text(partOfSpeech).font(NookTypography.caption).foregroundStyle(NookTheme.textSecondary) }
-                    Text(entry.meaning)
-                    Text(entry.originalSentence).font(.subheadline).foregroundStyle(.secondary)
-                    Link("\(entry.publisher) · \(entry.articleTitle)", destination: entry.articleURL).font(.caption)
+                NavigationLink {
+                    VocabularyDetailView(entry: entry)
+                } label: {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(entry.word).font(NookTypography.storyTitle)
+                        if entry.lemma.lowercased() != entry.word.lowercased() { Text(entry.lemma).font(.caption).foregroundStyle(.secondary) }
+                        if let partOfSpeech = entry.partOfSpeech { Text(partOfSpeech).font(NookTypography.caption).foregroundStyle(NookTheme.textSecondary) }
+                        Text(entry.meaning)
+                        Text(entry.originalSentence).font(.subheadline).foregroundStyle(.secondary)
+                        Text("\(entry.publisher) · \(entry.articleTitle)").font(.caption).foregroundStyle(.secondary)
+                    }.padding(.vertical, NookTheme.Space.inline)
+                }
+                .contextMenu {
                     Button("删除", role: .destructive) { remove(entry.id) }
-                        .font(.caption).buttonStyle(.borderless)
-                }.padding(.vertical, NookTheme.Space.inline)
+                }
                 .nookRows()
             }
             .onDelete { indices in
@@ -88,46 +93,7 @@ private struct LearningExplanationSheet: View {
                     Button("取消请求") { controller.cancel() }
                 }
                 if let value = controller.result {
-                    Section("当前语境") {
-                        if let lemma = value.lemma {
-                            Text(value.expression ?? lemma).font(NookTypography.storyTitle)
-                            if let expression = value.expression, expression.lowercased() != lemma.lowercased() {
-                                Text("原形 · \(lemma)").font(NookTypography.caption).foregroundStyle(NookTheme.textSecondary)
-                            }
-                            let detail = [value.kind == .phrase ? "phrase" : value.kind == .idiom ? "idiom" : nil,
-                                          value.partOfSpeech, value.pronunciation].compactMap { $0 }.joined(separator: " · ")
-                            if !detail.isEmpty { Text(detail).font(NookTypography.caption).foregroundStyle(NookTheme.textSecondary) }
-                        }
-                        Text(value.meaning)
-                        if let definition = value.englishDefinition { Text(definition).foregroundStyle(.secondary) }
-                    }
-                    if let usage = value.usage { Section("句中用法") { Text(usage) } }
-                    alternatives("近义词 / Synonyms", value.synonyms)
-                    alternatives("反义词 / Antonyms", value.antonyms)
-                    if let family = value.wordFamily, !family.isEmpty {
-                        Section {
-                            DisclosureGroup("Word family / 衍生词") {
-                                ForEach(Array(family.enumerated()), id: \.offset) { _, item in
-                                    VStack(alignment: .leading, spacing: NookTheme.Space.tight) {
-                                        Text(item.word).font(.headline) + Text(" · " + item.partOfSpeech).font(.caption)
-                                        Text(item.meaning).foregroundStyle(NookTheme.textSecondary)
-                                    }.padding(.vertical, NookTheme.Space.tight)
-                                }
-                            }
-                        }
-                    }
-                    if let collocations = value.collocations, !collocations.isEmpty {
-                        Section {
-                            DisclosureGroup("常用搭配 / Collocations") {
-                                ForEach(Array(collocations.enumerated()), id: \.offset) { _, item in Text(item) }
-                            }
-                        }
-                    }
-                    if let example = value.example { Section("例句") { Text(example) } }
-                    if let mainClause = value.mainClause { Section("句子主干") { Text(mainClause) } }
-                    rows("语法结构", value.grammar)
-                    rows("短语 / Collocations", value.phrases)
-                    rows("容易误解的地方", value.pitfalls)
+                    LearningExplanationSections(value: value)
                     if value.type == .word {
                         Button(saved ? "已保存到生词本" : "保存到生词本") {
                             do {
@@ -158,6 +124,54 @@ private struct LearningExplanationSheet: View {
         .onDisappear { controller.cancel() }
     }
     private func explain() async { await controller.explain(request.selection, type: request.type) }
+}
+
+/// Both the live explanation and saved vocabulary use the same presentation.
+/// This view has no controller, task, transport or cache lookup.
+private struct LearningExplanationSections: View {
+    let value: LearningExplanation
+    var body: some View {
+        Section("当前语境") {
+            if let lemma = value.lemma {
+                Text(value.expression ?? lemma).font(NookTypography.storyTitle)
+                if let expression = value.expression, expression.lowercased() != lemma.lowercased() {
+                    Text("原形 · \(lemma)").font(NookTypography.caption).foregroundStyle(NookTheme.textSecondary)
+                }
+                let detail = [value.kind == .phrase ? "phrase" : value.kind == .idiom ? "idiom" : nil,
+                              value.partOfSpeech, value.pronunciation].compactMap { $0 }.joined(separator: " · ")
+                if !detail.isEmpty { Text(detail).font(NookTypography.caption).foregroundStyle(NookTheme.textSecondary) }
+            }
+            Text(value.meaning)
+            if let definition = value.englishDefinition { Text(definition).foregroundStyle(.secondary) }
+        }
+        if let usage = value.usage { Section("句中用法") { Text(usage) } }
+        alternatives("近义词 / Synonyms", value.synonyms)
+        alternatives("反义词 / Antonyms", value.antonyms)
+        if let family = value.wordFamily, !family.isEmpty {
+            Section {
+                DisclosureGroup("Word family / 衍生词") {
+                    ForEach(Array(family.enumerated()), id: \.offset) { _, item in
+                        VStack(alignment: .leading, spacing: NookTheme.Space.tight) {
+                            Text(item.word).font(.headline) + Text(" · " + item.partOfSpeech).font(.caption)
+                            Text(item.meaning).foregroundStyle(NookTheme.textSecondary)
+                        }.padding(.vertical, NookTheme.Space.tight)
+                    }
+                }
+            }
+        }
+        if let collocations = value.collocations, !collocations.isEmpty {
+            Section {
+                DisclosureGroup("常用搭配 / Collocations") {
+                    ForEach(Array(collocations.enumerated()), id: \.offset) { _, item in Text(item) }
+                }
+            }
+        }
+        if let example = value.example { Section("例句") { Text(example) } }
+        if let mainClause = value.mainClause { Section("句子主干") { Text(mainClause) } }
+        rows("语法结构", value.grammar)
+        rows("短语 / Collocations", value.phrases)
+        rows("容易误解的地方", value.pitfalls)
+    }
     @ViewBuilder private func alternatives(_ title: String, _ values: [LearningSynonym]?) -> some View {
         if let values, !values.isEmpty {
             Section {
@@ -176,6 +190,36 @@ private struct LearningExplanationSheet: View {
         if let values, !values.isEmpty {
             Section(title) { ForEach(Array(values.enumerated()), id: \.offset) { _, text in Text(text) } }
         }
+    }
+}
+
+private struct VocabularyDetailView: View {
+    let entry: VocabularyEntry
+    var body: some View {
+        List {
+            Section("选中内容") {
+                Text(entry.word).textSelection(.enabled)
+                Text(entry.originalSentence).font(.caption).foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+            }
+            LearningExplanationSections(value: entry.savedExplanation)
+            if entry.explanationSnapshot == nil {
+                Section {
+                    Text("此词条来自旧版，未保存完整解释。这里显示当时保留的内容；在 Reader 中重新 Explain Word 并保存，可补全详情。")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            Section("来源") {
+                Text(entry.articleTitle)
+                if !entry.publisher.isEmpty { Text(entry.publisher).foregroundStyle(.secondary) }
+                LabeledContent("保存时间") { Text(entry.createdAt, style: .date) }
+                Link(destination: entry.articleURL) {
+                    Label("打开原文网页", systemImage: "arrow.up.right.square")
+                }
+            }
+        }
+        .nookScreen()
+        .navigationTitle("Explain Word")
     }
 }
 
